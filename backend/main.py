@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import re
+import shutil
 import subprocess
 import threading
 import time
@@ -27,68 +28,105 @@ MODEL_NAME = "gemini-omni-flash-preview"
 CRUSOE_MODEL_NAME = "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
 CRUSOE_DEFAULT_BASE_URL = "https://api.inference.crusoecloud.com/v1"
 ANNOTATION_PIPELINE_VERSION = "vlm-zones-framewise-v2"
+REVIEW_PIPELINE_VERSION = "gemini-vlm-review-v1"
 POLL_INTERVAL_SECONDS = 5
 POLL_TIMEOUT_SECONDS = 15 * 60
-DEFAULT_VIEW_BATCH_SIZE = 6
+DEFAULT_VIEW_BATCH_SIZE = 4
 BATCH_WORKERS = DEFAULT_VIEW_BATCH_SIZE
-LABEL_FRAME_COUNT = 4
+LABEL_FRAME_COUNT = 1
 LABEL_FRAME_WIDTH = 512
 MAX_LABEL_FRAME_PAYLOAD_BYTES = 2 * 1024 * 1024
+DEFAULT_GEMINI_REVIEW_MODEL = "gemini-3.5-flash"
+MAX_REVIEW_REVISIONS = 0
 
-JobStatus = Literal["queued", "running", "labeling", "completed", "failed"]
+JobStatus = Literal[
+    "queued",
+    "generating",
+    "reviewing",
+    "correcting",
+    "labeling",
+    "rendering",
+    "completed",
+    "failed",
+]
 LabelStatus = Literal["pending", "running", "completed", "failed"]
+ReviewStatus = Literal["pending", "running", "passed", "failed"]
+RenderStatus = Literal["pending", "running", "completed", "failed", "skipped"]
 BatchStatus = Literal["queued", "running", "completed", "failed", "partial"]
 
 CAMERA_VARIANTS = [
     {
-        "name": "wide_front",
-        "title": "Wide front safety view",
+        "name": "front_view",
+        "title": "Front view",
         "prompt": (
-            "Camera variant 1 of 6: wide frontal safety-training view from the end of the aisle. "
-            "Show the full rack bay, pallet, floor markings, surrounding boxes, and the complete before/after context."
+            "Video 1: Front view. The camera is positioned directly in front of the hazard, facing it straight on. "
+            "The cause of the hazard must be clearly visible from the beginning."
         ),
     },
     {
-        "name": "close_load_detail",
-        "title": "Close load detail",
+        "name": "rear_view",
+        "title": "Rear view",
         "prompt": (
-            "Camera variant 2 of 6: close detail shot focused on the unstable pallet load. "
-            "Show shrink wrap tension, cardboard labels, box edges, straps, wood grain, cracks, and impact details."
+            "Video 2: Rear view. The camera is positioned behind the hazard or behind the main object, showing "
+            "the incident from the opposite side. The cause must still be visible through angle, movement, or camera push-in."
         ),
     },
     {
-        "name": "high_overhead",
-        "title": "High overhead aisle view",
+        "name": "side_view",
+        "title": "Side view",
         "prompt": (
-            "Camera variant 3 of 6: high overhead or mezzanine-style view looking down the aisle. "
-            "Make the hazard zone, pallet footprint, floor markings, debris spread, and rack positions easy to annotate."
+            "Video 3: Side view. The camera is positioned at a 90-degree angle from the hazard, showing depth, "
+            "instability, and movement direction clearly."
         ),
     },
     {
-        "name": "low_floor",
-        "title": "Low floor impact view",
+        "name": "high_angle_inspection",
+        "title": "High-angle inspection view",
         "prompt": (
-            "Camera variant 4 of 6: low floor-level view near the pallet impact area. "
-            "Emphasize falling boxes, crushed cardboard, torn wrap, scattered debris, and floor contact."
-        ),
-    },
-    {
-        "name": "side_aisle",
-        "title": "Side aisle profile",
-        "prompt": (
-            "Camera variant 5 of 6: side profile view along the rack aisle. "
-            "Show the pallet tilt, rack uprights, empty rack space, boxes sliding, and depth of the aisle."
-        ),
-    },
-    {
-        "name": "after_inspection",
-        "title": "Aftermath inspection",
-        "prompt": (
-            "Camera variant 6 of 6: post-incident inspection view after the fall. "
-            "Show collapsed pallet, damaged boxes, torn plastic wrap, debris field, scrape marks, and empty rack location."
+            "Video 4: High-angle inspection view. The camera is slightly above the scene, looking down at the hazard "
+            "to show layout, spacing, floor marks, surrounding equipment, and the final damage pattern."
         ),
     },
 ]
+
+
+def _build_industrial_safety_prompt(user_prompt: str, camera_variant: dict[str, str], aspect_ratio: str) -> str:
+    return (
+        "Create a continuous cinematic industrial safety inspection video, single unbroken shot, "
+        f"{aspect_ratio}, realistic documentary training style.\n\n"
+        "Use the user prompt below as the incident brief. If the brief is vague, incomplete, contradictory, "
+        "or badly written, normalize it into one coherent industrial safety incident. Infer realistic missing "
+        "details, but keep the scene plausible and easy to inspect visually. Across the multi-angle set, keep "
+        "the same environment, same hazard cause, same warning signs, same failure sequence, and same after state. "
+        "Only the camera angle changes between videos.\n\n"
+        f"User incident brief:\n{user_prompt}\n\n"
+        "Scene requirements: clearly establish the industrial environment, such as a warehouse, factory, food "
+        "production area, chemical plant, construction site, or logistics hub. Include realistic background "
+        "elements: racks, machines, pipes, pallets, warning signs, concrete floor, tools, lights, labels, dust, "
+        "scratches, stains, and other domain-appropriate details.\n\n"
+        "The camera starts with a clean before view of the risky situation. The visible cause of the hazard must "
+        "be clearly shown before anything happens. Make the cause visually obvious and believable, not hidden. "
+        "Examples include a broken wooden pallet, corrosion, loose cable, missing brace, overloaded shelf, leaking "
+        "oil, damaged tire, torn safety net, cracked pipe, unstable stack, or any cause implied by the user brief.\n\n"
+        "Show early warning signs before the incident: leaning boxes, loose wrapping, dripping liquid, cracked wood "
+        "fibers, rust marks, vibration, moisture stains, bent metal, missing bolts, stretched straps, unstable "
+        "balance, floor marks, warning labels, or other subtle stress details.\n\n"
+        "The camera slowly pushes in and inspects close-up textures: damaged material, dust, labels, scratches, "
+        "stains, shadows, natural lighting, and signs of stress or failure.\n\n"
+        "At exactly 4 seconds, the hazard develops into a realistic incident caused directly by the visible defect. "
+        "Show the failure moment clearly with physically believable motion. No explosion unless explicitly required "
+        "by the user brief. No injuries, no gore, and no people harmed.\n\n"
+        "After the incident, the camera continues moving around the same scene to show the after state: collapsed "
+        "objects, damaged packaging, torn wrap, spilled material, broken parts, puddles, scrape marks, empty rack "
+        "space, scattered tools, contamination zone, stopped machine, or other consequences implied by the incident.\n\n"
+        "Camera-angle requirement for this specific output:\n"
+        f"{camera_variant['prompt']}\n\n"
+        "All videos in the set must follow the same structure: clean before view, visible hazard cause, warning "
+        "signs, failure moment at 4 seconds, and after-state inspection. Keep the video realistic, cinematic, "
+        "documentary-style, with natural industrial lighting, detailed textures, physically accurate motion, no "
+        "dialogue, no text overlays, no dramatic music, ambient industrial sound only, no injuries, and no gore."
+    )
+
 
 jobs_lock = threading.Lock()
 jobs: dict[str, dict[str, Any]] = {}
@@ -126,11 +164,20 @@ class VideoJobResponse(BaseModel):
     basePrompt: str
     cameraVariant: dict[str, str]
     aspect_ratio: Literal["16:9", "9:16"]
+    draftVideoUrl: str | None = None
     videoUrl: str | None = None
     error: str | None = None
+    reviewStatus: ReviewStatus = "pending"
+    review: dict[str, Any] | None = None
+    reviewHistory: list[dict[str, Any]] = Field(default_factory=list)
+    revisionCount: int = 0
+    correctionPrompt: str | None = None
     labelStatus: LabelStatus = "pending"
     label: dict[str, Any] | None = None
     labelError: str | None = None
+    labeledVideoUrl: str | None = None
+    renderStatus: RenderStatus = "pending"
+    renderError: str | None = None
 
 
 class VideoBatchResponse(BaseModel):
@@ -173,6 +220,10 @@ def get_gemini_api_key() -> str | None:
     return _get_env_value(("API_KEY_GEMINI", "GEMINI_API_KEY"))
 
 
+def get_gemini_review_model() -> str:
+    return _get_env_value(("GEMINI_REVIEW_MODEL",)) or DEFAULT_GEMINI_REVIEW_MODEL
+
+
 def get_crusoe_api_key() -> str | None:
     return _get_env_value(("API_KEY_CRUSOE", "CRUSOE_API_KEY"))
 
@@ -203,7 +254,12 @@ def _get_field(value: Any, name: str, default: Any = None) -> Any:
 
 def _state_name(state: Any) -> str:
     name = _get_field(state, "name")
-    return str(name or state or "").upper()
+    value = str(name or state or "").upper()
+    if "." in value:
+        value = value.split(".")[-1]
+    if value.startswith("FILE_STATE_"):
+        value = value.removeprefix("FILE_STATE_")
+    return value
 
 
 def _extract_output_video(interaction: Any) -> Any:
@@ -217,6 +273,20 @@ def _extract_output_video(interaction: Any) -> Any:
                 return item
 
     return None
+
+
+def _extract_output_text(interaction: Any) -> str:
+    output_text = _get_field(interaction, "output_text")
+    if output_text:
+        return str(output_text).strip()
+
+    parts: list[str] = []
+    for step in _get_field(interaction, "steps", []) or []:
+        for item in _get_field(step, "content", []) or []:
+            text = _get_field(item, "text")
+            if text:
+                parts.append(str(text).strip())
+    return "\n".join(part for part in parts if part).strip()
 
 
 def _extract_file_name(uri: str) -> str:
@@ -277,10 +347,163 @@ def _download_video_bytes(client: Any, output_video: Any, api_key: str) -> bytes
     raise RuntimeError("Could not download generated video from Gemini.")
 
 
-def _extract_json_from_text(text: str) -> dict[str, Any]:
+GEMINI_REVIEW_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "passed": {"type": "boolean"},
+        "score": {"type": "number"},
+        "issues": {"type": "array", "items": {"type": "string"}},
+        "missing_requirements": {"type": "array", "items": {"type": "string"}},
+        "visual_qa_notes": {"type": "array", "items": {"type": "string"}},
+        "correction_prompt": {"type": "string"},
+        "summary": {"type": "string"},
+        "feedback": {"type": "string"},
+    },
+    "required": ["passed", "score", "issues", "missing_requirements", "correction_prompt"],
+}
+
+
+def _wait_for_gemini_file(client: Any, file_info: Any) -> Any:
+    started_at = time.monotonic()
+    current = file_info
+    while True:
+        state = _state_name(_get_field(current, "state"))
+        if state == "ACTIVE":
+            return current
+        if state == "FAILED":
+            raise RuntimeError("Gemini file processing failed.")
+        if time.monotonic() - started_at > POLL_TIMEOUT_SECONDS:
+            raise TimeoutError("Gemini file processing timed out.")
+
+        time.sleep(POLL_INTERVAL_SECONDS)
+        name = _get_field(current, "name")
+        if not name:
+            raise RuntimeError("Gemini file upload did not return a file name.")
+        current = client.files.get(name=name)
+
+
+def _upload_video_for_gemini(client: Any, video_path: Path) -> Any:
+    file_info = client.files.upload(file=str(video_path))
+    return _wait_for_gemini_file(client, file_info)
+
+
+def _string_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _review_fallback_correction_prompt(job: dict[str, Any], review: dict[str, Any]) -> str:
+    problems = review.get("missing_requirements") or review.get("issues") or []
+    problem_text = "; ".join(str(problem) for problem in problems if str(problem).strip())
+    if not problem_text:
+        problem_text = "The first draft does not fully satisfy the warehouse safety training prompt."
+    return (
+        "Revise the previous video while preserving the same warehouse incident and camera variant. "
+        f"Fix these quality issues: {problem_text}. "
+        "Make the pallet fall clearly visible, include a before state and an after state, and keep pallets, "
+        "boxes, shrink wrap, racks, floor markings, debris, damaged boxes, and hazard zones easy to annotate. "
+        f"Camera variant requirement: {job.get('cameraVariant', {}).get('prompt', '')}"
+    )
+
+
+def _normalise_review(raw_review: dict[str, Any], job: dict[str, Any]) -> dict[str, Any]:
+    raw_passed = raw_review.get("passed", False)
+    if isinstance(raw_passed, str):
+        passed = raw_passed.strip().lower() in {"true", "yes", "pass", "passed", "ok"}
+    else:
+        passed = bool(raw_passed)
+
+    score = _float_or_none(raw_review.get("score"))
+    score = min(1.0, max(0.0, score)) if score is not None else (1.0 if passed else 0.0)
+    issues = _string_list(raw_review.get("issues"))
+    missing_requirements = _string_list(raw_review.get("missing_requirements"))
+    visual_qa_notes = _string_list(raw_review.get("visual_qa_notes"))
+    correction_prompt = str(raw_review.get("correction_prompt") or "").strip()
+
+    review = {
+        "schema_version": "gemini-video-review-v1",
+        "pipeline": REVIEW_PIPELINE_VERSION,
+        "model": get_gemini_review_model(),
+        "passed": passed,
+        "score": score,
+        "issues": issues,
+        "missing_requirements": missing_requirements,
+        "visual_qa_notes": visual_qa_notes,
+        "correction_prompt": correction_prompt,
+        "summary": str(raw_review.get("summary") or "").strip(),
+        "feedback": str(raw_review.get("feedback") or "").strip(),
+    }
+    if not review["passed"] and not review["correction_prompt"]:
+        review["correction_prompt"] = _review_fallback_correction_prompt(job, review)
+    return review
+
+
+def _review_video_with_gemini(client: Any, video_path: Path, job: dict[str, Any]) -> dict[str, Any]:
+    uploaded_video = _upload_video_for_gemini(client, video_path)
+    video_uri = _get_field(uploaded_video, "uri")
+    mime_type = _get_field(uploaded_video, "mime_type", _get_field(uploaded_video, "mimeType", "video/mp4"))
+    if not video_uri:
+        raise RuntimeError("Gemini file upload did not return a video URI.")
+
+    review_prompt = (
+        "You are a strict VLM quality reviewer for synthetic warehouse safety training videos. "
+        "Return only JSON matching the provided schema. Evaluate whether the video can be released for "
+        "object-detection training and whether it follows the prompt.\n\n"
+        "Visual QA discipline:\n"
+        "- Assume there are visual problems. Your job is to find them, not to confirm the draft is good.\n"
+        "- Inspect the video like a bug hunt across the beginning, middle, fall moment, and aftermath.\n"
+        "- Compare expected content against actual pixels: do not pass a video because the prompt says something "
+        "should be present; pass only if it is visibly present.\n"
+        "- Report all concerns, including minor ones, in visual_qa_notes.\n"
+        "- Look for cropped or cut-off important objects, confusing camera framing, occluded pallet/fall action, "
+        "missing before/after states, low contrast, motion blur that hides objects, inconsistent physics, objects "
+        "too small for annotation, or details that are too dark/unclear for VLM labels.\n"
+        "- If you find zero issues, look again critically before passing.\n\n"
+        "Required checks:\n"
+        "- visible warehouse scene with racks or storage aisle\n"
+        "- one pallet falls or has clearly fallen\n"
+        "- before and after states are visible\n"
+        "- annotatable details are visible: pallet, cardboard boxes, shrink wrap, racks, floor markings, debris, "
+        "damaged boxes, and hazard zones\n"
+        "- the requested camera angle variant is respected\n"
+        "- video is coherent enough for VLM training\n\n"
+        f"Original user prompt:\n{job['basePrompt']}\n\n"
+        f"Full generation prompt:\n{job['prompt']}\n\n"
+        f"Camera variant:\n{job.get('cameraVariant', {}).get('prompt', '')}\n\n"
+        "If the video fails, write a concise correction_prompt for Gemini Omni Flash to edit the previous video. "
+        "The correction prompt must be in English, preserve good parts, and only request the missing or unclear elements. "
+        "Write feedback in English for the UI, explaining briefly what is wrong or why the video passed."
+    )
+
+    interaction = client.interactions.create(
+        model=get_gemini_review_model(),
+        input=[
+            {"type": "video", "uri": video_uri, "mime_type": mime_type or "video/mp4"},
+            {"type": "text", "text": review_prompt},
+        ],
+        response_format={
+            "type": "text",
+            "mime_type": "application/json",
+            "schema": GEMINI_REVIEW_SCHEMA,
+        },
+    )
+    raw_review = _extract_json_from_text(_extract_output_text(interaction), "Gemini review")
+    review = _normalise_review(raw_review, job)
+    review["video"] = video_path.name
+    return review
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8")
+
+
+def _extract_json_from_text(text: str, source: str = "Crusoe") -> dict[str, Any]:
     text = text.strip()
     if not text or text.lower() in {"none", "null"}:
-        raise RuntimeError("Crusoe returned an empty label response.")
+        raise RuntimeError(f"{source} returned an empty JSON response.")
 
     try:
         value = json.loads(text)
@@ -298,7 +521,7 @@ def _extract_json_from_text(text: str) -> dict[str, Any]:
         except json.JSONDecodeError:
             pass
 
-    raise RuntimeError("Crusoe returned text that could not be parsed as annotation JSON.")
+    raise RuntimeError(f"{source} returned text that could not be parsed as JSON.")
 
 
 def _message_content_to_text(message: Any) -> str:
@@ -351,6 +574,28 @@ def _image_dimensions(image_path: Path) -> tuple[int | None, int | None]:
         "-of",
         "csv=p=0:s=x",
         str(image_path),
+    ]
+    result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+    if result.returncode != 0:
+        return None, None
+    match = re.search(r"(\d+)x(\d+)", result.stdout)
+    if not match:
+        return None, None
+    return int(match.group(1)), int(match.group(2))
+
+
+def _video_dimensions(video_path: Path) -> tuple[int | None, int | None]:
+    command = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "stream=width,height",
+        "-of",
+        "csv=p=0:s=x",
+        str(video_path),
     ]
     result = subprocess.run(command, capture_output=True, text=True, timeout=30)
     if result.returncode != 0:
@@ -813,6 +1058,128 @@ def _annotation_count(label: dict[str, Any]) -> int:
     )
 
 
+def _escape_drawtext_text(value: Any) -> str:
+    text = re.sub(r"[^A-Za-z0-9_ .-]+", "_", str(value or "object")).strip() or "object"
+    return text.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+
+
+def _drawtext_fontfile_option() -> str:
+    font_candidates = [
+        Path(os.environ.get("WINDIR", "C:\\Windows")) / "Fonts" / "arial.ttf",
+        Path(os.environ.get("WINDIR", "C:\\Windows")) / "Fonts" / "segoeui.ttf",
+    ]
+    for font_path in font_candidates:
+        if font_path.exists():
+            escaped_path = str(font_path).replace("\\", "/").replace(":", "\\:")
+            return f"fontfile='{escaped_path}':"
+    return ""
+
+
+def _annotation_filters(label: dict[str, Any], video_width: int, video_height: int) -> list[str]:
+    colors = [
+        "lime",
+        "cyan",
+        "yellow",
+        "orange",
+        "magenta",
+        "deepskyblue",
+        "springgreen",
+        "red",
+    ]
+    filters: list[str] = []
+    color_index = 0
+
+    for frame in label.get("frames", []):
+        if not isinstance(frame, dict):
+            continue
+
+        annotations = frame.get("annotations", [])
+        if not isinstance(annotations, list):
+            continue
+
+        for annotation in annotations:
+            if not isinstance(annotation, dict):
+                continue
+            box = annotation.get("box")
+            if not isinstance(box, dict):
+                continue
+            x = _clamp_unit(box.get("x"))
+            y = _clamp_unit(box.get("y"))
+            width = _clamp_unit(box.get("width"))
+            height = _clamp_unit(box.get("height"))
+            if x is None or y is None or width is None or height is None:
+                continue
+            if width <= 0 or height <= 0:
+                continue
+
+            px = int(round(x * video_width))
+            py = int(round(y * video_height))
+            pw = max(2, int(round(width * video_width)))
+            ph = max(2, int(round(height * video_height)))
+            if px + pw > video_width:
+                pw = max(2, video_width - px)
+            if py + ph > video_height:
+                ph = max(2, video_height - py)
+
+            color = colors[color_index % len(colors)]
+            color_index += 1
+            label_text = _escape_drawtext_text(annotation.get("label"))
+            text_y = max(0, py - 28)
+            filters.append(
+                f"drawbox=x={px}:y={py}:w={pw}:h={ph}:color={color}@0.85:t=3"
+            )
+            filters.append(
+                "drawtext="
+                f"{_drawtext_fontfile_option()}"
+                f"text='{label_text}':x={px}:y={text_y}:fontsize=20:"
+                f"fontcolor=black:box=1:boxcolor={color}@0.85:boxborderw=4"
+            )
+
+    return filters
+
+
+def _render_labeled_video(video_path: Path, label: dict[str, Any]) -> str:
+    video_width, video_height = _video_dimensions(video_path)
+    if not video_width or not video_height:
+        raise RuntimeError("Could not read generated video dimensions for label rendering.")
+
+    filters = _annotation_filters(label, video_width, video_height)
+    if not filters:
+        raise RuntimeError("No annotations available to render into the video.")
+
+    output_path = video_path.with_name(f"{video_path.stem}.labeled.mp4")
+    command = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        str(video_path),
+        "-vf",
+        ",".join(filters),
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "20",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "copy",
+        "-movflags",
+        "+faststart",
+        str(output_path),
+    ]
+    result = subprocess.run(command, capture_output=True, text=True, timeout=180)
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg label render failed: {result.stderr[:500]}")
+    if not output_path.exists():
+        raise RuntimeError("ffmpeg label render did not create an output video.")
+    return f"/generated/{output_path.name}"
+
+
 def _label_video(video_path: Path, prompt: str) -> dict[str, Any]:
     api_key = get_crusoe_api_key()
     if not api_key:
@@ -835,11 +1202,59 @@ def _set_job(job_id: str, **updates: Any) -> None:
             jobs[job_id].update(updates)
 
 
+def _append_review(job_id: str, review: dict[str, Any]) -> None:
+    with jobs_lock:
+        if job_id not in jobs:
+            return
+        history = list(jobs[job_id].get("reviewHistory") or [])
+        history.append(review)
+        jobs[job_id].update(
+            {
+                "review": review,
+                "reviewHistory": history,
+                "reviewStatus": "passed" if review.get("passed") else "failed",
+                "correctionPrompt": review.get("correction_prompt") or None,
+            }
+        )
+
+
+def _create_omni_video_interaction(
+    client: Any,
+    input_payload: Any,
+    aspect_ratio: str,
+    previous_interaction_id: str | None = None,
+) -> Any:
+    kwargs: dict[str, Any] = {
+        "model": MODEL_NAME,
+        "input": input_payload,
+        "response_format": {
+            "type": "video",
+            "delivery": "uri",
+            "aspect_ratio": aspect_ratio,
+        },
+    }
+    if previous_interaction_id:
+        kwargs["previous_interaction_id"] = previous_interaction_id
+    else:
+        kwargs["generation_config"] = {
+            "video_config": {
+                "task": "text_to_video",
+            },
+        }
+    return client.interactions.create(**kwargs)
+
+
+def _download_interaction_video(client: Any, interaction: Any, api_key: str, output_path: Path) -> None:
+    output_video = _extract_output_video(interaction)
+    video_bytes = _download_video_bytes(client, output_video, api_key)
+    output_path.write_bytes(video_bytes)
+
+
 def _generate_video(job_id: str) -> None:
     with jobs_lock:
         job = dict(jobs[job_id])
 
-    _set_job(job_id, status="running", error=None)
+    _set_job(job_id, status="generating", error=None)
 
     try:
         api_key = get_gemini_api_key()
@@ -853,46 +1268,110 @@ def _generate_video(job_id: str) -> None:
         from google import genai
 
         client = genai.Client(api_key=api_key)
-        interaction = client.interactions.create(
-            model=MODEL_NAME,
-            input=job["prompt"],
-            response_format={
-                "type": "video",
-                "delivery": "uri",
-                "aspect_ratio": job["aspect_ratio"],
-            },
-            generation_config={
-                "video_config": {
-                    "task": "text_to_video",
-                },
-            },
+        output_path = GENERATED_DIR / f"{job_id}.mp4"
+
+        interaction = _create_omni_video_interaction(client, job["prompt"], job["aspect_ratio"])
+        _download_interaction_video(client, interaction, api_key, output_path)
+        _set_job(
+            job_id,
+            status="reviewing",
+            draftVideoUrl=None,
+            error=None,
+            reviewStatus="running",
         )
 
-        output_video = _extract_output_video(interaction)
-        video_bytes = _download_video_bytes(client, output_video, api_key)
+        current_path = output_path
+        current_interaction = interaction
+        revision_count = 0
+        review = _review_video_with_gemini(client, current_path, job)
+        _append_review(job_id, review)
+        _write_json(current_path.with_suffix(".review.json"), review)
 
-        file_name = f"{job_id}.mp4"
-        output_path = GENERATED_DIR / file_name
-        output_path.write_bytes(video_bytes)
+        while not review.get("passed") and revision_count < MAX_REVIEW_REVISIONS:
+            correction_prompt = review.get("correction_prompt") or _review_fallback_correction_prompt(job, review)
+            _set_job(
+                job_id,
+                status="correcting",
+                reviewStatus="failed",
+                correctionPrompt=correction_prompt,
+            )
+            previous_id = _get_field(current_interaction, "id")
+            if not previous_id:
+                raise RuntimeError("Gemini did not return an interaction id for video correction.")
+
+            correction_interaction = _create_omni_video_interaction(
+                client,
+                correction_prompt,
+                job["aspect_ratio"],
+                previous_interaction_id=str(previous_id),
+            )
+            revision_count += 1
+            corrected_path = GENERATED_DIR / f"{job_id}.revision{revision_count}.mp4"
+            _download_interaction_video(client, correction_interaction, api_key, corrected_path)
+            _set_job(
+                job_id,
+                status="reviewing",
+                draftVideoUrl=f"/generated/{corrected_path.name}",
+                revisionCount=revision_count,
+                reviewStatus="running",
+            )
+
+            current_path = corrected_path
+            current_interaction = correction_interaction
+            review = _review_video_with_gemini(client, current_path, job)
+            _append_review(job_id, review)
+            _write_json(current_path.with_suffix(".review.json"), review)
+
+        if not review.get("passed"):
+            feedback = review.get("feedback") or review.get("summary") or ""
+            details = "; ".join(review.get("issues") or review.get("missing_requirements") or [])
+            raise RuntimeError(
+                "Gemini review failed. Final video was not published. "
+                f"{feedback} {details}".strip()
+            )
+
+        if current_path != output_path:
+            shutil.copyfile(current_path, output_path)
 
         _set_job(
             job_id,
             status="labeling",
-            videoUrl=f"/generated/{file_name}",
+            videoUrl=f"/generated/{output_path.name}",
             error=None,
+            reviewStatus="passed",
             labelStatus="running",
             labelError=None,
+            renderStatus="pending",
+            revisionCount=revision_count,
         )
 
         try:
             label = _label_video(output_path, job["prompt"])
             _set_job(
                 job_id,
-                status="completed",
+                status="rendering",
                 labelStatus="completed",
                 label=label,
                 labelError=None,
+                renderStatus="running",
             )
+            try:
+                labeled_video_url = _render_labeled_video(output_path, label)
+                _set_job(
+                    job_id,
+                    status="completed",
+                    labeledVideoUrl=labeled_video_url,
+                    renderStatus="completed",
+                    renderError=None,
+                )
+            except Exception as render_exc:
+                _set_job(
+                    job_id,
+                    status="completed",
+                    labeledVideoUrl=None,
+                    renderStatus="failed",
+                    renderError=str(render_exc),
+                )
         except Exception as label_exc:
             _set_job(
                 job_id,
@@ -900,9 +1379,18 @@ def _generate_video(job_id: str) -> None:
                 labelStatus="failed",
                 label=None,
                 labelError=str(label_exc),
+                renderStatus="skipped",
             )
     except Exception as exc:
-        _set_job(job_id, status="failed", error=str(exc), videoUrl=None, labelStatus="failed")
+        _set_job(
+            job_id,
+            status="failed",
+            error=str(exc),
+            videoUrl=None,
+            reviewStatus="failed",
+            labelStatus="failed",
+            renderStatus="skipped",
+        )
 
 
 def _job_response(job_id: str) -> VideoJobResponse:
@@ -915,10 +1403,11 @@ def _job_response(job_id: str) -> VideoJobResponse:
 
 def _batch_status(job_responses: list[VideoJobResponse]) -> BatchStatus:
     statuses = [job.status for job in job_responses]
+    active_statuses = {"queued", "generating", "reviewing", "correcting", "labeling", "rendering"}
     if not statuses:
         return "queued"
-    if any(status in ("queued", "running", "labeling") for status in statuses):
-        return "running" if any(status in ("running", "labeling") for status in statuses) else "queued"
+    if any(status in active_statuses for status in statuses):
+        return "queued" if all(status == "queued" for status in statuses) else "running"
     if all(job.status == "completed" and job.labelStatus == "completed" for job in job_responses):
         return "completed"
     if all(status == "failed" for status in statuses):
@@ -961,6 +1450,11 @@ def health() -> dict[str, Any]:
         "hasGeminiKey": bool(get_gemini_api_key()),
         "hasCrusoeKey": bool(get_crusoe_api_key()),
         "model": MODEL_NAME,
+        "batchSize": DEFAULT_VIEW_BATCH_SIZE,
+        "cameraVariants": [variant["name"] for variant in CAMERA_VARIANTS],
+        "reviewModel": get_gemini_review_model(),
+        "reviewPipeline": REVIEW_PIPELINE_VERSION,
+        "maxReviewRevisions": MAX_REVIEW_REVISIONS,
         "labelModel": CRUSOE_MODEL_NAME,
         "annotationPipeline": ANNOTATION_PIPELINE_VERSION,
     }
@@ -1020,13 +1514,7 @@ def create_video(request: VideoCreateRequest) -> VideoBatchResponse:
         }
 
         for index, (job_id, camera_variant) in enumerate(zip(job_ids, selected_variants), start=1):
-            final_prompt = (
-                f"{prompt}\n\n"
-                f"{camera_variant['prompt']}\n\n"
-                "Keep the same core scene and event as the user prompt, but make this camera angle visually distinct "
-                "from the other batch variants. Prioritize clear object visibility for VLM annotation: pallets, boxes, "
-                "rack posts, shrink wrap, floor markings, debris, damaged boxes, and hazard zones."
-            )
+            final_prompt = _build_industrial_safety_prompt(prompt, camera_variant, request.aspect_ratio)
             jobs[job_id] = {
                 "batchId": batch_id,
                 "index": index,
@@ -1039,11 +1527,20 @@ def create_video(request: VideoCreateRequest) -> VideoBatchResponse:
                     "prompt": camera_variant["prompt"],
                 },
                 "aspect_ratio": request.aspect_ratio,
+                "draftVideoUrl": None,
                 "videoUrl": None,
                 "error": None,
+                "reviewStatus": "pending",
+                "review": None,
+                "reviewHistory": [],
+                "revisionCount": 0,
+                "correctionPrompt": None,
                 "labelStatus": "pending",
                 "label": None,
                 "labelError": None,
+                "labeledVideoUrl": None,
+                "renderStatus": "pending",
+                "renderError": None,
             }
 
     for job_id in job_ids:

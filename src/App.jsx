@@ -2,26 +2,46 @@ import { AlertTriangle, Download, Film, Grid2X2, LoaderCircle, Play, WandSparkle
 import { useEffect, useMemo, useState } from "react";
 
 const POLL_INTERVAL_MS = 3000;
-const CAMERA_BATCH_SIZE = 6;
+const CAMERA_BATCH_SIZE = 4;
 
 const statusLabels = {
-  idle: "Pret",
-  queued: "En attente",
-  running: "Generation",
-  labeling: "Labelling",
-  completed: "Videos pretes",
-  failed: "Echec",
-  partial: "Termine avec erreurs",
+  idle: "Ready",
+  queued: "Queued",
+  generating: "Generating",
+  reviewing: "Gemini review",
+  correcting: "Gemini correction",
+  running: "Running",
+  labeling: "Labeling",
+  rendering: "Rendering labels",
+  completed: "Video ready",
+  failed: "Failed",
+  partial: "Finished with errors",
 };
 
 const labelStatusLabels = {
-  pending: "Annotations en attente",
-  running: "Annotation",
-  completed: "Annotations pretes",
-  failed: "Annotation echouee",
+  pending: "Annotation pending",
+  running: "Annotating",
+  completed: "Annotations ready",
+  failed: "Annotation failed",
+};
+
+const reviewStatusLabels = {
+  pending: "Review pending",
+  running: "Reviewing",
+  passed: "Review passed",
+  failed: "Review failed",
+};
+
+const renderStatusLabels = {
+  pending: "Label render pending",
+  running: "Rendering labeled video",
+  completed: "Labeled video ready",
+  failed: "Labeled render failed",
+  skipped: "Label render skipped",
 };
 
 const terminalStatuses = ["completed", "failed", "partial"];
+const activeJobStatuses = ["queued", "generating", "reviewing", "correcting", "labeling", "rendering"];
 
 async function readApiError(response) {
   try {
@@ -53,6 +73,13 @@ function jobVideoUrl(job) {
   return `${job.videoUrl}?t=${job.id}`;
 }
 
+function jobLabeledVideoUrl(job) {
+  if (!job.labeledVideoUrl) {
+    return "";
+  }
+  return `${job.labeledVideoUrl}?t=${job.id}-labeled`;
+}
+
 function cleanLabelText(value) {
   if (value == null) {
     return "";
@@ -74,12 +101,11 @@ function annotationCount(label) {
   }, 0);
 }
 
-function percent(value) {
-  const number = Number(value);
-  if (Number.isNaN(number)) {
-    return "0%";
-  }
-  return `${Math.min(100, Math.max(0, number * 100))}%`;
+function reviewIssues(review) {
+  const issues = Array.isArray(review?.issues) ? review.issues : [];
+  const missing = Array.isArray(review?.missing_requirements) ? review.missing_requirements : [];
+  const visualNotes = Array.isArray(review?.visual_qa_notes) ? review.visual_qa_notes : [];
+  return [...issues, ...missing, ...visualNotes].filter(Boolean);
 }
 
 export default function App() {
@@ -101,8 +127,7 @@ export default function App() {
     const completed = batch?.completed ?? 0;
     const failed = batch?.failed ?? 0;
     const done = completed + failed;
-    const percent = total > 0 ? Math.round((done / total) * 100) : 0;
-    return { total, completed, failed, done, percent };
+    return { total, completed, failed, done };
   }, [batch, batchCount]);
 
   useEffect(() => {
@@ -119,12 +144,12 @@ export default function App() {
         const nextBatch = await response.json();
         setBatch(nextBatch);
         if (nextBatch.status === "failed" || nextBatch.status === "partial") {
-          const firstError = nextBatch.jobs.find((job) => job.error || job.labelError);
-          const errorMessage = firstError?.error || firstError?.labelError;
-          setError(errorMessage || "Une ou plusieurs generations ou labels ont echoue.");
+          const firstError = nextBatch.jobs.find((job) => job.error || job.labelError || job.renderError);
+          const errorMessage = firstError?.error || firstError?.labelError || firstError?.renderError;
+          setError(errorMessage || "Generation or labeling failed.");
         }
       } catch (pollError) {
-        setError(pollError.message || "Impossible de recuperer le statut.");
+        setError(pollError.message || "Could not fetch status.");
       }
     }, POLL_INTERVAL_MS);
 
@@ -156,7 +181,7 @@ export default function App() {
 
       setBatch(await response.json());
     } catch (submitError) {
-      setError(submitError.message || "Impossible de lancer le batch.");
+      setError(submitError.message || "Could not start generation.");
     } finally {
       setIsSubmitting(false);
     }
@@ -186,7 +211,7 @@ export default function App() {
             className="flex h-fit flex-col gap-5 rounded-lg border border-zinc-200 bg-white p-4 shadow-soft sm:p-5"
           >
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-semibold text-zinc-800">Prompt commun</span>
+              <span className="text-sm font-semibold text-zinc-800">Prompt</span>
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
@@ -216,9 +241,9 @@ export default function App() {
             </div>
 
             <div className="rounded-md bg-zinc-100 p-3 text-sm text-zinc-700">
-              <div className="font-semibold text-zinc-900">Batch automatique</div>
+              <div className="font-semibold text-zinc-900">Four-angle batch</div>
               <div className="mt-1">
-                {CAMERA_BATCH_SIZE} videos en parallele, chacune avec un angle camera different.
+                Four separate videos keep the same incident while changing only the camera angle.
               </div>
             </div>
 
@@ -232,22 +257,16 @@ export default function App() {
               ) : (
                 <Play size={20} aria-hidden="true" />
               )}
-              Generer le batch
+              Generate angles
             </button>
 
             <div className="rounded-md bg-zinc-100 p-3">
               <div className="mb-2 flex items-center justify-between text-sm font-medium text-zinc-700">
-                <span>Progression</span>
-                <span>{progress.percent}%</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-zinc-200">
-                <div
-                  className="h-full rounded-full bg-emerald-700 transition-all"
-                  style={{ width: `${progress.percent}%` }}
-                />
+                <span>Status</span>
+                <span>{statusLabels[currentStatus]}</span>
               </div>
               <div className="mt-2 text-xs text-zinc-600">
-                {progress.completed} videos annotees - {progress.failed} erreurs
+                {progress.completed} labeled videos - {progress.failed} errors
               </div>
             </div>
           </form>
@@ -256,7 +275,7 @@ export default function App() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
               <div className="flex items-center gap-2 text-white">
                 <Grid2X2 size={20} aria-hidden="true" />
-                <span className="font-semibold">Batch preview</span>
+                <span className="font-semibold">Video preview</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-zinc-300">
                 <WandSparkles size={16} aria-hidden="true" />
@@ -269,9 +288,13 @@ export default function App() {
                 <div className="grid w-full auto-rows-fr gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {batch.jobs.map((job) => {
                     const videoUrl = jobVideoUrl(job);
+                    const labeledVideoUrl = jobLabeledVideoUrl(job);
+                    const displayVideoUrl = labeledVideoUrl || videoUrl;
                     const frames = annotationFrames(job.label);
                     const zones = annotationCount(job.label);
                     const summary = cleanLabelText(job.label?.video_summary || job.label?.summary);
+                    const qualityIssues = reviewIssues(job.review);
+                    const reviewText = cleanLabelText(job.review?.feedback || job.review?.summary);
                     return (
                       <article
                         key={job.id}
@@ -282,16 +305,16 @@ export default function App() {
                             aspectRatio === "9:16" ? "aspect-[9/16]" : "aspect-video"
                           }`}
                         >
-                          {videoUrl ? (
+                          {displayVideoUrl ? (
                             <video
-                              key={videoUrl}
-                              src={videoUrl}
+                              key={displayVideoUrl}
+                              src={displayVideoUrl}
                               controls
                               className="h-full w-full bg-black object-contain"
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-3 px-4 text-center text-zinc-300">
-                              {["queued", "running", "labeling"].includes(job.status) ? (
+                              {activeJobStatuses.includes(job.status) ? (
                                 <LoaderCircle
                                   className="animate-spin text-emerald-300"
                                   size={28}
@@ -315,10 +338,36 @@ export default function App() {
                             </span>
                           </div>
                           {job.error ? <p className="line-clamp-2 text-xs text-red-200">{job.error}</p> : null}
+                          {job.review || job.reviewStatus !== "pending" ? (
+                            <div className="rounded-md bg-sky-300/10 p-2 text-xs text-sky-50">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-semibold">Gemini review</p>
+                                <span className="rounded bg-sky-200/15 px-2 py-1 text-sky-100">
+                                  {reviewStatusLabels[job.reviewStatus] || "Pending"}
+                                </span>
+                              </div>
+                              {reviewText ? (
+                                <p className="mt-2 text-sky-100/90">{reviewText}</p>
+                              ) : null}
+                              {qualityIssues.length ? (
+                                <ul className="mt-2 list-disc space-y-1 pl-4 text-sky-100/80">
+                                  {qualityIssues.slice(0, 4).map((issue) => (
+                                    <li key={issue}>{issue}</li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                              {cleanLabelText(job.correctionPrompt) && job.reviewStatus === "failed" ? (
+                                <p className="mt-2 line-clamp-3 rounded bg-black/20 p-2 text-sky-100/80">
+                                  Suggested correction:{" "}
+                                  {cleanLabelText(job.correctionPrompt)}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
                           {job.label ? (
                             <div className="rounded-md bg-white/10 p-2 text-xs text-zinc-100">
                               <div className="flex items-center justify-between gap-2">
-                                <p className="font-semibold">Zones detectees</p>
+                                <p className="font-semibold">Detected zones</p>
                                 <span className="rounded bg-emerald-300/15 px-2 py-1 text-emerald-100">
                                   {zones} zones
                                 </span>
@@ -333,61 +382,33 @@ export default function App() {
                                   ))}
                                 </div>
                               ) : null}
-                              {frames.length ? (
-                                <div className="mt-3 grid gap-2">
-                                  {frames.slice(0, 3).map((frame) => (
-                                    <div key={frame.frame_index} className="rounded border border-white/10 bg-black/40 p-1">
-                                      <div className="mb-1 flex items-center justify-between text-[11px] text-zinc-300">
-                                        <span>Frame {frame.frame_index}</span>
-                                        <span>{frame.annotations?.length || 0} zones</span>
-                                      </div>
-                                      <div className="relative overflow-hidden rounded bg-black">
-                                        <img
-                                          src={frame.imageUrl}
-                                          alt={`Frame ${frame.frame_index}`}
-                                          className="block w-full"
-                                        />
-                                        {(frame.annotations || []).map((annotation, annotationIndex) => (
-                                          <div
-                                            key={`${frame.frame_index}-${annotationIndex}`}
-                                            className="absolute border-2 border-emerald-300 bg-emerald-300/10"
-                                            style={{
-                                              left: percent(annotation.box?.x),
-                                              top: percent(annotation.box?.y),
-                                              width: percent(annotation.box?.width),
-                                              height: percent(annotation.box?.height),
-                                            }}
-                                          >
-                                            <span className="absolute left-0 top-0 max-w-full translate-y-[-100%] truncate rounded-sm bg-emerald-300 px-1 py-0.5 text-[10px] font-semibold text-zinc-950">
-                                              {annotation.label}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p className="mt-2 text-zinc-400">Aucune zone structuree dans ce label.</p>
-                              )}
+                              {!frames.length ? (
+                                <p className="mt-2 text-zinc-400">No structured zones in this label.</p>
+                              ) : null}
                             </div>
                           ) : videoUrl ? (
                             <p className="text-xs text-zinc-400">
-                              {labelStatusLabels[job.labelStatus] || "Annotations en attente"}
+                              {labelStatusLabels[job.labelStatus] || "Annotation pending"}
                             </p>
                           ) : null}
                           {job.labelError ? (
                             <p className="line-clamp-2 text-xs text-red-200">{job.labelError}</p>
                           ) : null}
                           {videoUrl ? (
-                            <a
-                              href={videoUrl}
-                              download
-                              className="mt-auto inline-flex h-9 items-center justify-center gap-2 rounded-md bg-white px-3 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-100"
-                            >
-                              <Download size={16} aria-hidden="true" />
-                              MP4
-                            </a>
+                            <div className="mt-auto grid gap-2">
+                              <div className="rounded-md bg-white/10 px-3 py-2 text-xs text-zinc-200">
+                                {renderStatusLabels[job.renderStatus] || "Label render pending"}
+                                {job.renderError ? ` - ${job.renderError}` : ""}
+                              </div>
+                              <a
+                                href={displayVideoUrl}
+                                download
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-white px-3 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-100"
+                              >
+                                <Download size={16} aria-hidden="true" />
+                                MP4
+                              </a>
+                            </div>
                           ) : null}
                         </div>
                       </article>
@@ -400,9 +421,9 @@ export default function App() {
                     <div className="flex h-16 w-16 items-center justify-center rounded-md border border-white/10 bg-white/5">
                       <Film size={30} aria-hidden="true" />
                     </div>
-                    <p className="text-lg font-semibold text-white">Pret pour un batch</p>
+                    <p className="text-lg font-semibold text-white">Ready for four angles</p>
                     <p className="text-sm text-zinc-400">
-                      Lance un prompt une seule fois et genere {CAMERA_BATCH_SIZE} angles camera distincts en parallele.
+                      Submit one prompt; each angle is reviewed by Gemini before labeling starts.
                     </p>
                   </div>
                 </div>

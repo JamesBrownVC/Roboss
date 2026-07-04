@@ -1,0 +1,11 @@
+{
+  "video_path": "generated_video.mp4",
+  "scenario_prompt": "Human slips near a humanoid robot carrying a box",
+  "expected_objects": ["human", "box"],
+  "expected_action": "slip while carrying box",
+  "critical_contacts": [
+    "human hand - box",
+    "human foot - floor"
+  ],
+  "expected_outcome": "human loses balance, robot should avoid collision"
+}

@@ -61,6 +61,7 @@ echo
 echo "===== [1/3] Scenario compiler (intention -> scenarios) ====="
 AGENT_ARGS=(--out "$BUNDLE_DIR")
 [[ -n "$COUNT" ]] && AGENT_ARGS+=(--count "$COUNT")
+AGENT_ARGS+=(--start-frames)
 "$PY" -m agents "$INTENTION" "${AGENT_ARGS[@]}"
 
 if [[ ! -d "$PACKETS_DIR" ]]; then
@@ -77,7 +78,7 @@ i=0
 for packet in "${PACKETS[@]}"; do
     i=$((i + 1))
     sid="$("$PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('scenario_id','scenario_'+str($i)))" "$packet")"
-    prompt="$("$PY" -c "import json,sys; print(json.load(open(sys.argv[1]))['scenario_prompt'])" "$packet")"
+    prompt="$("$PY" -c "import json,sys; p=json.load(open(sys.argv[1])); print(p.get('video_prompt') or p.get('scenario_prompt'))" "$packet")"
     out="$RUN_DIR/$sid"
 
     echo

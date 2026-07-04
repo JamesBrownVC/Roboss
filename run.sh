@@ -10,6 +10,7 @@
 #   verify   <video.mp4>   Verify an existing video (gate 1 + gate 2 semantic).
 #   pipeline <prompt>      Full loop: generate -> verify -> label a video (Gemini).
 #   agents   <intention>   Scenario contract compiler: intention -> scenarios.
+#   api                    Start the FastAPI app on 127.0.0.1:8000.
 #   all      <prompt>      Run tests, then the full pipeline end-to-end.
 #   help                   Show this message.
 #
@@ -66,6 +67,11 @@ case "$cmd" in
         intention="$1"; shift
         echo "=== Scenario contract compiler ==="
         exec "$PY" -m agents "$intention" "$@"
+        ;;
+
+    api)
+        echo "=== FastAPI server ==="
+        exec "$PY" -m uvicorn roboss.api:app --host 127.0.0.1 --port 8000 "$@"
         ;;
 
     all)

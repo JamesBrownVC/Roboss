@@ -246,6 +246,7 @@ def test_compiled_scenario_artifacts():
     assert packet["expected_action"] == "human_slip"
     assert "cardboard box" in packet["expected_objects"]
     assert packet["expected_outcome"] == "stop_and_secure_object"
+    assert "Object identity anchors" in packet["video_prompt"]
     assert packet["object_registry"][2]["entity_id"] == "box_01"
     assert packet["scene_registry"]["scene_id"] == "warehouse_canvas_001"
     assert packet["identity_checks"]

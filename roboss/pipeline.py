@@ -1,0 +1,278 @@
+"""Reusable orchestration for compile, generate, verify and label steps."""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from agents.config import DEFAULT_CONFIG
+from agents.pipeline import run_pipeline as run_agents_pipeline
+
+from .settings import get_settings
+from .storage import get_storage
+
+
+@dataclass
+class VideoPipelineResult:
+    outdir: Path
+    video_path: Path
+    report_path: Path
+    labels_path: Path | None
+    report: dict[str, Any]
+
+
+def _write_json(path: Path, data: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False),
+                    encoding="utf-8")
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", value.strip()).strip("_")
+    return slug[:80] or "run"
+
+
+def _default_run_dir(prefix: str) -> Path:
+    settings = get_settings()
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return settings.runs_dir / f"{prefix}_{stamp}"
+
+
+def scenario_generation_prompt(scenario: dict[str, Any] | None,
+                               fallback_prompt: str) -> str:
+    """Use the compiled prompt when available, not the short title."""
+    if not scenario:
+        return fallback_prompt
+    return str(
+        scenario.get("video_prompt")
+        or scenario.get("generation_prompt")
+        or scenario.get("scenario_prompt")
+        or fallback_prompt
+    )
+
+
+def compile_scenarios(intention: str,
+                      outdir: str | Path | None = None,
+                      count: int | None = None,
+                      start_frames: bool = True,
+                      progress=print) -> dict[str, Any]:
+    storage = get_storage()
+    out = Path(outdir) if outdir else _default_run_dir("bundle")
+    result = run_agents_pipeline(
+        intention=intention,
+        out_dir=str(out),
+        cfg=DEFAULT_CONFIG,
+        count=count,
+        make_canvas=start_frames,
+        make_start_frames=start_frames,
+        progress=progress,
+    )
+    data = {
+        "outdir": str(out),
+        "world_id": result.contract["world_contract"]["world_id"],
+        "scene_id": result.contract.get("scene_registry", {}).get("scene_id"),
+        "scenarios": [s["scenario_id"] for s in result.scenarios],
+        "dropped": result.dropped,
+        "canvas": result.canvas_path,
+        "start_frames": result.start_frame_paths,
+        "bundle": str(out / "bundle.json"),
+    }
+    manifest = storage.write_manifest(out, {
+        "kind": "scenario_bundle",
+        "world_id": data["world_id"],
+        "scene_id": data["scene_id"],
+        "scenarios": data["scenarios"],
+    })
+    data["manifest"] = manifest.url
+    data["files"] = storage.collect_files(out)
+    return data
+
+
+def verify_video(video_path: Path,
+                 scenario: dict[str, Any] | None,
+                 report_path: Path,
+                 gate2: bool = True,
+                 device: str | None = None,
+                 progress=print) -> dict[str, Any]:
+    from verifier.checks import run_all_checks
+    from verifier.config import DEFAULT_THRESHOLDS
+    from verifier.extract import extract_evidence
+    from verifier.gate2 import run_gate2
+    from verifier.report import build_report, save_report
+
+    th = DEFAULT_THRESHOLDS
+    progress("[Verifier] Extracting pose and object tracks ...")
+    evidence = extract_evidence(str(video_path), th, device=device)
+
+    progress("[Verifier] Running Gate 1 ...")
+    violations = run_all_checks(evidence, th)
+
+    gate2_meta = None
+    if gate2:
+        progress(f"[Verifier] Running Gate 2 ({th.gate2_model}) ...")
+        semantic, gate2_meta = run_gate2(str(video_path), evidence, violations,
+                                         scenario, th)
+        if gate2_meta.get("status") != "ok":
+            progress(f"[Verifier] Gate 2 {gate2_meta['status']}: "
+                     f"{gate2_meta.get('error', '')}")
+        violations = sorted(violations + semantic,
+                            key=lambda v: v.severity, reverse=True)
+
+    report = build_report(evidence, violations, th, scenario, gate2_meta)
+    save_report(report, str(report_path))
+    return report
+
+
+def run_video_pipeline(prompt: str,
+                       outdir: str | Path | None = None,
+                       scenario: dict[str, Any] | None = None,
+                       scenario_path: str | Path | None = None,
+                       gate2: bool | None = None,
+                       label: bool | None = None,
+                       device: str | None = None,
+                       progress=print) -> VideoPipelineResult:
+    from gemini_service import generate_video, label_video
+
+    storage = get_storage()
+    settings = get_settings()
+    out = Path(outdir) if outdir else _default_run_dir("pipeline")
+    out.mkdir(parents=True, exist_ok=True)
+
+    if scenario_path and scenario is None:
+        scenario = _read_json(Path(scenario_path))
+
+    generation_prompt = scenario_generation_prompt(scenario, prompt)
+    storage.save_json(Path(storage.relative(out)) / "generation_request.json", {
+        "input_prompt": prompt,
+        "generation_prompt": generation_prompt,
+        "scenario": scenario,
+    })
+
+    video_path = out / "generated.mp4"
+    report_path = out / "report.json"
+    labels_path = out / "labels.json"
+
+    progress("[Pipeline] Generating video ...")
+    video_bytes = generate_video(generation_prompt)
+    storage.save_bytes(Path(storage.relative(video_path)), video_bytes)
+
+    use_gate2 = settings.gate2_enabled if gate2 is None else gate2
+    report = verify_video(video_path, scenario, report_path,
+                          gate2=use_gate2, device=device, progress=progress)
+
+    should_label = settings.label_on_accept if label is None else label
+    final_labels_path = None
+    if should_label and report["decision"] == "accept":
+        progress("[Pipeline] Labeling accepted video ...")
+        labels = label_video(video_bytes)
+        storage.save_json(Path(storage.relative(labels_path)), labels)
+        final_labels_path = labels_path
+    else:
+        progress("[Pipeline] Labeling skipped.")
+
+    storage.write_manifest(out, {
+        "kind": "verified_video",
+        "decision": report["decision"],
+        "plausibility_score": report["plausibility_score"],
+        "video_url": storage.url_for(video_path),
+        "report_url": storage.url_for(report_path),
+        "labels_url": storage.url_for(final_labels_path)
+        if final_labels_path else None,
+    })
+
+    return VideoPipelineResult(
+        outdir=out,
+        video_path=video_path,
+        report_path=report_path,
+        labels_path=final_labels_path,
+        report=report,
+    )
+
+
+def run_e2e_pipeline(intention: str,
+                     count: int | None = 3,
+                     run_name: str | None = None,
+                     start_frames: bool = True,
+                     gate2: bool = True,
+                     label: bool = True,
+                     device: str | None = None,
+                     progress=print) -> dict[str, Any]:
+    settings = get_settings()
+    name = _slug(run_name or f"e2e_{datetime.now():%Y%m%d_%H%M%S}")
+    run_dir = settings.runs_dir / name
+    bundle_dir = run_dir / "scenarios"
+
+    compile_data = compile_scenarios(
+        intention=intention,
+        outdir=bundle_dir,
+        count=count,
+        start_frames=start_frames,
+        progress=progress,
+    )
+
+    scenarios_file = bundle_dir / "scenarios.json"
+    scenarios = _read_json(scenarios_file).get("scenarios", [])
+    results = []
+    for scenario in scenarios:
+        sid = scenario["scenario_id"]
+        packet = scenario.get("verifier_packet") or {}
+        packet.setdefault("video_prompt", scenario.get("video_prompt"))
+        scenario_out = run_dir / sid
+        try:
+            result = run_video_pipeline(
+                prompt=scenario.get("title", sid),
+                outdir=scenario_out,
+                scenario=packet,
+                gate2=gate2,
+                label=label,
+                device=device,
+                progress=progress,
+            )
+            status = result.report["decision"]
+            code = exit_code_for_report(result.report)
+        except Exception as exc:
+            status = "error"
+            code = 1
+            _write_json(scenario_out / "error.json", {
+                "type": type(exc).__name__,
+                "message": str(exc),
+            })
+        results.append({
+            "scenario_id": sid,
+            "status": status,
+            "exit_code": code,
+            "outdir": str(scenario_out),
+        })
+
+    summary = {
+        "run_dir": str(run_dir),
+        "compile": compile_data,
+        "results": results,
+    }
+    storage = get_storage()
+    storage.save_json(Path(storage.relative(run_dir)) / "summary.json",
+                      summary)
+    manifest = storage.write_manifest(run_dir, {
+        "kind": "verified_video_batch",
+        "summary_url": storage.url_for(run_dir / "summary.json"),
+    })
+    summary["manifest"] = manifest.url
+    summary["files"] = storage.collect_files(run_dir)
+    return summary
+
+
+def exit_code_for_report(report: dict[str, Any]) -> int:
+    return 0 if report.get("decision") == "accept" else 2
+
+
+def exit_with_report_decision(report: dict[str, Any]) -> None:
+    sys.exit(exit_code_for_report(report))

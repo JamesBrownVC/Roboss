@@ -78,8 +78,10 @@ def compile_verifier_packet(contract: dict, scenario: dict) -> dict:
     """The metadata packet the verification gate consumes (--scenario)."""
     wc = contract["world_contract"]
     scene = contract.get("scene_registry", {})
+    video_prompt = compile_video_prompt(contract, scenario)
     return {
         "scenario_prompt": scenario["title"],
+        "video_prompt": video_prompt,
         "expected_objects": [e["type"].replace("_", " ")
                              for e in wc["locked_entities"]],
         "expected_action": scenario["event"]["type"],

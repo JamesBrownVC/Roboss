@@ -29,6 +29,8 @@ Two ways to drive it:
 - **Batch** — one idea fanned out into several scenario variations, each
   generated, verified and labeled (`e2e.sh`, which chains the scenario
   compiler into the pipeline).
+- **API** — FastAPI endpoints over the same service layer
+  (`uvicorn roboss.api:app`).
 
 ## Quick start
 
@@ -38,6 +40,9 @@ Two ways to drive it:
 
 # one idea → N scenario variations, each generated + verified + labeled
 ./e2e.sh "industrial safety hazard in a warehouse" 5 my_run
+
+# API server
+./run.sh api
 
 # verify an existing video only
 ./run.sh verify path/to/video.mp4
@@ -136,6 +141,10 @@ Put your key in a `.env` file at the project root (loaded automatically):
 GEMINI_API_KEY=your_key_here
 ```
 
+See [.env.example](.env.example) for optional knobs such as
+`ROBOSS_VIDEO_MODEL`, `ROBOSS_LABEL_MODEL`, `ROBOSS_GATE2_ENABLED`,
+`ROBOSS_LABEL_ON_ACCEPT`, and `ROBOSS_RUNS_DIR`.
+
 YOLO11 weights (`yolo11n-pose.pt`, `yolo11n.pt`, ~12 MB total) download
 automatically on first run. `run.sh` / `e2e.sh` create the venv for you if
 it is missing.
@@ -148,6 +157,7 @@ it is missing.
 | `./run.sh verify <video.mp4>` | verify an existing video (Gate 1 + Gate 2) |
 | `./run.sh pipeline "<prompt>"` | generate → verify → label one video |
 | `./run.sh agents "<intention>"` | scenario compiler: idea → scenario bundle |
+| `./run.sh api` | serve FastAPI on `127.0.0.1:8000` |
 | `./run.sh all "<prompt>"` | tests, then the full pipeline |
 | `./e2e.sh "<idea>" [count] [name]` | compile N scenarios, then generate + verify + label each |
 
@@ -157,6 +167,57 @@ it is missing.
 
 Outputs per run land in `runs/<name>/`: `generated.mp4`, `report.json`,
 and `labels.json` (only if accepted). Exit code `0` = accept, `2` = reject.
+
+The batch path uses the compiled `video_prompt` from each scenario packet
+when present. That prompt carries the object/scene identity anchors; the
+short `scenario_prompt` is kept for reports and semantic review context.
+
+## FastAPI
+
+```bash
+uvicorn roboss.api:app --host 127.0.0.1 --port 8000
+```
+
+Endpoints:
+
+| endpoint | purpose |
+|---|---|
+| `GET /health` | env/runs sanity check |
+| `POST /scenario-bundles` | intention → world contract + scenario bundle |
+| `POST /verified-videos` | one prompt/scenario → video → verification → labels |
+| `POST /verified-video-batches` | intention → scenarios → generate/verify/label each |
+| `GET /runs` | list local runs with manifest URLs |
+| `GET /runs/{run_id}` | run metadata + frontend file URLs |
+| `GET /assets/...` | static access to local files under `runs/` |
+
+Legacy aliases (`/compile`, `/pipeline`, `/e2e`) still work but are hidden
+from the public docs.
+
+### Local File Storage
+
+The local MVP stores artifacts under `runs/` and exposes them to the
+frontend through FastAPI:
+
+```
+Pipeline writes files
+→ LocalStorageService saves/records them under runs/
+→ manifest.json stores file metadata + /assets URLs
+→ frontend calls /runs or /runs/{run_id}
+→ frontend displays video/image/json from /assets/...
+```
+
+Example:
+
+```bash
+curl http://127.0.0.1:8000/runs
+curl http://127.0.0.1:8000/runs/warehouse_v1
+```
+
+A video generated at `runs/my_run/sc_01/generated.mp4` is available as:
+
+```
+http://127.0.0.1:8000/assets/my_run/sc_01/generated.mp4
+```
 
 ### Verifier CLI (existing video only)
 
@@ -219,11 +280,16 @@ python -m pytest tests -q     # or: ./run.sh tests
 ## Project layout
 
 ```
-run.sh              runner: tests / verify / pipeline / agents / all
+run.sh              runner: tests / verify / pipeline / agents / api / all
 e2e.sh              batch: idea → N scenarios → generate + verify + label each
 run_pipeline.py     single video: generate → verify → label
 gemini_service.py   Gemini video generation + auto-labeling
 env_loader.py       tiny dependency-free .env loader
+roboss/
+  settings.py       centralized .env-backed settings
+  storage.py        LocalStorageService + /assets-ready file metadata
+  pipeline.py       reusable compile/generate/verify/label orchestration
+  api.py            FastAPI app
 agents/             scenario compiler (idea → world contract → scenarios)
 verifier/
   config.py    thresholds + score weights (all tunable)

@@ -8,12 +8,11 @@ from pydantic import BaseModel
 from google import genai
 from google.genai import types
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
+from roboss.settings import get_settings
 
-GEN_MODEL = "gemini-omni-flash-preview"
-LABEL_MODEL = "gemini-3.5-flash"
+_SETTINGS = get_settings()
+GEN_MODEL = _SETTINGS.video_model
+LABEL_MODEL = _SETTINGS.label_model
 TRACKING_CONCURRENCY = int(os.environ.get("TRACKING_CONCURRENCY", "4"))
 
 # ---------------------------------------------------------------------------

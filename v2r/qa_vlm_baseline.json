@@ -1,0 +1,493 @@
+{
+  "aigen_cup": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": 0.746,
+    "boundary_mae_s": 0.33,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "proceed",
+      "human_present": "partial",
+      "skills": [
+        "grasp",
+        "lift",
+        "reach",
+        "walk"
+      ]
+    },
+    "seconds": 12.7,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 4.0,
+        "skill": "walk",
+        "text": "A person walks towards the table."
+      },
+      {
+        "start_s": 4.0,
+        "end_s": 6.0,
+        "skill": "reach",
+        "text": "The person reaches for the red mug."
+      },
+      {
+        "start_s": 6.0,
+        "end_s": 7.0,
+        "skill": "grasp",
+        "text": "The person grasps the red mug."
+      },
+      {
+        "start_s": 7.0,
+        "end_s": 9.0,
+        "skill": "lift",
+        "text": "The person lifts the red mug."
+      }
+    ]
+  },
+  "pipette": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": 0.69,
+    "boundary_mae_s": 1.8,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "proceed",
+      "human_present": "hands_only",
+      "skills": [
+        "lift",
+        "pour"
+      ]
+    },
+    "seconds": 13.4,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 8.0,
+        "skill": "pour",
+        "text": "dispensing liquid into the well plate using a pipette"
+      },
+      {
+        "start_s": 8.0,
+        "end_s": 11.0,
+        "skill": "lift",
+        "text": "lifting the pipette away from the well plate"
+      }
+    ]
+  },
+  "waves": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": null,
+    "boundary_mae_s": null,
+    "evidence_coverage": null,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "none",
+      "skills": [
+        "idle"
+      ]
+    },
+    "seconds": 10.7,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 33.0,
+        "skill": "idle",
+        "text": "Ocean waves crashing on the shore"
+      }
+    ]
+  },
+  "gear_assembly": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": 0.909,
+    "boundary_mae_s": 0.25,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "proceed",
+      "human_present": "hands_only",
+      "skills": [
+        "grasp",
+        "insert",
+        "lift",
+        "reach",
+        "rotate"
+      ]
+    },
+    "seconds": 12.4,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 1.0,
+        "skill": "reach",
+        "text": "The person reaches for a small gear in the organizer box."
+      },
+      {
+        "start_s": 1.0,
+        "end_s": 2.0,
+        "skill": "grasp",
+        "text": "The person grasps the small gear."
+      },
+      {
+        "start_s": 2.0,
+        "end_s": 4.0,
+        "skill": "insert",
+        "text": "The person inserts the small gear into the planetary gear assembly."
+      },
+      {
+        "start_s": 4.0,
+        "end_s": 5.0,
+        "skill": "lift",
+        "text": "The person lifts the gear assembly from the table."
+      },
+      {
+        "start_s": 5.0,
+        "end_s": 9.0,
+        "skill": "rotate",
+        "text": "The person rotates the gears to test their movement."
+      }
+    ]
+  },
+  "aigen_cup2": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 0.75,
+    "hallucinations": [
+      "walk"
+    ],
+    "boundary_iou": 0.435,
+    "boundary_mae_s": 1.25,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "proceed",
+      "human_present": "partial",
+      "skills": [
+        "grasp",
+        "idle",
+        "lift",
+        "reach",
+        "walk"
+      ]
+    },
+    "seconds": 12.9,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 1.0,
+        "skill": "idle",
+        "text": "A red mug is on the table."
+      },
+      {
+        "start_s": 1.0,
+        "end_s": 3.0,
+        "skill": "walk",
+        "text": "A man walks towards the table."
+      },
+      {
+        "start_s": 3.0,
+        "end_s": 4.0,
+        "skill": "reach",
+        "text": "The man reaches for the red mug."
+      },
+      {
+        "start_s": 4.0,
+        "end_s": 5.0,
+        "skill": "grasp",
+        "text": "The man grasps the red mug."
+      },
+      {
+        "start_s": 5.0,
+        "end_s": 8.0,
+        "skill": "lift",
+        "text": "The man lifts the red mug."
+      }
+    ]
+  },
+  "veo_wave": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": 0.579,
+    "boundary_mae_s": 0.8,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "partial",
+      "skills": [
+        "wave"
+      ]
+    },
+    "seconds": 10.9,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 3.0,
+        "skill": "wave",
+        "text": "The woman is waving her hand to greet the viewer."
+      }
+    ]
+  },
+  "wire_winding": {
+    "verdict_ok": false,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": null,
+    "boundary_mae_s": null,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "hands_only",
+      "skills": [
+        "hold"
+      ]
+    },
+    "seconds": 14.1,
+    "ai_generated_suspected": true,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 9.0,
+        "skill": "hold",
+        "text": "holding and winding copper wire around the motor armature"
+      }
+    ]
+  },
+  "workshop_montage": {
+    "verdict_ok": false,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 0.8,
+    "hallucinations": [],
+    "boundary_iou": null,
+    "boundary_mae_s": null,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "partial",
+      "skills": [
+        "grasp",
+        "hold",
+        "place",
+        "pull",
+        "rotate"
+      ]
+    },
+    "seconds": 14.3,
+    "ai_generated_suspected": true,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 2.0,
+        "skill": "hold",
+        "text": "holding a soldering iron to solder a circuit board"
+      },
+      {
+        "start_s": 2.0,
+        "end_s": 4.0,
+        "skill": "rotate",
+        "text": "rotating a valve with a wrench"
+      },
+      {
+        "start_s": 4.0,
+        "end_s": 6.0,
+        "skill": "grasp",
+        "text": "grasping metal parts from a bin"
+      },
+      {
+        "start_s": 6.0,
+        "end_s": 8.0,
+        "skill": "pull",
+        "text": "pulling a thread while sewing"
+      },
+      {
+        "start_s": 8.0,
+        "end_s": 10.0,
+        "skill": "place",
+        "text": "placing a gear onto a shaft"
+      }
+    ]
+  },
+  "street_montage": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": null,
+    "boundary_mae_s": null,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "partial",
+      "skills": [
+        "idle",
+        "rotate"
+      ]
+    },
+    "seconds": 15.3,
+    "ai_generated_suspected": true,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 7.0,
+        "skill": "idle",
+        "text": "Various workers performing tasks in an alleyway."
+      },
+      {
+        "start_s": 7.0,
+        "end_s": 9.0,
+        "skill": "rotate",
+        "text": "A man rotating a wrench to tighten a bolt on an engine block."
+      }
+    ]
+  },
+  "wrench_portrait": {
+    "verdict_ok": false,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": 0.697,
+    "boundary_mae_s": 0.88,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "partial",
+      "skills": [
+        "idle",
+        "rotate"
+      ]
+    },
+    "seconds": 12.6,
+    "ai_generated_suspected": true,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 4.0,
+        "skill": "rotate",
+        "text": "The woman is using a wrench to tighten a bolt."
+      },
+      {
+        "start_s": 4.0,
+        "end_s": 9.0,
+        "skill": "idle",
+        "text": "The woman stops working and smiles."
+      }
+    ]
+  },
+  "night_hut": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": null,
+    "boundary_mae_s": null,
+    "evidence_coverage": null,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "none",
+      "skills": [
+        "idle"
+      ]
+    },
+    "seconds": 10.7,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 12.0,
+        "skill": "idle",
+        "text": "The camera captures a static shot of a stone house at night."
+      }
+    ]
+  },
+  "timelapse": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": true,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": null,
+    "boundary_mae_s": null,
+    "evidence_coverage": null,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "none",
+      "skills": [
+        "idle"
+      ]
+    },
+    "seconds": 11.8,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 5.0,
+        "skill": "idle",
+        "text": "A time-lapse of a starry night sky over a snowy mountain, transitioning to sunrise."
+      }
+    ]
+  },
+  "stick_figure": {
+    "verdict_ok": true,
+    "human_ok": true,
+    "skill_recall": false,
+    "skill_precision": 1.0,
+    "hallucinations": [],
+    "boundary_iou": null,
+    "boundary_mae_s": null,
+    "evidence_coverage": 0.0,
+    "predicted": {
+      "recommendation": "reject",
+      "human_present": "none",
+      "skills": [
+        "gesture"
+      ]
+    },
+    "seconds": 13.4,
+    "ai_generated_suspected": false,
+    "raw_segments": [
+      {
+        "start_s": 0.0,
+        "end_s": 1.0,
+        "skill": "gesture",
+        "text": "The stick figure brings its arms closer to its body."
+      },
+      {
+        "start_s": 1.0,
+        "end_s": 2.0,
+        "skill": "gesture",
+        "text": "The stick figure moves its arms back to the starting position."
+      },
+      {
+        "start_s": 2.0,
+        "end_s": 3.0,
+        "skill": "gesture",
+        "text": "The stick figure brings its arms closer to its body again."
+      }
+    ]
+  }
+}

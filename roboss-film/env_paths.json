@@ -1,0 +1,7 @@
+{
+  "python_exe": "C:\\Users\\james\\miniconda3\\envs\\ml\\python.exe",
+  "ffmpeg_exe": "C:\\Users\\james\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-8.1.2-full_build\\bin\\ffmpeg.exe",
+  "ffprobe_exe": "C:\\Users\\james\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-8.1.2-full_build\\bin\\ffprobe.exe",
+  "v2r_src": "C:\\Users\\james\\Downloads\\RAISE SUMMIT HACK\\v2r\\src",
+  "notes": "python_exe is the shared ml conda env (Python 3.11.15). ffmpeg was installed via winget (Gyan.FFmpeg 8.1.2) 2026-07-04; not yet on PATH in already-open shells, use full path or open a fresh shell. v2r_src is added to sys.path/PYTHONPATH read-only, to reuse v2r.syngen.gemini's REST client (Omni + Veo) and its certifi SSL workaround, without modifying that repo."
+}

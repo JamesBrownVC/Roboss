@@ -117,6 +117,10 @@ class Segment(BaseModel):
     end_s: float
     skill: str          # must come from config/verbs.yaml (validated at stage level)
     text: str
+    # per-label provenance for data buyers: which measurements/tools support
+    # this segment (e.g. "boundary from primitives changepoint at 4.9s;
+    # skill from VLM + wrist-speed profile"). Optional: legacy labels lack it.
+    evidence: Optional[str] = None
 
     @field_validator("end_s")
     @classmethod

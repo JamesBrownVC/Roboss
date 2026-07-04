@@ -13,6 +13,19 @@ v2r/workspaces/
 v2r/.gpu_locks/
 demo/.cache/
 
+# Stray generated media in repo root
+/*.mp4
+/*.png
+
+# roboss-film: keep the text/code/manifest scaffolding, exclude heavy media
+# (669 PNG frames + 88 MP4 clips ≈ 667 MB — regenerable render artifacts)
+roboss-film/clips/
+roboss-film/roughcut/
+roboss-film/selects/
+roboss-film/slates/
+roboss-film/**/*.png
+roboss-film/**/*.mp4
+
 # Model weights
 v2r/assets/models/*.task
 v2r/assets/models/*.pt

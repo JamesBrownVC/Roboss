@@ -29,7 +29,32 @@ app = typer.Typer(name="v2r", help="Video -> robot-ready (LeRobot v3) pipeline")
 session_app = typer.Typer(name="session", help="Multi-view same-event sessions (GT tier)")
 app.add_typer(session_app, name="session")
 app.add_typer(syngen_app, name="syngen")
-console = Console()
+# legacy Windows consoles (cp1252) crash on LLM-produced unicode (U+202F,
+# U+2011, ...); force utf-8 with replacement at the stream level so every
+# print path (rich tables included) survives
+import sys  # noqa: E402
+
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+# emoji=False: model ids like "agent-loop:gemini:flash" contain ':gemini:',
+# which rich would substitute with the zodiac emoji and crash cp1252 consoles
+console = Console(emoji=False)
+
+
+def _safe_print(*args, **kwargs) -> None:
+    """console.print that survives cp1252 terminals: LLM output may contain
+    characters (e.g. U+202F) the legacy Windows console cannot encode."""
+    try:
+        console.print(*args, **kwargs)
+    except UnicodeEncodeError:
+        cleaned = [a.encode("ascii", "replace").decode("ascii")
+                   if isinstance(a, str) else a for a in args]
+        console.print(*cleaned, **kwargs)
 
 
 def _repo_root(root: Optional[Path]) -> Path:
@@ -43,16 +68,18 @@ def label_video(
     video: Path = typer.Option(..., "--video", help="Path to any video (AI-generated or real)"),
     episode_id: Optional[str] = typer.Option(None, "--episode-id", help="Workspace episode id (default: derived from filename)"),
     model: Optional[str] = typer.Option(None, "--model", help="Gemini model override"),
+    agent: str = typer.Option("auto", "--agent", help="loop (iterative agent) | simple (one-pass) | auto"),
     root: Optional[Path] = typer.Option(None, "--root", help="V2R repo root"),
 ):
-    """Agentic labeling: VLM plans which perception tools to run (MediaPipe
-    pose/hands, YOLO, motion analysis), runs them, then writes segments,
-    captions, scene tags and a feasibility verdict into the workspace."""
+    """Agentic labeling: an iterative agent (Nemotron/Kimi via NIM, or Gemini)
+    investigates the video with perception tools (MediaPipe pose/hands, YOLO,
+    motion, native whole-video analysis), a critic verifies the labels against
+    the evidence, then segments/captions/scene-tags/feasibility are written."""
     from ..agentic import run_agentic_labeler
 
     cfg = V2RConfig.load(root)
     report = run_agentic_labeler(cfg, Path(video), episode_id=episode_id,
-                                 model=model, log=console.print)
+                                 model=model, agent=agent, log=_safe_print)
     feas = report["feasibility"]
     table = Table(title=f"Agentic labels - {report['episode_id']}")
     table.add_column("field")
@@ -62,6 +89,38 @@ def label_video(
     table.add_row("AI-generated suspected", str(feas.get("ai_generated_suspected")))
     table.add_row("recommendation", str(feas.get("recommendation")))
     table.add_row("confidence", f"{feas.get('confidence', 0):.2f}")
+    console.print(table)
+
+
+@app.command("label-bench")
+def label_bench(
+    fixture: Path = typer.Option(Path("tests/data/label_bench.yaml"), "--fixture",
+                                 help="Ground-truth YAML fixture"),
+    prefix: str = typer.Option("bench", "--prefix", help="Episode-id prefix"),
+    agent: str = typer.Option("loop", "--agent", help="loop | simple"),
+    only: Optional[str] = typer.Option(None, "--only",
+                                       help="Comma-separated clip names"),
+    reuse: bool = typer.Option(False, "--reuse",
+                               help="Score existing workspaces without rerunning"),
+    root: Optional[Path] = typer.Option(None, "--root", help="V2R repo root"),
+):
+    """Label-accuracy regression bench: run the agent loop over the
+    hand-labeled ground-truth set and report quantified accuracy (verdicts,
+    skill precision/recall, hallucinations, boundary IoU/MAE, evidence
+    coverage). Writes qa_bench_report.json at the repo root."""
+    from ..agentic.bench import run_bench
+
+    cfg = V2RConfig.load(root)
+    fixture_path = fixture if fixture.is_absolute() else cfg.root / fixture
+    report = run_bench(cfg, fixture_path, prefix=prefix, agent=agent,
+                       only=only.split(",") if only else None, reuse=reuse,
+                       log=_safe_print)
+    agg = report["aggregate"]
+    table = Table(title=f"Label bench - {agg.get('n_clips', 0)} clips")
+    table.add_column("metric")
+    table.add_column("value")
+    for k, v in agg.items():
+        table.add_row(k, str(v))
     console.print(table)
 
 

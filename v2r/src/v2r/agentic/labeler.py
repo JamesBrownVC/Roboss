@@ -46,6 +46,7 @@ LABEL_SCHEMA = {
                     "end_s": {"type": "number"},
                     "skill": {"type": "string"},
                     "text": {"type": "string"},
+                    "evidence": {"type": "string"},
                 },
                 "required": ["start_s", "end_s", "skill", "text"],
             },
@@ -133,7 +134,35 @@ def _ensure_workspace(cfg: V2RConfig, video: Path, episode_id: Optional[str],
 
 
 def _validate_labels(raw: dict, verbs: list[str], duration_s: float) -> dict:
-    """Clamp/repair the agent's labels; never trust free-form output blindly."""
+    """Clamp/repair the agent's labels; never trust free-form output blindly.
+
+    Raises ValueError on structurally incomplete labels (missing captions or
+    feasibility verdict) so the agent loop can reject the finalize and ask
+    for a complete labels object instead of writing a broken workspace.
+    """
+    caps = raw.get("captions") or {}
+    missing = [k for k in ("short", "medium", "long") if not str(caps.get(k, "")).strip()]
+    if missing:
+        raise ValueError(f"captions incomplete (missing {missing})")
+    feas = raw.get("feasibility") or {}
+    missing = [k for k in ("human_present", "recommendation") if not feas.get(k)]
+    if missing:
+        raise ValueError(f"feasibility incomplete (missing {missing})")
+    if feas["recommendation"] not in ("proceed", "reject", "human_review"):
+        raise ValueError(f"invalid recommendation {feas['recommendation']!r}")
+    if feas["human_present"] == "none":
+        # quadruped gaits/locomotion are legitimate with no human (animal
+        # subject -> Go2 retargeting); only human-manipulation verbs contradict
+        non_human_verbs = {"idle", "walk", "trot", "gallop", "jump", "sit",
+                           "lie_down", "stand", "turn"}
+        human_verbs = {s.get("skill") for s in raw.get("segments", [])} - non_human_verbs
+        if human_verbs:
+            raise ValueError(
+                f"contradiction: human_present='none' but segments use human "
+                f"action verbs {sorted(human_verbs)}; either revise "
+                "human_present or use only locomotion/idle verbs "
+                "(walk/trot/gallop/jump/sit/lie_down/stand/turn/idle)")
+
     fixed_segments: list[Segment] = []
     fallback = "idle" if "idle" in verbs else verbs[0]
     prev_end = 0.0
@@ -146,18 +175,26 @@ def _validate_labels(raw: dict, verbs: list[str], duration_s: float) -> dict:
         if s1 <= s0:
             continue
         skill = seg["skill"] if seg["skill"] in verbs else fallback
+        ev = seg.get("evidence")
         fixed_segments.append(Segment(start_s=s0, end_s=s1, skill=skill,
-                                      text=str(seg.get("text", ""))[:200]))
+                                      text=str(seg.get("text", ""))[:200],
+                                      evidence=str(ev)[:300] if ev else None))
         prev_end = s1
     if not fixed_segments:
         fixed_segments = [Segment(start_s=0.0, end_s=duration_s, skill=fallback,
                                   text="no confident segmentation")]
     raw["segments"] = fixed_segments
-    tags = raw.get("scene_tags", {})
+    tags = raw.get("scene_tags") or {}
     tags["clutter"] = int(min(5, max(1, tags.get("clutter", 3))))
+    tags.setdefault("scene_type", "unknown")
+    tags.setdefault("lighting", "unknown")
+    tags.setdefault("surfaces", [])
     raw["scene_tags"] = tags
-    feas = raw.get("feasibility", {})
     feas["confidence"] = float(min(1.0, max(0.0, feas.get("confidence", 0.3))))
+    feas.setdefault("physically_plausible", True)
+    feas.setdefault("tracking_likely_valid", False)
+    feas.setdefault("ai_generated_suspected", False)
+    feas.setdefault("ai_generated_artifacts", [])
     raw["feasibility"] = feas
     return raw
 
@@ -205,8 +242,11 @@ def run_agentic_labeler(
     video: Path,
     episode_id: Optional[str] = None,
     model: Optional[str] = None,
+    agent: str = "auto",
     log: Callable[[str], None] = print,
 ) -> dict:
+    """agent: 'loop' = iterative investigate-verify agent (NIM/Gemini);
+    'simple' = one-pass plan/sense/label; 'auto' = loop when an LLM is up."""
     video = Path(video)
     ws = _ensure_workspace(cfg, video, episode_id, log)
     model = model or gemini.DEFAULT_VISION_MODEL
@@ -214,6 +254,28 @@ def run_agentic_labeler(
 
     probe = T.probe_video(ws.video_path)
     duration_s = float(probe.get("duration_s", 0.0))
+
+    # ---- iterative agent path ----------------------------------------------
+    if agent in ("auto", "loop"):
+        from .agent_loop import AgentLoop
+        from .llm import LLMRouter
+
+        router = LLMRouter(cfg.root, log=log)
+        if router.available():
+            log(f"[label] agent loop | orchestrator={router.active_provider('orchestrator')} "
+                f"critic={router.active_provider('fast')}")
+            loop = AgentLoop(cfg, ws, router, log=log)
+            result = loop.run()
+            judge = f"agent-loop:{router.active_provider('orchestrator')}"
+            return _write_outputs(
+                ws, video, result["labels"],
+                plan={"mode": "agent-loop", "steps": result["steps"],
+                      "revisions": result["revisions"],
+                      "critic": result["evidence"].get("critic")},
+                evidence=result["evidence"], judge_source=judge, log=log)
+        if agent == "loop":
+            log("[label] no LLM provider available; falling back to simple mode")
+
     jpegs, stamps, sample_info = T.sample_frames(
         ws.video_path, n=6, save_dir=ws.frames_review_dir)
     log(f"[label] probe: {probe.get('width')}x{probe.get('height')} "
@@ -306,11 +368,23 @@ def run_agentic_labeler(
             judge_source = f"gemini:{model}"
         except Exception as e:  # noqa: BLE001
             log(f"[label] VLM labeling failed ({e}); heuristic fallback")
+    if labels is not None:
+        try:
+            labels = _validate_labels(labels, cfg.verbs, duration_s)
+        except ValueError as e:
+            log(f"[label] VLM labels incomplete ({e}); heuristic fallback")
+            labels = None
+            judge_source = "heuristic"
     if labels is None:
-        labels = _heuristic_labels(evidence, cfg.verbs, duration_s)
-    labels = _validate_labels(labels, cfg.verbs, duration_s)
+        labels = _validate_labels(_heuristic_labels(evidence, cfg.verbs, duration_s),
+                                  cfg.verbs, duration_s)
+    return _write_outputs(ws, video, labels, plan=plan, evidence=evidence,
+                          judge_source=judge_source, log=log)
 
-    # ---- write workspace artifacts ----------------------------------------
+
+def _write_outputs(ws: EpisodeWorkspace, video: Path, labels: dict, plan: dict,
+                   evidence: dict, judge_source: str,
+                   log: Callable[[str], None]) -> dict:
     src = SourceTag.estimated
     write_json_model(ws.segments_json, SegmentsFile(
         segments=labels["segments"], method=f"agentic:{judge_source}", source=src))
@@ -345,9 +419,14 @@ def run_agentic_labeler(
         f"{feas.get('ai_generated_artifacts')}",
         f"- recommendation: **{feas.get('recommendation')}** "
         f"(confidence {feas.get('confidence'):.2f})",
-        "",
-        "## Segments", "",
     ]
+    if plan.get("mode") == "agent-loop":
+        md.append(f"- agent: {plan['steps']} steps, {plan['revisions']} revision(s), "
+                  f"critic={plan.get('critic', {}).get('verdict')}")
+        if evidence.get("notes"):
+            md += ["", "## Agent notes", ""]
+            md += [f"- {n}" for n in evidence["notes"]]
+    md += ["", "## Segments", ""]
     for s in labels["segments"]:
         md.append(f"- `{s.start_s:6.2f} - {s.end_s:6.2f}s` **{s.skill}** - {s.text}")
     md += ["", "## Captions", "", f"- short: {cap['short']}",

@@ -26,4 +26,15 @@ verbs:
   - hold
   - walk
   - turn
+  # social / gestural motion (non-manipulation but trackable)
+  - wave
+  - point
+  - gesture
   - idle
+  # quadruped gaits / behaviors (SuperAnimal-Quadruped subjects -> Go2 retarget)
+  - trot
+  - gallop
+  - jump
+  - sit
+  - lie_down
+  - stand

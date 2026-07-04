@@ -1,4 +1,6 @@
 const RUNS_STORAGE_KEY = "roboss.runs.v1";
+const ACTIVE_BATCH_STORAGE_KEY = "roboss.activeBatch.v1";
+const STUDIO_STATE_STORAGE_KEY = "roboss.studioState.v1";
 
 export async function readApiError(response) {
   try {
@@ -43,6 +45,61 @@ export function createBatch({ prompt, aspectRatio, count, reference }) {
 
 export function getBatch(batchId) {
   return fetchJson(`/api/batches/${batchId}`);
+}
+
+export function getBatchDownloadUrl(batchId) {
+  return `/api/batches/${encodeURIComponent(batchId)}/download`;
+}
+
+export function readActiveBatchId() {
+  try {
+    return window.localStorage.getItem(ACTIVE_BATCH_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveActiveBatchId(batchId) {
+  try {
+    window.localStorage.setItem(ACTIVE_BATCH_STORAGE_KEY, batchId);
+  } catch {
+    /* active batch resume is best-effort */
+  }
+}
+
+export function clearActiveBatchId(batchId) {
+  try {
+    const current = window.localStorage.getItem(ACTIVE_BATCH_STORAGE_KEY);
+    if (!batchId || current === batchId) {
+      window.localStorage.removeItem(ACTIVE_BATCH_STORAGE_KEY);
+    }
+  } catch {
+    /* active batch resume is best-effort */
+  }
+}
+
+export function readStudioState() {
+  try {
+    const raw = window.localStorage.getItem(STUDIO_STATE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveStudioState(patch) {
+  try {
+    const next = { ...readStudioState(), ...patch, updatedAt: Date.now() };
+    for (const key of Object.keys(next)) {
+      if (next[key] == null) {
+        delete next[key];
+      }
+    }
+    window.localStorage.setItem(STUDIO_STATE_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    /* Studio resume is best-effort */
+  }
 }
 
 function timeoutSignal(ms) {
@@ -105,4 +162,40 @@ export async function getStats() {
     /* backend stats endpoint unavailable: fall back to local history */
   }
   return { source: "local", runs: readLocalRuns() };
+}
+
+/* ---------- Agent logs: REST catch-up + SSE live stream ---------- */
+
+export async function getLogs(sinceId) {
+  const query = sinceId != null ? `?since=${sinceId}` : "";
+  return fetchJson(`/api/logs${query}`);
+}
+
+export function openLogStream({ onEntry, onError, onOpen }) {
+  const source = new EventSource("/api/logs/stream");
+
+  source.onopen = () => {
+    if (onOpen) {
+      onOpen();
+    }
+  };
+
+  source.onmessage = (event) => {
+    try {
+      const entry = JSON.parse(event.data);
+      onEntry(entry);
+    } catch {
+      /* ignore malformed SSE payloads */
+    }
+  };
+
+  source.onerror = () => {
+    if (onError) {
+      onError();
+    }
+  };
+
+  return () => {
+    source.close();
+  };
 }

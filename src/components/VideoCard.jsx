@@ -4,28 +4,14 @@ export const STATUS_LABELS = {
   idle: "Ready",
   queued: "Queued",
   generating: "Generating",
-  reviewing: "AI review",
-  correcting: "AI correction",
+  reviewing: "Verifying",
+  correcting: "Correcting",
   running: "Running",
-  labeling: "Labeling",
-  rendering: "Rendering labels",
+  labeling: "Building labels",
+  rendering: "Rendering preview",
   completed: "Video ready",
   failed: "Failed",
   partial: "Finished with errors",
-};
-
-const LABEL_STATUS_LABELS = {
-  pending: "Annotation pending",
-  running: "Annotating",
-  completed: "Annotations ready",
-  failed: "Annotation failed",
-};
-
-const REVIEW_STATUS_LABELS = {
-  pending: "Review pending",
-  running: "Reviewing",
-  passed: "Review passed",
-  failed: "Review failed",
 };
 
 const ACTIVE_JOB_STATUSES = ["queued", "generating", "reviewing", "correcting", "labeling", "rendering"];
@@ -49,20 +35,13 @@ export function annotationCount(label) {
   );
 }
 
-function reviewIssues(review) {
-  const issues = Array.isArray(review?.issues) ? review.issues : [];
-  const missing = Array.isArray(review?.missing_requirements) ? review.missing_requirements : [];
-  return [...issues, ...missing].filter(Boolean);
-}
 
 export default function VideoCard({ job, aspectRatio }) {
   const videoUrl = job.videoUrl ? `${job.videoUrl}?t=${job.id}` : "";
   const labeledVideoUrl = job.labeledVideoUrl ? `${job.labeledVideoUrl}?t=${job.id}-labeled` : "";
-  const displayVideoUrl = labeledVideoUrl || videoUrl;
+  const displayVideoUrl = videoUrl || labeledVideoUrl;
   const zones = annotationCount(job.label);
   const summary = cleanText(job.label?.video_summary || job.label?.summary);
-  const reviewText = cleanText(job.review?.feedback || job.review?.summary);
-  const issues = reviewIssues(job.review);
   const isActive = ACTIVE_JOB_STATUSES.includes(job.status);
 
   return (
@@ -73,7 +52,14 @@ export default function VideoCard({ job, aspectRatio }) {
         }`}
       >
         {displayVideoUrl ? (
-          <video key={displayVideoUrl} src={displayVideoUrl} controls className="h-full w-full bg-black object-contain" />
+          <video
+            key={displayVideoUrl}
+            src={displayVideoUrl}
+            controls
+            preload="metadata"
+            playsInline
+            className="h-full w-full bg-black object-contain"
+          />
         ) : (
           <div className="flex flex-col items-center gap-3 px-4 text-center">
             {isActive ? (
@@ -108,33 +94,6 @@ export default function VideoCard({ job, aspectRatio }) {
 
         {job.error ? <p className="line-clamp-2 text-xs text-red-300">{job.error}</p> : null}
 
-        {job.review || job.reviewStatus !== "pending" ? (
-          <div className="rounded-lg bg-surface-800 p-2.5 text-xs">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-semibold text-sage-200/80">Quality review</span>
-              <span
-                className={`rounded px-2 py-0.5 font-medium ${
-                  job.reviewStatus === "passed"
-                    ? "bg-emerald-400/15 text-emerald-300"
-                    : job.reviewStatus === "failed"
-                      ? "bg-red-400/10 text-red-300"
-                      : "bg-sage-500/10 text-sage-200/60"
-                }`}
-              >
-                {REVIEW_STATUS_LABELS[job.reviewStatus] || "Pending"}
-              </span>
-            </div>
-            {reviewText ? <p className="mt-1.5 text-sage-200/60">{reviewText}</p> : null}
-            {issues.length ? (
-              <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-sage-200/50">
-                {issues.slice(0, 3).map((issue) => (
-                  <li key={issue}>{issue}</li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
-
         {job.label ? (
           <div className="rounded-lg bg-surface-800 p-2.5 text-xs">
             <div className="flex items-center justify-between gap-2">
@@ -154,16 +113,12 @@ export default function VideoCard({ job, aspectRatio }) {
               </div>
             ) : null}
           </div>
-        ) : videoUrl ? (
-          <p className="text-xs text-sage-300/40">
-            {LABEL_STATUS_LABELS[job.labelStatus] || "Annotation pending"}
-          </p>
         ) : null}
 
         {job.labelError ? <p className="line-clamp-2 text-xs text-red-300">{job.labelError}</p> : null}
 
         {videoUrl ? (
-          <div className="mt-auto grid grid-cols-2 gap-2 pt-1">
+          <div className={`mt-auto grid gap-2 pt-1 ${labeledVideoUrl ? "grid-cols-2" : "grid-cols-1"}`}>
             <a
               href={videoUrl}
               download
@@ -181,11 +136,7 @@ export default function VideoCard({ job, aspectRatio }) {
                 <Download size={14} aria-hidden="true" />
                 Labeled MP4
               </a>
-            ) : (
-              <span className="inline-flex h-9 items-center justify-center rounded-lg bg-surface-800 px-3 text-xs font-medium text-sage-300/40">
-                Labels pending
-              </span>
-            )}
+            ) : null}
           </div>
         ) : null}
       </div>

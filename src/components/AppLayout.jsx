@@ -31,6 +31,14 @@ export default function AppLayout() {
   }, []);
 
   const apiOnline = Boolean(health?.ok);
+  const apiReady = apiOnline && health.geminiApiKeyConfigured !== false;
+  const statusLabel = !checked
+    ? "Connecting"
+    : !apiOnline
+      ? "Offline"
+      : apiReady
+        ? "Connected"
+        : "Missing API key";
 
   return (
     <div className="flex min-h-screen bg-surface-950 text-sage-100">
@@ -68,10 +76,16 @@ export default function AppLayout() {
           <div className="flex items-center gap-2 text-xs font-medium text-sage-300/50">
             <span
               className={`h-2 w-2 rounded-full ${
-                !checked ? "bg-sage-500/50" : apiOnline ? "bg-emerald-400" : "bg-red-400"
+                !checked
+                  ? "bg-sage-500/50"
+                  : !apiOnline
+                    ? "bg-red-400"
+                    : apiReady
+                      ? "bg-emerald-400"
+                      : "bg-amber-400"
               }`}
             />
-            <span>{!checked ? "Connecting" : apiOnline ? "Connected" : "Offline"}</span>
+            <span>{statusLabel}</span>
           </div>
         </div>
       </aside>

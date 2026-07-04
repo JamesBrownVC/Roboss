@@ -3,15 +3,6 @@
 React/Tailwind frontend for the Roboss video data pipeline: one-shot prompt to
 generated, reviewed and annotated MP4 training videos.
 
-## Pages
-
-- **Studio** - one prompt (plus optional image/video reference) in, an annotated video
-  dataset out, with inline preview of the first samples and MP4 download.
-- **Analytics** - dashboard with KPI cards and charts: videos generated, validation pass
-  rate, datasets produced, success rate and latency per pipeline stage.
-- **Monitor** - live robot view: connect the robot to watch its camera feed, real-time
-  detection overlays, telemetry and action log.
-
 ## Frontend setup
 
 ```powershell
@@ -22,8 +13,38 @@ npm run dev
 Open `http://127.0.0.1:5174`.
 
 The dev server proxies `/api` and `/generated` to the backend at
-`http://127.0.0.1:8010`. Start the FastAPI backend separately so the Studio page
+`http://127.0.0.1:8010`. Start the FastAPI backend so the Studio page
 can generate videos.
+
+## Backend setup
+
+Requires Python 3.13 and `GEMINI_API_KEY` (Gemini Omni Flash video generation).
+
+Create a `.env` file in the project root (`C:\Users\adilo\Roboss\.env`):
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+```powershell
+py -3.13 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn server.app:app --host 127.0.0.1 --port 8010 --reload
+```
+
+The backend orchestrates the agent pipeline (`python -m agents`), Gemini Omni Flash video generation, and the physics verifier. Generated MP4s are served from
+`/generated`.
+
+## Pages
+
+- **Studio** - one prompt (plus optional image/video reference) in, an annotated video
+  dataset out, with inline preview of the first samples, MP4 download, and live
+  backend agent logs underneath the generation workspace.
+- **Analytics** - dashboard with KPI cards and charts: videos generated, validation pass
+  rate, datasets produced, success rate and latency per pipeline stage.
+- **Monitor** - live robot view: connect the robot to watch its camera feed, real-time
+  detection overlays, telemetry and action log.
 
 ## Video Plausibility Verifier
 

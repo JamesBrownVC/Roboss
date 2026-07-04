@@ -3,7 +3,9 @@ dist/
 generated/
 .env
 .venv/
-.env
+.venv.broken/
+.tmp/
+.ultralytics/
 __pycache__/
 *.pyc
 *.pt

@@ -1,8 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ImagePlus, Info, LoaderCircle, Play, X } from "lucide-react";
+import { AlertTriangle, Download, ImagePlus, Info, LoaderCircle, Play, X } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
+import AgentLogsPanel from "../components/AgentLogsPanel.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import VideoCard, { STATUS_LABELS, annotationCount } from "../components/VideoCard.jsx";
-import { createBatch, getBatch, recordRuns } from "../lib/api.js";
+import {
+  clearActiveBatchId,
+  createBatch,
+  getBatch,
+  getBatchDownloadUrl,
+  readActiveBatchId,
+  readStudioState,
+  recordRuns,
+  saveActiveBatchId,
+  saveStudioState,
+} from "../lib/api.js";
 
 const POLL_INTERVAL_MS = 3000;
 const PREVIEW_LIMIT = 4;
@@ -40,10 +52,23 @@ function clampDataset(value) {
   return Math.min(MAX_DATASET, Math.max(MIN_DATASET, numeric));
 }
 
+function batchErrorMessage(nextBatch) {
+  const firstError = nextBatch.jobs?.find((job) => job.error || job.labelError || job.renderError);
+  return (
+    firstError?.error ||
+    firstError?.labelError ||
+    firstError?.renderError ||
+    nextBatch.error ||
+    "Generation or labeling failed."
+  );
+}
+
 export default function Studio() {
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-  const [aspectRatio, setAspectRatio] = useState("16:9");
-  const [datasetCount, setDatasetCount] = useState(10);
+  const { health } = useOutletContext();
+  const savedStudioState = useMemo(() => readStudioState(), []);
+  const [prompt, setPrompt] = useState(savedStudioState.prompt || DEFAULT_PROMPT);
+  const [aspectRatio, setAspectRatio] = useState(savedStudioState.aspectRatio || "16:9");
+  const [datasetCount, setDatasetCount] = useState(() => clampDataset(savedStudioState.datasetCount || 10));
   const [reference, setReference] = useState(null);
   const [referenceNotice, setReferenceNotice] = useState("");
   const [batch, setBatch] = useState(null);
@@ -52,10 +77,12 @@ export default function Studio() {
   const fileInputRef = useRef(null);
   const submitTimeRef = useRef(null);
   const recordedRef = useRef(false);
+  const resumeAttemptedRef = useRef(false);
 
+  const apiKeyMissing = Boolean(health?.ok) && health.geminiApiKeyConfigured === false;
   const currentStatus = batch?.status ?? "idle";
   const isBatchActive = ["queued", "running"].includes(currentStatus);
-  const canSubmit = prompt.trim().length > 0 && !isSubmitting && !isBatchActive;
+  const canSubmit = prompt.trim().length > 0 && !isSubmitting && !isBatchActive && !apiKeyMissing;
   const busy = isSubmitting || isBatchActive;
 
   const safeDatasetCount = clampDataset(datasetCount || MIN_DATASET);
@@ -70,7 +97,59 @@ export default function Studio() {
   }, [batch, safeDatasetCount]);
 
   const previewJobs = useMemo(() => (batch?.jobs ?? []).slice(0, PREVIEW_LIMIT), [batch]);
+  const downloadableVideoCount = useMemo(
+    () => (batch?.jobs ?? []).filter((job) => job.videoUrl || job.labeledVideoUrl).length,
+    [batch],
+  );
   const placeholderCount = Math.min(PREVIEW_LIMIT, safeDatasetCount);
+
+  useEffect(() => {
+    saveStudioState({ prompt, aspectRatio, datasetCount: safeDatasetCount });
+  }, [prompt, aspectRatio, safeDatasetCount]);
+
+  useEffect(() => {
+    if (batch?.id) {
+      saveStudioState({ batchId: batch.id });
+    }
+  }, [batch?.id]);
+
+  useEffect(() => {
+    if (resumeAttemptedRef.current) {
+      return undefined;
+    }
+    resumeAttemptedRef.current = true;
+    const activeBatchId = savedStudioState.batchId || readActiveBatchId();
+    if (!activeBatchId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    async function resumeActiveBatch() {
+      try {
+        const nextBatch = await getBatch(activeBatchId);
+        if (cancelled) {
+          return;
+        }
+        setBatch(nextBatch);
+        if (TERMINAL_STATUSES.includes(nextBatch.status)) {
+          clearActiveBatchId(nextBatch.id);
+        }
+        if (nextBatch.status === "failed" || nextBatch.status === "partial") {
+          setError(batchErrorMessage(nextBatch));
+        }
+      } catch {
+        if (!cancelled) {
+          clearActiveBatchId(activeBatchId);
+          saveStudioState({ batchId: null });
+        }
+      }
+    }
+
+    resumeActiveBatch();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!batch?.id || TERMINAL_STATUSES.includes(batch.status)) {
@@ -81,12 +160,15 @@ export default function Studio() {
       try {
         const nextBatch = await getBatch(batch.id);
         setBatch(nextBatch);
+        if (TERMINAL_STATUSES.includes(nextBatch.status)) {
+          clearActiveBatchId(nextBatch.id);
+        }
         if (nextBatch.status === "failed" || nextBatch.status === "partial") {
-          const firstError = nextBatch.jobs.find((job) => job.error || job.labelError || job.renderError);
-          const message = firstError?.error || firstError?.labelError || firstError?.renderError;
-          setError(message || "Generation or labeling failed.");
+          setError(batchErrorMessage(nextBatch));
         }
       } catch (pollError) {
+        clearActiveBatchId(batch.id);
+        saveStudioState({ batchId: null });
         setError(pollError.message || "Could not fetch status.");
       }
     }, POLL_INTERVAL_MS);
@@ -98,6 +180,7 @@ export default function Studio() {
     if (!batch || !TERMINAL_STATUSES.includes(batch.status) || recordedRef.current) {
       return;
     }
+    clearActiveBatchId(batch.id);
     recordedRef.current = true;
     const totalSeconds = submitTimeRef.current
       ? Math.round((Date.now() - submitTimeRef.current) / 1000)
@@ -188,6 +271,13 @@ export default function Studio() {
         count: safeDatasetCount,
         reference,
       });
+      saveActiveBatchId(nextBatch.id);
+      saveStudioState({
+        prompt: prompt.trim(),
+        aspectRatio,
+        datasetCount: safeDatasetCount,
+        batchId: nextBatch.id,
+      });
       setBatch(nextBatch);
     } catch (submitError) {
       setError(submitError.message || "Could not start generation.");
@@ -196,12 +286,29 @@ export default function Studio() {
     }
   }
 
+  function handleDownloadAll() {
+    if (!batch?.id || downloadableVideoCount === 0) {
+      return;
+    }
+    window.location.href = getBatchDownloadUrl(batch.id);
+  }
+
   return (
     <>
       <PageHeader
         title="Studio"
-        subtitle="One prompt in, an annotated training dataset out. Describe an industrial incident and generate as many review-checked, labeled videos as you need."
+        subtitle="One prompt in, an annotated training dataset out. Describe an industrial incident and generate as many labeled videos as you need."
       />
+
+      {apiKeyMissing ? (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-sm text-amber-100">
+          <AlertTriangle className="mt-0.5 shrink-0 text-amber-300" size={18} aria-hidden="true" />
+          <p>
+            Missing Gemini API key. Add `GEMINI_API_KEY=your_key_here` to the project root `.env`
+            file, then restart the backend.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
         <form
@@ -270,8 +377,9 @@ export default function Studio() {
                 <button
                   key={ratio}
                   type="button"
+                  disabled={busy}
                   onClick={() => setAspectRatio(ratio)}
-                  className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                  className={`rounded-full px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
                     aspectRatio === ratio
                       ? "bg-accent-500/10 text-accent-200 ring-1 ring-accent-500/40"
                       : "bg-surface-850 text-sage-300/60 hover:text-sage-100"
@@ -293,19 +401,25 @@ export default function Studio() {
               min={MIN_DATASET}
               max={MAX_DATASET}
               value={datasetCount}
+              disabled={busy}
               onChange={(event) => setDatasetCount(event.target.value === "" ? "" : clampDataset(event.target.value))}
               onBlur={() => setDatasetCount((value) => clampDataset(value || MIN_DATASET))}
-              className="h-11 rounded-lg border border-white/10 bg-surface-850 px-3 text-sm text-sage-50 outline-none transition focus:border-accent-500/60 focus:ring-4 focus:ring-accent-500/10"
+              className="h-11 rounded-lg border border-white/10 bg-surface-850 px-3 text-sm text-sage-50 outline-none transition disabled:cursor-not-allowed disabled:text-sage-300/35 focus:border-accent-500/60 focus:ring-4 focus:ring-accent-500/10"
               placeholder="Number of videos to generate"
             />
           </div>
 
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={busy || !canSubmit}
             className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-accent-500 px-4 text-base font-bold text-surface-950 shadow-glow transition hover:bg-accent-400 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:text-sage-300/30 disabled:shadow-none"
           >
-            {busy ? (
+            {apiKeyMissing ? (
+              <>
+                <AlertTriangle size={20} aria-hidden="true" />
+                Missing API key
+              </>
+            ) : busy ? (
               <>
                 <LoaderCircle className="animate-spin" size={20} aria-hidden="true" />
                 Generating {progress.done}/{progress.total}
@@ -322,7 +436,7 @@ export default function Studio() {
             <Info size={15} className="mt-0.5 shrink-0 text-sage-300" aria-hidden="true" />
             <p>
               Videos share the same incident and environment with varied camera angles and details.
-              Each one is automatically quality-reviewed and annotated. The preview shows the first
+              Each one is automatically verified and annotated. The preview shows the first
               four; the full dataset is available for download.
             </p>
           </div>
@@ -334,7 +448,16 @@ export default function Studio() {
               <span className="font-display font-semibold text-white">Output</span>
               <span className="text-xs text-sage-300/50">{STATUS_LABELS[currentStatus]}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleDownloadAll}
+                disabled={!batch?.id || downloadableVideoCount === 0}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-surface-850 px-3 text-xs font-semibold text-sage-200 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:text-sage-300/30"
+              >
+                <Download size={14} aria-hidden="true" />
+                Download all videos
+              </button>
               <div className="h-1.5 w-40 overflow-hidden rounded-full bg-surface-700">
                 <div
                   className="h-full rounded-full bg-accent-500 transition-all duration-500"
@@ -392,6 +515,8 @@ export default function Studio() {
           <p>{error}</p>
         </div>
       ) : null}
+
+      <AgentLogsPanel />
     </>
   );
 }

@@ -4,10 +4,38 @@ __pycache__/
 .pytest_cache/
 workspaces/
 .gpu_locks/
-data/
+data/**
+# ...but DO commit the specific clips the bench fixture + tests reference so
+# teammates can run `v2r label-bench` and the suite out of the box. Each parent
+# directory must be un-ignored before the leaf file can be re-included.
+!tests/data/
+!tests/data/**
+!data/raw/
+!data/raw/animal_dog/
+!data/raw/animal_dog/dog_run.mp4
+!data/raw/human_pexels_walk/
+!data/raw/human_pexels_walk/human_pexels_walk_000.mp4
+!data/raw/human_pexels_dance/
+!data/raw/human_pexels_dance/human_pexels_dance_000.mp4
+!data/raw/animal_pexels/
+!data/raw/animal_pexels/animal_pexels_000.mp4
+!data/raw/animal_pexels_wildlife/
+!data/raw/animal_pexels_wildlife/animal_pexels_wildlife_000.mp4
+!data/syngen/
+!data/syngen/web_175617/
+!data/syngen/web_175617/videos/
+!data/syngen/web_175617/videos/e01_cam0.mp4
+!data/syngen/web_175617/videos/e02_cam0.mp4
+!data/syngen/web_175617/videos/e03_cam0.mp4
+!data/syngen/veo1/
+!data/syngen/veo1/videos/
+!data/syngen/veo1/videos/e00_cam0.mp4
 assets/models/*.task
 assets/models/*.pt
 !assets/models/.gitkeep
+# MediaPipe landmarker models (small, needed by pose/hands tools)
+!assets/models/hand_landmarker.task
+!assets/models/pose_landmarker_lite.task
 assets/body_models/*
 !assets/body_models/README.md
 assets/robots/*/meshes/

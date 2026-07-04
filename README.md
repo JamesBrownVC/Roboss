@@ -1,11 +1,54 @@
-# Roboss — Video Plausibility Verifier
+# Roboss — Synthetic Action Dataset Compiler
 
-The **rejection gate** of the Synthetic Action Dataset Compiler.
+An end-to-end pipeline that turns a plain-English idea into **physically
+plausible, auto-labeled action videos** for training — and throws out the
+ones that break physics. The heart of it is a **rejection gate** so that
+impossible AI-generated footage never enters the dataset.
 
-It receives an AI-generated action video, extracts human pose, object
-tracks and contact evidence, then applies physics-aware checks to reject
-videos with impossible motion. Output: a structured plausibility report
-with a score, an accept/reject decision and frame-level reasons.
+```
+ idea / prompt
+      │
+      ▼
+ 1. SCENARIO COMPILER   (agents/)   idea → world contract → N validated scenarios
+      │
+      ▼
+ 2. VIDEO GENERATION    (Gemini)    prompt → generated.mp4
+      │
+      ▼
+ 3. VERIFICATION        (verifier/) the rejection gate — Gate 1 + Gate 2
+      │
+      ├─ REJECT ─▶ discard (report.json explains why)
+      │
+      └─ ACCEPT ─▶ 4. AUTO-LABELING (Gemini) → labels.json  ──▶ dataset
+```
+
+Two ways to drive it:
+
+- **Single video** — one prompt straight through generate → verify → label
+  (`run.sh pipeline` / `run_pipeline.py`).
+- **Batch** — one idea fanned out into several scenario variations, each
+  generated, verified and labeled (`e2e.sh`, which chains the scenario
+  compiler into the pipeline).
+
+## Quick start
+
+```bash
+# one prompt → one video → verify → label
+./run.sh pipeline "a warehouse rover drives down an aisle when barrels fall"
+
+# one idea → N scenario variations, each generated + verified + labeled
+./e2e.sh "industrial safety hazard in a warehouse" 5 my_run
+
+# verify an existing video only
+./run.sh verify path/to/video.mp4
+
+# run the tests (no models, no API)
+./run.sh tests
+```
+
+`run.sh help` lists every command. All outputs land in `runs/<name>/`.
+
+## The rejection gate (verifier)
 
 ```
 generated video (+ optional scenario metadata)
@@ -58,7 +101,7 @@ engine decides first, the VLM extends coverage.
 
 Requires Gemini API credentials (`GEMINI_API_KEY`):
 
-```powershell
+```bash
 python -m verifier video.mp4 --gate2 --scenario scenario.example.json
 ```
 
@@ -70,24 +113,56 @@ Thresholds and score weights live in [verifier/config.py](verifier/config.py).
 Scoring: `score = 1 − Σ weight(type) × worst_severity(type)`.
 Accept if `score ≥ 0.72` and no single violation exceeds `0.85`.
 
-## Setup (Windows)
+## Setup
 
-Requires Python 3.13 (PyTorch does not support 3.14 yet).
+Requires **Python 3.13** (PyTorch does not support 3.14 yet). Using
+[`uv`](https://github.com/astral-sh/uv):
 
-```powershell
-py -3.13 -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+```bash
+uv venv --python 3.13 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
 ```
 
-YOLO11 weights (`yolo11n-pose.pt`, `yolo11n.pt`, ~12 MB total) are
-downloaded automatically on first run.
+Or plain `venv`:
 
-## Usage
+```bash
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
 
-```powershell
-python -m verifier path\to\generated_video.mp4 `
-    --scenario scenario.example.json `
+Put your key in a `.env` file at the project root (loaded automatically):
+
+```
+GEMINI_API_KEY=your_key_here
+```
+
+YOLO11 weights (`yolo11n-pose.pt`, `yolo11n.pt`, ~12 MB total) download
+automatically on first run. `run.sh` / `e2e.sh` create the venv for you if
+it is missing.
+
+## Runners
+
+| command | what it does |
+|---|---|
+| `./run.sh tests` | physics + agent test suite (no models, no API) |
+| `./run.sh verify <video.mp4>` | verify an existing video (Gate 1 + Gate 2) |
+| `./run.sh pipeline "<prompt>"` | generate → verify → label one video |
+| `./run.sh agents "<intention>"` | scenario compiler: idea → scenario bundle |
+| `./run.sh all "<prompt>"` | tests, then the full pipeline |
+| `./e2e.sh "<idea>" [count] [name]` | compile N scenarios, then generate + verify + label each |
+
+`run.sh pipeline` flags: `--outdir DIR` (keep runs separate; default
+`runs/latest` is overwritten), `--no-gate2`, `--device cpu|0`,
+`--scenario FILE|none`. Extra flags pass through to the underlying tool.
+
+Outputs per run land in `runs/<name>/`: `generated.mp4`, `report.json`,
+and `labels.json` (only if accepted). Exit code `0` = accept, `2` = reject.
+
+### Verifier CLI (existing video only)
+
+```bash
+python -m verifier path/to/generated_video.mp4 \
+    --scenario scenario.example.json \
     --annotated annotated.mp4
 ```
 
@@ -137,13 +212,19 @@ comes from the video-generation side; the report then also lists
 The physics checks are pure NumPy over track data, so they run without
 models or videos:
 
-```powershell
-python -m pytest tests -q
+```bash
+python -m pytest tests -q     # or: ./run.sh tests
 ```
 
 ## Project layout
 
 ```
+run.sh              runner: tests / verify / pipeline / agents / all
+e2e.sh              batch: idea → N scenarios → generate + verify + label each
+run_pipeline.py     single video: generate → verify → label
+gemini_service.py   Gemini video generation + auto-labeling
+env_loader.py       tiny dependency-free .env loader
+agents/             scenario compiler (idea → world contract → scenarios)
 verifier/
   config.py    thresholds + score weights (all tunable)
   tracks.py    Track / Evidence / Violation data structures
@@ -155,8 +236,19 @@ verifier/
   viz.py       annotated demo video (skeletons, boxes, violation timeline)
   __main__.py  CLI
 tests/
-  test_checks.py
+  test_checks.py   gate-1 physics checks
+  test_agents.py   scenario compiler
 ```
+
+## Models
+
+| stage | model | where |
+|---|---|---|
+| scenario compiler (text) | `gemini-3.5-flash` | `agents/config.py` |
+| scenario canvas (image) | `gemini-3.1-flash-image` | `agents/config.py` |
+| video generation | `gemini-omni-flash-preview` | `gemini_service.py` |
+| Gate 2 reviewer | `gemini-3.5-flash` | `verifier/config.py` |
+| auto-labeling | `gemini-3.5-flash` | `gemini_service.py` |
 
 ## Known limitations
 

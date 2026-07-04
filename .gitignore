@@ -6,3 +6,9 @@ __pycache__/
 *_report.json
 annotated*.mp4
 .pytest_cache/
+
+# generated pipeline outputs (videos, reports, labels) — keep only the
+# curated runs/warehouse_v1 demo that is already tracked
+/runs/*
+!/runs/warehouse_v1/
+scenario_bundle/

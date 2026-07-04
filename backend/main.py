@@ -3,8 +3,9 @@
 The labeling step is agentic: one focused Gemini pass per concern, streamed
 to the UI as each pass completes:
 
-    1. inventory — ALL visible elements (objects) + actions, no boxes
-    2. tracking  — tight bounding-box keyframes for each inventoried object
+    1. inventory — ALL visible elements (objects) + actions (video call)
+    2. tracking  — frames extracted at 2 fps (ffmpeg), one image-detection
+                   call per frame, box keyframes assembled per object
     3. audio     — soundtrack analysis (speech transcript, music, SFX, ambient)
 
 Endpoints:
@@ -24,6 +25,8 @@ import base64
 import io
 import json
 import os
+import subprocess
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -131,21 +134,66 @@ inventory of the IMAGE track:
   if significant (max 8).
 {COMMON_RULES}"""
 
-TRACKING_PROMPT_TEMPLATE = f"""You are a precision object-detection system. An annotator inventoried these
-objects in this video (label, time range, description):
+TRACKING_FPS = 2  # frames per second sampled for box detection
 
-{{objects}}
+DETECT_PROMPT_TEMPLATE = """Detect the following objects in this image (they may or may not be visible):
 
-For EACH object above, return one label (track "object", keep the exact same
-label name, t_start, t_end, detail and confidence) with boxes: bounding-box
-keyframes sampled every ~1 second across its time range (at least 2 keyframes;
-more if the object or camera moves fast). Each keyframe:
-- t: timestamp in seconds
-- box_2d: [ymin, xmin, ymax, xmax] normalized to 0-1000, TIGHT around the
-  visible extent of the object AT THAT EXACT MOMENT — hug the pixels, do not
-  pad, do not reuse a previous box if the object moved.
-Accuracy of box placement is the ONLY goal of this pass.
-{COMMON_RULES}"""
+{objects}
+
+Return one detection per object that is clearly visible, using EXACTLY the label
+names above. box_2d = [ymin, xmin, ymax, xmax] normalized to 0-1000, TIGHT
+around the visible extent of the object — hug the pixels, do not pad.
+Skip objects that are not visible in this image. confidence is 0.0-1.0.
+"""
+
+
+class Detection(BaseModel):
+    label: str
+    box_2d: list[int]
+    confidence: float
+
+
+class FrameDetections(BaseModel):
+    detections: list[Detection]
+
+
+def _extract_frames(video: bytes, fps: int = TRACKING_FPS, width: int = 640) -> list[tuple[float, bytes]]:
+    """Extract (timestamp, jpeg_bytes) frames from an mp4 using ffmpeg."""
+    with tempfile.TemporaryDirectory() as tmp:
+        src = Path(tmp) / "in.mp4"
+        src.write_bytes(video)
+        subprocess.run(
+            [
+                "ffmpeg", "-hide_banner", "-loglevel", "error",
+                "-i", str(src),
+                "-vf", f"fps={fps},scale={width}:-2",
+                "-q:v", "3",
+                str(Path(tmp) / "f%04d.jpg"),
+            ],
+            check=True,
+            timeout=60,
+        )
+        frames = []
+        for f in sorted(Path(tmp).glob("f*.jpg")):
+            idx = int(f.stem[1:]) - 1
+            frames.append((idx / fps, f.read_bytes()))
+        return frames
+
+
+def _detect_frame(client: genai.Client, jpeg: bytes, object_names: list[str]) -> list[dict]:
+    prompt = DETECT_PROMPT_TEMPLATE.format(objects="\n".join(f"- {n}" for n in object_names))
+    response = client.models.generate_content(
+        model=LABEL_MODEL,
+        contents=[types.Part.from_bytes(data=jpeg, mime_type="image/jpeg"), prompt],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=FrameDetections,
+            temperature=0.0,
+        ),
+    )
+    if response.parsed is None:
+        return []
+    return [d.model_dump() for d in response.parsed.detections]
 
 AUDIO_PROMPT = f"""You are a meticulous audio annotator. LISTEN to this video's soundtrack and
 produce a COMPLETE inventory of the AUDIO track only (track "audio"):
@@ -171,27 +219,45 @@ def _upload_video(client: genai.Client, video: bytes):
     return uploaded
 
 
-def _run_pass(client: genai.Client, uploaded, prompt: str) -> list[dict]:
-    response = client.models.generate_content(
-        model=LABEL_MODEL,
-        contents=[uploaded, prompt],
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=LabelSet,
-            temperature=0.0,
-            media_resolution=types.MediaResolution.MEDIA_RESOLUTION_HIGH,
-        ),
-    )
-    label_set: LabelSet = response.parsed
-    return [l.model_dump() for l in label_set.labels]
+def _run_pass(client: genai.Client, uploaded, prompt: str, retries: int = 1) -> list[dict]:
+    last_err: Exception | None = None
+    for _ in range(retries + 1):
+        try:
+            response = client.models.generate_content(
+                model=LABEL_MODEL,
+                contents=[uploaded, prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=LabelSet,
+                    temperature=0.0,
+                    media_resolution=types.MediaResolution.MEDIA_RESOLUTION_HIGH,
+                ),
+            )
+            if response.parsed is None:
+                raise RuntimeError(f"Unparseable labeling response: {(response.text or '')[:200]}")
+            return [l.model_dump() for l in response.parsed.labels]
+        except Exception as err:
+            last_err = err
+    raise last_err  # type: ignore[misc]
 
 
 async def _label_stream(version: Version):
     def event(payload: dict) -> str:
         return json.dumps(payload) + "\n"
 
-    client = genai.Client()
+    # explicit timeout: without it a stuck API call hangs the pass forever
+    client = genai.Client(http_options={"timeout": 180_000})
     all_labels: list[dict] = []
+
+    async def run_with_heartbeat(prompt: str, pass_name: str):
+        """Run a pass in a thread, yielding progress events while it runs."""
+        task = asyncio.create_task(asyncio.to_thread(_run_pass, client, uploaded, prompt))
+        started = time.monotonic()
+        while not task.done():
+            await asyncio.wait({task}, timeout=2)
+            if not task.done():
+                yield {"type": "progress", "pass": pass_name, "elapsed": round(time.monotonic() - started)}
+        yield {"type": "_result", "labels": task.result()}
 
     try:
         yield event({"type": "pass_start", "pass": "upload", "message": "Uploading video to Gemini..."})
@@ -199,31 +265,87 @@ async def _label_stream(version: Version):
 
         # Pass 1 — inventory (objects + actions, no boxes yet)
         yield event({"type": "pass_start", "pass": "inventory", "message": "Pass 1/3 — visual inventory (objects, actions)..."})
-        visual = await asyncio.to_thread(_run_pass, client, uploaded, VISUAL_PROMPT)
-        visual = [l for l in visual if l["track"] in ("object", "action")]
+        visual: list[dict] = []
+        async for ev in run_with_heartbeat(VISUAL_PROMPT, "inventory"):
+            if ev["type"] == "_result":
+                visual = [l for l in ev["labels"] if l["track"] in ("object", "action")]
+            else:
+                yield event(ev)
         all_labels += visual
         yield event({"type": "labels", "pass": "inventory", "labels": visual})
 
-        # Pass 2 — dedicated box tracking for the inventoried objects
-        objects = [l for l in visual if l["track"] == "object"]
+        # Pass 2 — per-frame detection: extract frames, detect all objects in
+        # each frame in parallel, then assemble box keyframes per object
+        objects = [l for l in visual if l["track"] == "object"][:10]
         if objects:
-            yield event({"type": "pass_start", "pass": "tracking", "message": f"Pass 2/3 — tracking {len(objects)} object(s) (tight boxes)..."})
-            tracking_prompt = TRACKING_PROMPT_TEMPLATE.format(
-                objects="\n".join(
-                    f"- {o['label']} [{o['t_start']}s–{o['t_end']}s]: {o['detail']}" for o in objects
-                )
-            )
-            tracked = await asyncio.to_thread(_run_pass, client, uploaded, tracking_prompt)
-            tracked = [{**l, "track": "object"} for l in tracked if l.get("boxes")]
-            if tracked:
-                # replace inventory objects with their tracked versions
-                all_labels = [l for l in all_labels if l["track"] != "object"] + tracked
-            yield event({"type": "labels", "pass": "tracking", "labels": tracked})
+            yield event({"type": "pass_start", "pass": "tracking", "message": "Pass 2/3 — extracting frames..."})
+            frames = await asyncio.to_thread(_extract_frames, version.video)
+            object_names = [o["label"] for o in objects]
+            total = len(frames)
+            yield event({"type": "pass_start", "pass": "tracking", "message": f"Pass 2/3 — detecting {len(object_names)} object(s) in {total} frames..."})
+            started = time.monotonic()
+
+            semaphore = asyncio.Semaphore(8)
+
+            async def detect_one(t: float, jpeg: bytes):
+                async with semaphore:
+                    detections = await asyncio.wait_for(
+                        asyncio.to_thread(_detect_frame, client, jpeg, object_names), timeout=45
+                    )
+                    return t, detections
+
+            pending = {asyncio.ensure_future(detect_one(t, jpeg)) for t, jpeg in frames}
+            keyframes: dict[str, list[dict]] = {}
+            done_count = 0
+            while pending:
+                done, pending = await asyncio.wait(pending, timeout=2, return_when=asyncio.FIRST_COMPLETED)
+                for task in done:
+                    done_count += 1
+                    try:
+                        t, detections = task.result()
+                    except Exception:
+                        continue  # failed/timed-out frame: skip
+                    for d in detections:
+                        if d["label"] in object_names and len(d["box_2d"]) == 4:
+                            keyframes.setdefault(d["label"], []).append({"t": t, "box_2d": d["box_2d"]})
+                if pending:
+                    yield event(
+                        {
+                            "type": "progress",
+                            "pass": "tracking",
+                            "elapsed": round(time.monotonic() - started),
+                            "message": f"Pass 2/3 — detecting objects... {done_count}/{total} frames",
+                        }
+                    )
+
+            # assemble tracked labels: detected time range + dense keyframes
+            tracked_all: list[dict] = []
+            for o in objects:
+                kfs = sorted(keyframes.get(o["label"], []), key=lambda k: k["t"])
+                if kfs:
+                    tracked_all.append(
+                        {
+                            **o,
+                            "t_start": kfs[0]["t"],
+                            "t_end": kfs[-1]["t"] + 1 / TRACKING_FPS,
+                            "boxes": kfs,
+                        }
+                    )
+            if tracked_all:
+                tracked_names = {t["label"] for t in tracked_all}
+                all_labels = [
+                    l for l in all_labels if not (l["track"] == "object" and l["label"] in tracked_names)
+                ] + tracked_all
+                yield event({"type": "labels", "pass": "tracking", "labels": tracked_all})
 
         # Pass 3 — audio analysis
         yield event({"type": "pass_start", "pass": "audio", "message": "Pass 3/3 — soundtrack analysis (speech, music, SFX)..."})
-        audio = await asyncio.to_thread(_run_pass, client, uploaded, AUDIO_PROMPT)
-        audio = [{**l, "track": "audio", "boxes": None} for l in audio]
+        audio: list[dict] = []
+        async for ev in run_with_heartbeat(AUDIO_PROMPT, "audio"):
+            if ev["type"] == "_result":
+                audio = [{**l, "track": "audio", "boxes": None} for l in ev["labels"]]
+            else:
+                yield event(ev)
         all_labels += audio
         yield event({"type": "labels", "pass": "audio", "labels": audio})
 
@@ -393,3 +515,11 @@ async def versions():
         {"id": v.id, "prompt": v.prompt, "summary": v.summary}
         for v in (STORE[vid] for vid in ORDER)
     ]
+
+
+@app.get("/api/versions/{video_id}/labels")
+async def version_labels(video_id: str):
+    version = STORE.get(video_id)
+    if version is None:
+        raise HTTPException(404, f"Unknown version {video_id}")
+    return {"video_id": version.id, "labels": version.labels, "summary": version.summary}

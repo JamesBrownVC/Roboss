@@ -155,13 +155,22 @@ export default function Home() {
       switch (event.type) {
         case "pass_start":
           setStatus(event.message);
+          setElapsed(0);
+          break;
+        case "progress":
+          setElapsed(event.elapsed);
+          if (event.message) setStatus(event.message);
           break;
         case "labels":
           patchVersion(videoId, (v) => {
-            // the tracking pass re-emits objects with boxes: replace them
-            if (event.pass === "tracking" && event.labels.length) {
+            // tracking labels replace their inventory counterparts (by name)
+            if (event.pass === "tracking") {
+              const trackedNames = new Set((event.labels as Label[]).map((l) => l.label));
               return {
-                labels: [...v.labels.filter((l) => l.track !== "object"), ...event.labels],
+                labels: [
+                  ...v.labels.filter((l) => !(l.track === "object" && trackedNames.has(l.label))),
+                  ...event.labels,
+                ],
               };
             }
             return { labels: [...v.labels, ...event.labels] };
@@ -209,7 +218,11 @@ export default function Home() {
         }
       });
       if (!videoId) throw new Error("No video id returned");
-      setVersions((prev) => [...prev, { id: videoId!, prompt, labels: [], summary: null }]);
+      // backend restarts reset ids (v1, v2...): drop any stale version with the same id
+      setVersions((prev) => [
+        ...prev.filter((v) => v.id !== videoId),
+        { id: videoId!, prompt, labels: [], summary: null },
+      ]);
       setCurrentId(videoId);
       await labelVideo(videoId);
     } catch (err: any) {
@@ -339,7 +352,7 @@ export default function Home() {
           </div>
           <p className="status">
             {status}
-            {phase === "generating" && <span className="elapsed"> · {elapsed}s</span>}
+            {elapsed > 0 && <span className="elapsed"> · {elapsed}s</span>}
           </p>
         </section>
       )}
@@ -387,7 +400,20 @@ export default function Home() {
                 />
                 Show bounding boxes
               </label>
-              <span className="synthid">SynthID watermarked · {current.id}</span>
+              <div className="meta-right">
+                <button
+                  className="relabel"
+                  onClick={() => labelVideo(current.id).catch((err) => {
+                    setPhase("review");
+                    setError(err?.message ?? String(err));
+                  })}
+                  disabled={busy}
+                  title="Run the labeling passes again on this video"
+                >
+                  ↻ Re-label
+                </button>
+                <span className="synthid">SynthID watermarked · {current.id}</span>
+              </div>
             </div>
 
             {/* Timeline */}

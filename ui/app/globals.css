@@ -309,6 +309,23 @@ video {
   cursor: pointer;
 }
 
+.meta-right {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+button.relabel {
+  background: #21262d;
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  padding: 0.3rem 0.7rem;
+}
+
+button.relabel:hover:not(:disabled) {
+  background: #30363d;
+}
+
 .synthid {
   color: var(--faint);
   font-size: 0.75rem;

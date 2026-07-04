@@ -56,7 +56,11 @@ VIPE_COMMIT = "PIN_ME_VIPE_COMMIT"
 # Alternatives if ViPE underperforms (master prompt 6.B gotchas, not wired):
 # MegaSaM, VGGT, MASt3R-SLAM; COLMAP for static multi-view calibration.
 
-SCENE_CENTER = np.array([0.0, 0.8, 0.6])  # Z-up world, in front of the camera
+# Z-up world. The synthetic camera is a handheld eye-height shot framing a
+# person zone ~3 m ahead: SCENE_CENTER is the look-at point (mid-body height
+# at the person's distance) so a standing 1.75 m human fits the vertical fov.
+SCENE_CENTER = np.array([0.0, 3.0, 0.9])
+CAM_EYE_HEIGHT = 1.35
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +173,7 @@ class Geometry(Stage):
             [
                 radius * np.cos(theta),
                 radius * np.sin(theta),
-                0.03 * np.sin(0.4 * t + phase),
+                CAM_EYE_HEIGHT + 0.03 * np.sin(0.4 * t + phase),
             ],
             axis=1,
         )
@@ -189,14 +193,15 @@ class Geometry(Stage):
         df = sio.poses_df(t, frames, T_world_cam, conf, valid, "synthesized")
         sio.write_table(df, ws.poses_parquet, required_columns=sio.POSES_COLUMNS)
 
-        # depth: plane at 1.2-2.0 m + gaussian bump ("table object") ------
+        # depth: background wall just behind the person zone (~3 m, see
+        # SCENE_CENTER) + gaussian bump for a nearer table object ----------
         dw, dh = cam.depth_width, cam.depth_height
         uu, vv = np.meshgrid(np.arange(dw), np.arange(dh))
-        base = 1.2 + 0.8 * (vv / max(dh - 1, 1))
+        base = 3.05 + 0.25 * (vv / max(dh - 1, 1))
         bu = rng.uniform(0.40, 0.60) * dw
         bv = rng.uniform(0.50, 0.70) * dh
         sig = 0.06 * dw
-        bump = 0.18 * np.exp(-((uu - bu) ** 2 + (vv - bv) ** 2) / (2.0 * sig**2))
+        bump = 0.45 * np.exp(-((uu - bu) ** 2 + (vv - bv) ** 2) / (2.0 * sig**2))
         depth0 = base - bump
         bw = max(1, int(round(0.04 * dw)))
         bh = max(1, int(round(0.04 * dh)))

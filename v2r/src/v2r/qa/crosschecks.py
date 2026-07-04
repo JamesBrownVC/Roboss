@@ -226,10 +226,11 @@ def run_crosschecks(ws: EpisodeWorkspace, cfg: V2RConfig) -> CrossChecks:
                 reproj_mean = float("inf")
                 reproj_p95 = float("inf")
 
-            frame_inside = np.all(front, axis=1) & np.all(
-                np.where(front, dist, np.inf) == 0.0, axis=1
-            )
-            inside_ratio = float(np.mean(frame_inside))
+            # fraction of (frame, joint) samples projecting inside the image:
+            # per-joint, not all-joints-per-frame — real footage routinely
+            # crops legs/feet and must not auto-fail this check
+            sample_inside = front & (np.where(front, dist, np.inf) == 0.0)
+            inside_ratio = float(np.mean(sample_inside))
             front_ratio = float(np.mean(front))
             details["reprojection"].update({
                 "inside_frame_ratio": inside_ratio,

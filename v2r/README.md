@@ -106,6 +106,48 @@ Strategy (`config/multiview.yaml`): align variants per camera, pick **best_frame
 
 Config: `config/multiview.yaml` (sync, calibration, triangulation thresholds).
 
+## Synthetic data generation loop (`v2r syngen`)
+
+Prompt → **Gemini director** (prompt expansion, temperature 0.9, JSON schema) →
+**Veo video generation** (or a local cv2 mock) → **two-track agentic verification**
+(Track A: Gemini VLM judge on sampled frames; Track B: optical-flow physics
+heuristics + MediaPipe pose sanity) → accepted videos ingested as V2R episodes
+and same-event multi-view sessions → **LeRobot delivery** with a dataset card.
+
+```bash
+# one-shot (uses Veo when GEMINI_API_KEY is available, otherwise mock):
+v2r syngen run "person picking up objects from a table" --variants 3 --cameras 2 --job-id demo1
+
+# or step by step:
+v2r syngen request "person waves hello" --variants 2 --cameras 2 --job-id demo2
+v2r syngen status  --job-id demo2
+v2r syngen deliver --job-id demo2
+
+# force offline demo (no API):
+v2r syngen run "person waves hello" --variants 2 --cameras 2 --job-id test1 --backend mock --no-llm
+```
+
+- **API key**: put `GEMINI_API_KEY=...` in `.env` at the repo root (gitignored) or export it.
+  Without a key everything falls back to deterministic mocks.
+- **Semantics**: `--variants N` = motion/lighting event variations; `--cameras M` =
+  viewpoints per event; total videos = N×M. Every event with ≥2 accepted cameras
+  becomes a `v2r session` whose calibration is seeded from the director's camera
+  parameters in `spec.json` (height/distance/azimuth/FOV).
+- **Artifacts**: `data/syngen/{job_id}/` — `spec.json`, `videos/{variant}.mp4` (+ sidecar),
+  `verification/{variant}.json` (verdict accept|reject|review), `ingest.json`,
+  `delivery/` (LeRobot episodes, `rejected.json`, `README.md` dataset card with yield funnel).
+- **Backends**: `--backend mock | omni | veo | auto` (`auto` = omni when a key is
+  present, else mock). The `VideoGenBackend` interface in
+  `src/v2r/syngen/backends.py` is pluggable. `omni` uses Gemini Omni Flash via
+  the Interactions API (`POST /v1beta/interactions`, blocking ~40 s/clip,
+  duration model-controlled); `veo` uses `models/veo-*:predictLongRunning` +
+  operation polling. Models: `DEFAULT_OMNI_MODEL` / `DEFAULT_VEO_MODEL` in
+  `src/v2r/syngen/gemini.py`. Note: omni prompts mentioning people can trip
+  Google's content filter; failed variants automatically fall back to mock.
+- Mock-backend videos are schematic silhouettes, so they are verified with the
+  offline judge (a real VLM would correctly reject them as non-photorealistic);
+  Veo videos get the full Gemini VLM + physics verification.
+
 ## Dev harness (separate from production stages)
 
 Lightweight import/timeseries path (MediaPipe + YOLO) — **not** production geometry/body:

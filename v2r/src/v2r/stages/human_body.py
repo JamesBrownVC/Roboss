@@ -33,24 +33,31 @@ class HumanBodyStage(Stage):
         ws = ctx.ws
         rng = syn.episode_rng(ws, self.name)
         metrics = syn.synthesize_smplx(ws, ctx.cfg, rng)
-        # Umeyama fusion report (synthetic aligned trajectories)
+        # Umeyama world-frame harmonization, exercised for real: simulate the
+        # body tracker's private world frame as the TRUE camera trajectory
+        # under a known random Sim3 + noise, then RECOVER the alignment (this
+        # is exactly the GVHMR->ViPE fusion step run in real mode).
         if ws.poses_parquet.is_file() and ws.smplx_npz.is_file():
-            from ..schema.io import read_npz
-            from ..schema.models import Sim3
+            from ..schema.alignment import apply_sim3
+            from ..schema.rotations import axis_angle_to_matrix
+
             parr = poses_arrays(read_table(ws.poses_parquet))
-            smplx = read_npz(ws.smplx_npz)
-            body_root = np.asarray(smplx["joints_world"][:, 0, :], dtype=np.float64)
             cam_pos = parr["T_world_cam"][:, :3, 3]
-            n = min(len(body_root), len(cam_pos))
-            if np.std(body_root[:n], axis=0).max() < 1e-6:
-                report = FusionReport(
-                    sim3=Sim3(scale=1.0, quat_wxyz=(1.0, 0.0, 0.0, 0.0), translation=(0.0, 0.0, 0.0)),
-                    rms_residual_m=0.0, p95_residual_m=0.0, n_frames=n,
-                    notes="synthetic static body; Umeyama skipped",
-                )
-            else:
-                _, _, _, report = align_trajectories(body_root[:n], cam_pos[:n])
+            s_true = float(rng.uniform(0.9, 1.1))
+            R_true = axis_angle_to_matrix(rng.normal(0, 0.1, 3))
+            t_true = rng.normal(0, 0.5, 3)
+            # tracker-frame trajectory: inverse-transform the true one
+            tracker_traj = (cam_pos - t_true) @ R_true / s_true
+            tracker_traj = tracker_traj + rng.normal(0, 0.004, tracker_traj.shape)
+            _, _, _, report = align_trajectories(tracker_traj, cam_pos)
+            report.notes = (
+                f"synthetic harness: recovered known Sim3 (scale err "
+                f"{abs(report.sim3.scale - s_true):.4f}) from noisy tracker trajectory"
+            )
             write_json_model(ws.fusion_report_json, report)
+            metrics["fusion_rms_m"] = report.rms_residual_m
+            # fold alignment residual into confidence (contract: conf reflects fusion quality)
+            metrics["conf_fusion_factor"] = float(np.exp(-report.rms_residual_m / 0.05))
         else:
             from ..schema.models import Sim3
             report = FusionReport(

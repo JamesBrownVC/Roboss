@@ -11,7 +11,9 @@ from pydantic import BaseModel, Field
 
 class DirectUrlSource(BaseModel):
     id: str
-    subject: Literal["human", "animal"]
+    # 'scene' = footage with no trackable human/animal subject (kept for
+    # geometry/VLM testing only; timeseries extraction skips it)
+    subject: Literal["human", "animal", "scene"]
     license: str
     description: str = ""
     method: Literal["direct_url"] = "direct_url"

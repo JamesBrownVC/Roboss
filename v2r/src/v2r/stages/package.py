@@ -37,9 +37,16 @@ class PackageStage(Stage):
 
         generate_license_audit(ctx.cfg.root, ctx.cfg)
         outputs = write_exports(ws, ctx.cfg, ctx.robots, synthetic=(ctx.mode == "synthetic"))
+
+        from ..export.rerun_snapshot import write_rerun_snapshot
+
+        rrd = write_rerun_snapshot(ws)
+        if rrd is not None:
+            outputs.append(ws.rel(rrd))
         return StageResult(
             status=StageStatus.success,
-            metrics={"n_robots": len(ctx.robots)},
+            metrics={"n_robots": len(ctx.robots),
+                     "rerun_snapshot": ws.rel(rrd) if rrd else "skipped (rerun-sdk missing)"},
             outputs=outputs,
             tool="lerobot",
             repo="github.com/huggingface/lerobot",

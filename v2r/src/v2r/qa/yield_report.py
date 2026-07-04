@@ -45,19 +45,17 @@ def write_yield_report(ws: EpisodeWorkspace, cfg: V2RConfig, robots: list[str]) 
             lines.append(f"- ai_artifacts: {', '.join(fr.ai_generated_artifacts)}")
 
     lines.extend(["", "## Retarget / physics by robot", ""])
+    retarget_status = "—"
+    if ws.manifest_path("retarget").is_file():
+        retarget_status = read_json_model(ws.manifest_path("retarget"), StageManifest).status.value
     for robot in robots:
-        for suffix in ("retarget", "physics_validate"):
-            mpath = ws.manifest_path(suffix)
-            status = "—"
-            if mpath.is_file():
-                status = read_json_model(mpath, StageManifest).status.value
-            phys = ws.physics_report_json(robot)
-            phys_ok = "—"
-            if phys.is_file():
-                from ..schema.models import PhysicsReport
-                pr = read_json_model(phys, PhysicsReport)
-                phys_ok = str(pr.physics_valid)
-            lines.append(f"- **{robot}**: retarget={status}, physics_valid={phys_ok}")
+        phys = ws.physics_report_json(robot)
+        phys_ok = "—"
+        if phys.is_file():
+            from ..schema.models import PhysicsReport
+            pr = read_json_model(phys, PhysicsReport)
+            phys_ok = str(pr.physics_valid)
+        lines.append(f"- **{robot}**: retarget={retarget_status}, physics_valid={phys_ok}")
 
     ws.yield_report_md.parent.mkdir(parents=True, exist_ok=True)
     ws.yield_report_md.write_text("\n".join(lines) + "\n", encoding="utf-8")

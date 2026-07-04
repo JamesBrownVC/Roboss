@@ -1,4 +1,4 @@
-# Embodiment registry (master prompt section 6.H).
+﻿# Embodiment registry (master prompt section 6.H).
 # NOTE: joint lists follow the vendor MJCF/URDF naming. joint_limits here are
 # conservative placeholders used by Tier-1 kinematic checks when the MJCF is
 # not present; when assets/robots/{name}/ contains the model, limits are read
@@ -6,7 +6,7 @@
 robots:
   g1:
     class: humanoid_wholebody
-    model_path: assets/robots/g1/g1_29dof.xml
+    model_path: assets/robots/g1/scene.xml
     control_rate_hz: 50.0
     dof:
       - left_hip_pitch_joint
@@ -51,7 +51,7 @@ robots:
 
   franka:
     class: ee_manipulator
-    model_path: assets/robots/franka/panda.xml
+    model_path: assets/robots/franka/scene.xml
     control_rate_hz: 100.0
     dof:
       - panda_joint1
@@ -78,7 +78,7 @@ robots:
 
   go2:
     class: quadruped
-    model_path: assets/robots/go2/go2.xml
+    model_path: assets/robots/go2/scene.xml
     control_rate_hz: 50.0
     dof:
       - FL_hip_joint

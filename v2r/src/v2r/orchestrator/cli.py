@@ -21,12 +21,14 @@ from ..session.runner import (
     session_sync,
     session_triangulate,
 )
+from ..syngen.cli import syngen_app
 from ..timeseries.export_training import build_training_npz
 from ..timeseries.extract import extract_all
 
 app = typer.Typer(name="v2r", help="Video -> robot-ready (LeRobot v3) pipeline")
 session_app = typer.Typer(name="session", help="Multi-view same-event sessions (GT tier)")
 app.add_typer(session_app, name="session")
+app.add_typer(syngen_app, name="syngen")
 console = Console()
 
 
@@ -34,6 +36,33 @@ def _repo_root(root: Optional[Path]) -> Path:
     if root is not None:
         return Path(root).resolve()
     return V2RConfig.load().root
+
+
+@app.command("label")
+def label_video(
+    video: Path = typer.Option(..., "--video", help="Path to any video (AI-generated or real)"),
+    episode_id: Optional[str] = typer.Option(None, "--episode-id", help="Workspace episode id (default: derived from filename)"),
+    model: Optional[str] = typer.Option(None, "--model", help="Gemini model override"),
+    root: Optional[Path] = typer.Option(None, "--root", help="V2R repo root"),
+):
+    """Agentic labeling: VLM plans which perception tools to run (MediaPipe
+    pose/hands, YOLO, motion analysis), runs them, then writes segments,
+    captions, scene tags and a feasibility verdict into the workspace."""
+    from ..agentic import run_agentic_labeler
+
+    cfg = V2RConfig.load(root)
+    report = run_agentic_labeler(cfg, Path(video), episode_id=episode_id,
+                                 model=model, log=console.print)
+    feas = report["feasibility"]
+    table = Table(title=f"Agentic labels - {report['episode_id']}")
+    table.add_column("field")
+    table.add_column("value")
+    table.add_row("judge", report["judge_source"])
+    table.add_row("human present", str(feas.get("human_present")))
+    table.add_row("AI-generated suspected", str(feas.get("ai_generated_suspected")))
+    table.add_row("recommendation", str(feas.get("recommendation")))
+    table.add_row("confidence", f"{feas.get('confidence', 0):.2f}")
+    console.print(table)
 
 
 @app.command("run")

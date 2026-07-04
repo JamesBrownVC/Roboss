@@ -37,6 +37,17 @@ def test_pipeline_synthetic(sample_video, repo_root, tmp_path):
     )
     assert result.workspace.is_dir()
     assert (result.workspace / "manifests" / "ingest.manifest.json").is_file()
-    assert (result.workspace / "export" / "lerobot" / "meta.json").is_file()
+    lerobot = result.workspace / "export" / "lerobot"
+    assert (lerobot / "meta" / "info.json").is_file()
+    assert (lerobot / "meta" / "tasks.parquet").is_file()
+    assert (lerobot / "data" / "chunk-000" / "file-000.parquet").is_file()
+    assert (lerobot / "videos" / "observation.images.ego" / "chunk-000" / "file-000.mp4").is_file()
+    import json
+
+    info = json.loads((lerobot / "meta" / "info.json").read_text(encoding="utf-8"))
+    assert info["codebase_version"] == "v3.0"
+    assert info["validation"]["passed"]
+    assert (result.workspace / "export" / "egodex_mirror" / "0.hdf5").is_file()
+    assert (result.workspace / "retargets" / "g1" / "qpos.csv").is_file()
     assert (repo_root / "LICENSE_AUDIT.md").is_file()
     assert result.accepted

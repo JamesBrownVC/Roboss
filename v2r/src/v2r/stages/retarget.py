@@ -34,12 +34,23 @@ class RetargetStage(Stage):
                     return StageResult(status=StageStatus.failed, failure_reason=err, **TOOL)
             else:
                 syn.synthesize_retarget(ctx.ws, ctx.cfg, robot, syn.episode_rng(ctx.ws, f"{self.name}:{robot}"))
+            self._write_qpos_csv(ctx, robot)
             outputs.extend([
                 ctx.ws.rel(ctx.ws.qpos_parquet(robot)),
+                ctx.ws.rel(ctx.ws.qpos_csv(robot)),
                 ctx.ws.rel(ctx.ws.ee_parquet(robot)),
                 ctx.ws.rel(ctx.ws.mapping_json(robot)),
             ])
         return StageResult(status=StageStatus.success, metrics=metrics, outputs=outputs, **TOOL)
+
+    @staticmethod
+    def _write_qpos_csv(ctx: StageContext, robot: str) -> None:
+        """CSV mirror of qpos.parquet for downstream trackers (BeyondMimic, H1)."""
+        qp = ctx.ws.qpos_parquet(robot)
+        if qp.is_file():
+            import pandas as pd
+
+            pd.read_parquet(qp).to_csv(ctx.ws.qpos_csv(robot), index=False)
 
     def _run_real_robot(self, ctx: StageContext, robot: str) -> str | None:
         ws = ctx.ws

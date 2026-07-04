@@ -8,35 +8,38 @@
 
 data_root: data/raw
 
+# CONTENT AUDIT 2026-07-04: every Pexels URL below was frame-inspected. The
+# original category labels (walk/sports/dance/animal) did NOT match any clip;
+# entries are renamed to the VERIFIED content. Duplicate downloads existed
+# across the old categories (see data/raw/catalog_corrections.json).
 sources:
-  # --- Human action / pose (direct samples) ---------------------------------
-  - id: human_pexels_walk
+  # --- Verified human footage (hands-only manipulation) ---------------------
+  - id: human_lab_pipetting
     subject: human
     license: Pexels License
-    description: Person walking outdoors
+    description: >-
+      VERIFIED: close-up of gloved hands pipetting into a 96-well plate
+      (laboratory). Hands-only manipulation; no full body visible.
     method: direct_url
     urls:
       - https://videos.pexels.com/video-files/3195394/3195394-hd_1280_720_25fps.mp4
-      - https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_25fps.mp4
       - https://videos.pexels.com/video-files/3195394/3195394-hd_1920_1080_25fps.mp4
 
-  - id: human_pexels_sports
-    subject: human
+  # --- Verified non-subject scenery (VLM/geometry tests only) ---------------
+  - id: scene_ocean_waves_aerial
+    subject: scene
     license: Pexels License
-    description: Human sports and exercise clips
+    description: "VERIFIED: aerial drone shot of ocean waves on a beach; no people"
     method: direct_url
     urls:
       - https://videos.pexels.com/video-files/3571264/3571264-hd_1280_720_30fps.mp4
-      - https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_25fps.mp4
-      - https://videos.pexels.com/video-files/3195394/3195394-hd_1280_720_25fps.mp4
 
-  - id: human_pexels_dance
-    subject: human
+  - id: scene_smoke_macro
+    subject: scene
     license: Pexels License
-    description: Dance and expressive motion
+    description: "VERIFIED: abstract dark smoke/ink particle macro; no people"
     method: direct_url
     urls:
-      - https://videos.pexels.com/video-files/3571264/3571264-hd_1280_720_30fps.mp4
       - https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_25fps.mp4
 
   # --- HuggingFace human / egocentric ---------------------------------------
@@ -60,25 +63,22 @@ sources:
     video_column: video
     max_episodes: 20
 
-  # --- Animal behavior (direct samples) -------------------------------------
-  - id: animal_pexels
-    subject: animal
+  # --- Former "animal" entries: VERIFIED to contain no animals --------------
+  - id: scene_night_hut
+    subject: scene
     license: Pexels License
-    description: Dogs, cats, birds in natural motion
+    description: "VERIFIED: static night scene, stone hut with blue lamp; no animals"
     method: direct_url
     urls:
       - https://videos.pexels.com/video-files/854548/854548-hd_1280_720_25fps.mp4
-      - https://videos.pexels.com/video-files/854548/854548-hd_1920_1080_25fps.mp4
-      - https://videos.pexels.com/video-files/857195/857195-hd_1280_720_25fps.mp4
 
-  - id: animal_pexels_wildlife
-    subject: animal
+  - id: scene_mountain_timelapse
+    subject: scene
     license: Pexels License
-    description: Wildlife locomotion
+    description: "VERIFIED: starry-sky timelapse over snowy mountains with tents; no animals"
     method: direct_url
     urls:
       - https://videos.pexels.com/video-files/857195/857195-hd_1280_720_25fps.mp4
-      - https://videos.pexels.com/video-files/854548/854548-hd_1280_720_25fps.mp4
 
   # --- HuggingFace animal ---------------------------------------------------
   - id: hf_animal_kingdom

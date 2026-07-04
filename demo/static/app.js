@@ -1,4 +1,4 @@
-/* V2R Factory demo frontend */
+/* V2R Factory — single linear "watch the factory work" flow */
 "use strict";
 
 const $ = (sel) => document.querySelector(sel);
@@ -8,613 +8,538 @@ const el = (tag, cls, html) => {
   if (html !== undefined) e.innerHTML = html;
   return e;
 };
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (v) => (v === null || v === undefined ? "—" : (v * 100).toFixed(0) + "%");
 const fmt = (v, d = 2) => (v === null || v === undefined ? "—" : Number(v).toFixed(d));
-
-const COLORS = ["#22d3ee", "#a78bfa", "#34d399", "#fbbf24", "#f87171", "#818cf8", "#f472b6", "#4ade80"];
-
-/* MediaPipe 33-joint skeleton connections */
-const POSE_EDGES = [
-  [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
-  [11, 23], [12, 24], [23, 24],
-  [23, 25], [25, 27], [27, 29], [29, 31], [27, 31],
-  [24, 26], [26, 28], [28, 30], [30, 32], [28, 32],
-  [15, 17], [15, 19], [15, 21], [16, 18], [16, 20], [16, 22],
-  [9, 10], [0, 7], [0, 8],
-];
 
 Chart.defaults.color = "#8ea0bf";
 Chart.defaults.borderColor = "#1e2a42";
 Chart.defaults.font.family = "Consolas, monospace";
 
-/* ------------------------------------------------------------------ hero */
-(function heroSkeleton() {
-  const g = $("#heroSkel");
-  g.innerHTML = `
-    <circle cx="0" cy="-16" r="4.5" fill="none" stroke="#818cf8" stroke-width="2"/>
-    <line x1="0" y1="-11" x2="0" y2="4" stroke="#818cf8" stroke-width="2"/>
-    <line x1="0" y1="-7" x2="-10" y2="2" stroke="#818cf8" stroke-width="2" class="limb l1"/>
-    <line x1="0" y1="-7" x2="10" y2="2" stroke="#818cf8" stroke-width="2" class="limb l2"/>
-    <line x1="0" y1="4" x2="-7" y2="17" stroke="#818cf8" stroke-width="2" class="limb l3"/>
-    <line x1="0" y1="4" x2="7" y2="17" stroke="#818cf8" stroke-width="2" class="limb l4"/>`;
-  let t = 0;
-  setInterval(() => {
-    t += 0.12;
-    const s = Math.sin(t) * 5;
-    const lines = g.querySelectorAll(".limb");
-    if (lines.length === 4) {
-      lines[0].setAttribute("x2", -10 - s); lines[1].setAttribute("x2", 10 - s);
-      lines[2].setAttribute("x2", -7 + s); lines[3].setAttribute("x2", 7 - s);
-    }
-  }, 50);
-})();
+const PHASE_ORDER = ["starting", "requested", "generating", "generated",
+  "verifying", "verified", "ingesting", "ingested", "delivered"];
+const rank = (p) => PHASE_ORDER.indexOf(p);
 
-async function loadOverview() {
-  const o = await (await fetch("/api/overview")).json();
-  const row = $("#statsRow");
-  const stats = [
-    [o.videos, "videos imported"],
-    [o.timeseries, "timeseries files"],
-    [o.workspaces, "episode workspaces"],
-    [o.sessions, "multi-view sessions"],
-    [o.stages, "pipeline stages"],
-  ];
-  for (const [v, k] of stats) {
-    const s = el("div", "stat");
-    s.append(el("div", "v", "0"), el("div", "k", k));
-    row.append(s);
-    animateCount(s.querySelector(".v"), v);
+const V2R_STAGES = ["ingest", "feasibility_judge", "geometry", "human_body",
+  "hands", "objects", "contact", "semantics", "retarget", "physics_validate",
+  "qa", "package"];
+
+/* ------------------------------------------------------------------ state */
+let currentJobId = null;
+let pollTimer = null;
+let stageSigs = {};            // stage id -> content signature (skip rebuilds)
+const trajDone = new Set();    // episode ids whose trajectory chart is drawn
+
+/* ------------------------------------------------------------- stage defs */
+const STAGES = [
+  {
+    id: "director", num: "01", icon: "🎬", title: "Director — prompt expansion",
+    sub: "Gemini turns one sentence into a multi-camera, multi-event shot plan",
+    status(j) {
+      if (j.variants.length) return "done";
+      return j.runner && j.runner.running ? "active" : "pending";
+    },
+    sig: (j) => j.variants.map((v) => v.variant_id).join() + j.director,
+    render: renderDirector,
+  },
+  {
+    id: "generation", num: "02", icon: "📼", title: "Video generation",
+    sub: "each planned shot is rendered by the video backend",
+    status(j) {
+      if (!j.variants.length) return "pending";
+      if (rank(j.phase) >= rank("generated") ||
+          j.variants.every((v) => v.generated)) return "done";
+      return j.phase === "generating" ? "active" : "pending";
+    },
+    sig: (j) => j.variants.map((v) => (v.video_url || "-") + (v.gen_error || "")).join() + j.phase,
+    render: renderGeneration,
+  },
+  {
+    id: "verification", num: "03", icon: "🔍", title: "Agentic verification",
+    sub: "VLM judge + physics tools accept or reject every generated video",
+    status(j) {
+      if (rank(j.phase) >= rank("verified")) return "done";
+      return j.phase === "verifying" ? "active" : "pending";
+    },
+    sig: (j) => j.variants.map((v) => (v.verdict || "-") + (v.vlm_notes || "").length).join() + j.phase,
+    render: renderVerification,
+  },
+  {
+    id: "pipeline", num: "04", icon: "🏭", title: "V2R pipeline",
+    sub: "accepted videos run the full 12-stage factory (geometry → retarget → QA)",
+    status(j) {
+      if (rank(j.phase) >= rank("ingested")) {
+        // nothing passed verification: this stage was skipped, not completed
+        return j.pipeline.length ? "done" : "skipped";
+      }
+      return j.phase === "ingesting" ? "active" : "pending";
+    },
+    sig: (j) => JSON.stringify(j.pipeline) + j.phase + (j.accepted ?? ""),
+    render: renderPipeline,
+  },
+  {
+    id: "multiview", num: "05", icon: "📐", title: "Multi-view triangulation",
+    sub: "same event, ≥2 cameras → measured cross-view reprojection error",
+    skip: (j) => j.n_cameras < 2 && !j.reproj.length,
+    status(j) {
+      if (j.reproj.length && rank(j.phase) >= rank("ingested")) return "done";
+      if (rank(j.phase) >= rank("ingested")) return "skipped";
+      return j.phase === "ingesting" ? "active" : "pending";
+    },
+    sig: (j) => JSON.stringify(j.reproj) + j.phase,
+    render: renderMultiview,
+  },
+  {
+    id: "delivery", num: "06", icon: "📦", title: "Delivery — robot training data",
+    sub: "feasibility-filtered LeRobot episodes, tier-tagged and ready to train on",
+    status(j) {
+      if (j.phase === "delivered") return "done";
+      return j.phase === "ingested" ? "active" : "pending";
+    },
+    sig: (j) => j.phase + j.episodes.join() + j.episodes_detail.length +
+      j.variants.map((v) => v.verdict || "-").join() + (j.dataset_card || "").length,
+    render: renderDelivery,
+  },
+];
+
+/* --------------------------------------------------------------- skeleton */
+function buildSkeleton(job) {
+  const root = $("#stages");
+  root.innerHTML = "";
+  stageSigs = {};
+  trajDone.clear();
+  for (const st of STAGES) {
+    const sec = el("section", "stage pending");
+    sec.id = "stage_" + st.id;
+    sec.innerHTML = `
+      <div class="stage-rail"><div class="stage-dot">${st.icon}</div><div class="stage-line"></div></div>
+      <div class="stage-body">
+        <div class="stage-head">
+          <span class="stage-num">${st.num}</span>
+          <h2>${st.title}</h2>
+          <span class="stage-state"></span>
+        </div>
+        <p class="stage-sub">${st.sub}</p>
+        <div class="stage-content"></div>
+      </div>`;
+    root.append(sec);
   }
 }
-function animateCount(node, target) {
-  const t0 = performance.now(), dur = 1200;
-  const tick = (now) => {
-    const p = Math.min(1, (now - t0) / dur);
-    node.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
-    if (p < 1) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
+
+/* ------------------------------------------------------------ stage render */
+function renderDirector(j, box) {
+  box.innerHTML = "";
+  const meta = el("div", "chip-row");
+  meta.append(el("span", "chip",
+    `director: <b>${j.director === "gemini" ? "Gemini (LLM)" : "deterministic"}</b>`));
+  meta.append(el("span", "chip", `${j.n_events} event${j.n_events > 1 ? "s" : ""} × ${j.n_cameras} camera${j.n_cameras > 1 ? "s" : ""} = <b>${j.variants.length} videos planned</b>`));
+  box.append(meta);
+  const camsById = {};
+  for (const c of j.cameras || []) camsById[c.cam_id] = c;
+  const grid = el("div", "card-grid");
+  for (const v of j.variants) {
+    const c = camsById[v.cam_id] || {};
+    const card = el("div", "mini-card pop");
+    card.append(el("div", "mini-title",
+      `${esc(v.variant_id)} <span class="dim">· ${esc(v.cam_id)}</span>`));
+    if (c.description) card.append(el("div", "mini-cam", "🎥 " + esc(c.description)));
+    const chips = el("div", "chip-row tight");
+    if (c.height_m != null) chips.append(el("span", "chip sm", `h ${c.height_m}m`));
+    if (c.distance_m != null) chips.append(el("span", "chip sm", `d ${c.distance_m}m`));
+    if (c.azimuth_deg != null) chips.append(el("span", "chip sm", `az ${c.azimuth_deg}°`));
+    if (c.fov_deg != null) chips.append(el("span", "chip sm", `fov ${c.fov_deg}°`));
+    if (v.duration_s) chips.append(el("span", "chip sm", `${v.duration_s}s`));
+    card.append(chips);
+    card.append(el("div", "mini-prompt", esc(v.prompt)));
+    grid.append(card);
+  }
+  box.append(grid);
 }
 
-/* ------------------------------------------------------- dataset explorer */
-let VIDEOS = [];
-async function loadVideos() {
-  const data = await (await fetch("/api/videos")).json();
-  VIDEOS = data.videos;
-  $("#videosMock").hidden = !data.mock;
-  const grid = $("#videoGrid");
-  grid.innerHTML = "";
-  for (const v of VIDEOS) {
-    const card = el("div", "vcard reveal");
-    card.dataset.id = v.id;
-    if (v.url) {
+function renderGeneration(j, box) {
+  box.innerHTML = "";
+  const grid = el("div", "vid-grid");
+  for (const v of j.variants) {
+    const slot = el("div", "vid-slot pop");
+    if (v.video_url) {
       const vid = document.createElement("video");
-      vid.src = v.url; vid.muted = true; vid.loop = true; vid.playsInline = true;
-      vid.preload = "metadata";
-      card.append(vid);
-      card.addEventListener("mouseenter", () => vid.play().catch(() => {}));
-      card.addEventListener("mouseleave", () => vid.pause());
+      vid.src = v.video_url; vid.muted = true; vid.loop = true;
+      vid.playsInline = true; vid.controls = true; vid.preload = "metadata";
+      slot.append(vid);
+    } else if (v.gen_error) {
+      slot.append(el("div", "vid-wait err", "✗ " + esc(v.gen_error.slice(0, 80))));
     } else {
-      card.append(el("div", "vthumb", v.subject === "human" ? "🕺" : "🐕"));
+      slot.append(el("div", "vid-wait",
+        `<span class="spin"></span> generating with ${esc(v.backend || j.backend || "backend")}… (~40s/clip)`));
     }
-    const body = el("div", "vcard-body");
-    body.append(el("div", "vcard-name", v.filename));
-    body.append(el("div", "vcard-meta",
-      `${v.source_id} · ${v.duration_s}s · ${v.width}×${v.height} @ ${v.fps}fps · ${v.size_mb} MB`));
-    const badges = el("div", "badges");
-    badges.append(el("span", `badge ${v.subject}`, v.subject));
-    if (v.has_timeseries) badges.append(el("span", "badge ts", "pose extracted"));
-    if (v.mock) badges.append(el("span", "badge mock", "demo"));
-    body.append(badges);
-    card.append(body);
-    card.addEventListener("click", () => selectVideo(v, card));
-    grid.append(card);
+    slot.append(el("div", "vid-cap",
+      `${esc(v.variant_id)} · ${esc(v.backend || j.backend || "?")}`));
+    grid.append(slot);
   }
-  observeReveals();
-  const first = VIDEOS.find((v) => v.has_timeseries) || VIDEOS[0];
-  if (first) selectVideo(first, grid.querySelector(`[data-id="${CSS.escape(first.id)}"]`));
+  box.append(grid);
 }
 
-/* -------------------------------------------------------- timeseries viewer */
-let TS = null;           // current timeseries payload
-let tsChart = null;
-let overlayRAF = null;
-let mockClock = { playing: false, t: 0, last: 0 };
-let selectedJoints = new Set(["left_wrist", "right_wrist", "left_ankle", "right_ankle"]);
-
-async function selectVideo(v, cardEl) {
-  document.querySelectorAll(".vcard.selected").forEach((c) => c.classList.remove("selected"));
-  if (cardEl) cardEl.classList.add("selected");
-
-  $("#tsVideoTitle").textContent = `${v.subject === "human" ? "Skeleton overlay" : "Track overlay"} — ${v.filename}`;
-  const video = $("#tsVideo");
-  const placeholder = $("#stagePlaceholder");
-  cancelAnimationFrame(overlayRAF);
-  mockClock.playing = false;
-  mockClock.t = 0;
-  $("#btnPlay").textContent = "▶ Play";
-
-  if (v.url) {
-    video.src = v.url; video.hidden = false;
-    placeholder.style.display = "none";
-  } else {
-    video.removeAttribute("src"); video.hidden = true;
-    placeholder.style.display = "flex";
-    placeholder.textContent = "synthetic preview (demo data)";
-  }
-
-  TS = await (await fetch(`/api/timeseries/${v.subject}/${encodeURIComponent(v.stem)}`)).json();
-  TS._video = v;
-  $("#tsMock").hidden = !TS.mock;
-  $("#tsMeta").textContent =
-    `${TS.n_frames} frames @ ${TS.fps} Hz · ${TS.subject} · ${TS.mock ? "synthetic demo signal" : "extracted from video"}`;
-
-  buildChart();
-  buildJointPicker();
-  startOverlay();
-}
-
-$("#btnPlay").addEventListener("click", () => {
-  const video = $("#tsVideo");
-  if (TS && TS._video && TS._video.url) {
-    if (video.paused) { video.play(); $("#btnPlay").textContent = "❚❚ Pause"; }
-    else { video.pause(); $("#btnPlay").textContent = "▶ Play"; }
-  } else {
-    mockClock.playing = !mockClock.playing;
-    mockClock.last = performance.now();
-    $("#btnPlay").textContent = mockClock.playing ? "❚❚ Pause" : "▶ Play";
-  }
-});
-
-function stageMapping(canvas) {
-  /* map normalized video coords -> canvas px, accounting for object-fit: contain */
-  const video = $("#tsVideo");
-  const cw = canvas.width, ch = canvas.height;
-  let vw = video.videoWidth || 16, vh = video.videoHeight || 9;
-  if (!TS._video.url) { vw = 16; vh = 9; }
-  const scale = Math.min(cw / vw, ch / vh);
-  const w = vw * scale, h = vh * scale;
-  const ox = (cw - w) / 2, oy = (ch - h) / 2;
-  return (nx, ny) => [ox + nx * w, oy + ny * h];
-}
-
-function frameAt(time) {
-  if (!TS || !TS.frames.length) return null;
-  const idx = Math.min(TS.frames.length - 1, Math.max(0, Math.round(time * TS.fps)));
-  return TS.frames[idx];
-}
-
-function startOverlay() {
-  const canvas = $("#overlayCanvas");
-  const stage = $("#videoStage");
-  const video = $("#tsVideo");
-  const ctx = canvas.getContext("2d");
-
-  const draw = () => {
-    canvas.width = stage.clientWidth * devicePixelRatio;
-    canvas.height = stage.clientHeight * devicePixelRatio;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!TS) { overlayRAF = requestAnimationFrame(draw); return; }
-
-    let t;
-    if (TS._video.url) {
-      t = video.currentTime;
-    } else {
-      const now = performance.now();
-      if (mockClock.playing) mockClock.t += (now - mockClock.last) / 1000;
-      mockClock.last = now;
-      const dur = TS.n_frames / TS.fps;
-      t = mockClock.t % Math.max(0.1, dur);
-    }
-
-    /* draw overlay only when data matches source: real parquet over real video,
-       or synthetic walker on the empty stage */
-    const overlayOk = (!TS.mock && TS._video.url) || (!TS._video.url);
-    const fr = frameAt(t);
-    if (fr && overlayOk) {
-      const map = stageMapping(canvas);
-      if (TS.subject === "human") drawSkeleton(ctx, fr, map);
-      else drawTracks(ctx, fr, map, canvas);
-    }
-    drawTimeCursor(t);
-    overlayRAF = requestAnimationFrame(draw);
-  };
-  cancelAnimationFrame(overlayRAF);
-  overlayRAF = requestAnimationFrame(draw);
-}
-
-function drawSkeleton(ctx, fr, map) {
-  const J = fr.joints;
-  ctx.lineWidth = 2.5 * devicePixelRatio;
-  ctx.lineCap = "round";
-  for (const [a, b] of POSE_EDGES) {
-    const pa = J[a], pb = J[b];
-    if (!pa || !pb || pa[0] === null || pb[0] === null) continue;
-    if (pa[3] < 0.3 || pb[3] < 0.3) continue;
-    const [x1, y1] = map(pa[0], pa[1]);
-    const [x2, y2] = map(pb[0], pb[1]);
-    const g = ctx.createLinearGradient(x1, y1, x2, y2);
-    g.addColorStop(0, "#22d3ee"); g.addColorStop(1, "#a78bfa");
-    ctx.strokeStyle = g;
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-  }
-  for (const p of J) {
-    if (!p || p[0] === null || p[3] < 0.3) continue;
-    const [x, y] = map(p[0], p[1]);
-    ctx.fillStyle = "#e6ecf7";
-    ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 6 * devicePixelRatio;
-    ctx.beginPath(); ctx.arc(x, y, 3 * devicePixelRatio, 0, 7); ctx.fill();
-    ctx.shadowBlur = 0;
-  }
-}
-
-function drawTracks(ctx, fr, map) {
-  for (let i = 0; i < (fr.entities || []).length; i++) {
-    const e = fr.entities[i];
-    const [cx, cy] = map(e.cx, e.cy);
-    const [x0, y0] = map(e.cx - e.w / 2, e.cy - e.h / 2);
-    const [x1, y1] = map(e.cx + e.w / 2, e.cy + e.h / 2);
-    const color = COLORS[e.entity_id % COLORS.length];
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5 * devicePixelRatio;
-    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
-    ctx.fillStyle = color;
-    ctx.font = `${12 * devicePixelRatio}px Consolas, monospace`;
-    ctx.fillText(`${e.class_name} #${e.entity_id} ${(e.conf * 100).toFixed(0)}%`,
-      x0, Math.max(12 * devicePixelRatio, y0 - 5 * devicePixelRatio));
-    /* velocity vector */
-    ctx.beginPath(); ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + e.vx * 900, cy + e.vy * 900); ctx.stroke();
-  }
-}
-
-let cursorPlugin = null;
-let lastCursorUpdate = 0;
-function drawTimeCursor(t) {
-  if (!tsChart) return;
-  const now = performance.now();
-  if (now - lastCursorUpdate < 80) return;   // ~12 fps is plenty for the cursor
-  lastCursorUpdate = now;
-  tsChart.$cursorT = t;
-  tsChart.update("none");
-}
-
-const CHART_JOINTS = ["nose", "left_shoulder", "right_shoulder", "left_wrist", "right_wrist",
-  "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"];
-
-function buildJointPicker() {
-  const picker = $("#jointPicker");
-  picker.innerHTML = "";
-  if (!TS || TS.subject !== "human") return;
-  for (const j of CHART_JOINTS) {
-    const chip = el("button", "jchip" + (selectedJoints.has(j) ? " on" : ""), j);
-    chip.addEventListener("click", () => {
-      selectedJoints.has(j) ? selectedJoints.delete(j) : selectedJoints.add(j);
-      chip.classList.toggle("on");
-      buildChart();
-    });
-    picker.append(chip);
-  }
-}
-
-function buildChart() {
-  if (tsChart) { tsChart.destroy(); tsChart = null; }
-  if (!TS) return;
-  const ctx = $("#tsChart").getContext("2d");
-  const times = TS.frames.map((f) => f.t);
-  let datasets = [];
-
-  if (TS.subject === "human") {
-    $("#tsChartTitle").textContent = "Joint trajectories (normalized y over time)";
-    let ci = 0;
-    for (const jname of CHART_JOINTS) {
-      if (!selectedJoints.has(jname)) continue;
-      const ji = TS.joint_names.indexOf(jname);
-      datasets.push({
-        label: jname,
-        data: TS.frames.map((f) => {
-          const p = f.joints[ji];
-          return p && p[0] !== null ? p[1] : null;
-        }),
-        borderColor: COLORS[ci % COLORS.length],
-        backgroundColor: "transparent",
-        borderWidth: 1.8, pointRadius: 0, tension: 0.25, spanGaps: true,
-      });
-      ci++;
-    }
-  } else {
-    $("#tsChartTitle").textContent = "Track center + speed over time";
-    const ids = [...new Set(TS.frames.flatMap((f) => (f.entities || []).map((e) => e.entity_id)))].slice(0, 4);
-    ids.forEach((id, ci) => {
-      const grab = (key) => TS.frames.map((f) => {
-        const e = (f.entities || []).find((x) => x.entity_id === id);
-        return e ? e[key] : null;
-      });
-      datasets.push({ label: `#${id} cx`, data: grab("cx"), borderColor: COLORS[ci * 2 % COLORS.length],
-        borderWidth: 1.8, pointRadius: 0, tension: 0.25, spanGaps: true });
-      datasets.push({ label: `#${id} cy`, data: grab("cy"), borderColor: COLORS[(ci * 2 + 1) % COLORS.length],
-        borderWidth: 1.8, pointRadius: 0, tension: 0.25, spanGaps: true, borderDash: [5, 4] });
-    });
-  }
-
-  cursorPlugin = {
-    id: "timeCursor",
-    afterDraw(chart) {
-      const t = chart.$cursorT;
-      if (t === undefined) return;
-      const xs = chart.scales.x;
-      const px = xs.getPixelForValue(t);
-      if (px < xs.left || px > xs.right) return;
-      const c = chart.ctx;
-      c.save();
-      c.strokeStyle = "#e6ecf766"; c.lineWidth = 1; c.setLineDash([4, 4]);
-      c.beginPath(); c.moveTo(px, chart.chartArea.top); c.lineTo(px, chart.chartArea.bottom); c.stroke();
-      c.restore();
-    },
-  };
-
-  tsChart = new Chart(ctx, {
-    type: "line",
-    data: { labels: times, datasets },
-    options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
-      interaction: { mode: "index", intersect: false },
-      scales: {
-        x: { type: "linear", title: { display: true, text: "time (s)" }, grid: { color: "#141d31" } },
-        y: { reverse: TS.subject === "human", grid: { color: "#141d31" } },
-      },
-      plugins: { legend: { labels: { boxWidth: 12, font: { size: 10 } } } },
-    },
-    plugins: [cursorPlugin],
-  });
-}
-
-/* --------------------------------------------------------- feasibility */
-async function loadFeasibility() {
-  const data = await (await fetch("/api/feasibility")).json();
-  $("#feasMock").hidden = !data.mock;
-  const grid = $("#feasGrid");
-  grid.innerHTML = "";
-  for (const r of data.reports) {
-    const card = el("div", "panel feas-card reveal");
-    const stripeColor = { proceed: "#34d399", reject: "#f87171", human_review: "#fbbf24" }[r.recommendation] || "#8ea0bf";
-    const stripe = el("div", "verdict-stripe"); stripe.style.background = stripeColor;
-    card.append(stripe);
-
-    const head = el("div", "feas-head");
-    head.append(el("div", "feas-title", r.episode_id + (r.mock ? ' <span class="badge mock">demo</span>' : "")));
-    head.append(el("span", `verdict ${r.recommendation}`, r.recommendation.replace("_", " ")));
+function renderVerification(j, box) {
+  box.innerHTML = "";
+  const grid = el("div", "card-grid");
+  for (const v of j.variants) {
+    const card = el("div", "mini-card pop" + (v.verdict ? "" : " dim-card"));
+    const head = el("div", "verify-head");
+    head.append(el("span", "mini-title", esc(v.variant_id)));
+    const badgeCls = v.verdict === "accept" ? "ok" : v.verdict === "reject" ? "bad" : "wait";
+    head.append(el("span", `verdict-badge ${badgeCls}`,
+      v.verdict ? esc(v.verdict) : "pending"));
     card.append(head);
-
-    const flags = el("div", "feas-flags");
-    flags.append(el("span", "flag " + (r.physically_plausible ? "ok" : ""),
-      (r.physically_plausible ? "✓" : "✗") + " physically_plausible"));
-    flags.append(el("span", "flag " + (r.tracking_likely_valid ? "ok" : ""),
-      (r.tracking_likely_valid ? "✓" : "✗") + " tracking_valid"));
-    for (const a of r.ai_generated_artifacts || []) flags.append(el("span", "flag", "⚠ " + a));
-    card.append(flags);
-
-    const gauges = el("div", "gauges");
-    gauges.append(gauge("confidence", r.confidence, "#22d3ee"));
-    gauges.append(gauge("violations", r.physics_violation_frame_ratio, "#f87171", true));
-    const pc = r.physics_checks || {};
-    if (pc.vel_spike_ratio !== undefined) gauges.append(gauge("vel spikes", pc.vel_spike_ratio, "#fbbf24", true));
-    if (pc.foot_slide_ratio !== undefined) gauges.append(gauge("foot slide", pc.foot_slide_ratio, "#a78bfa", true));
-    card.append(gauges);
-
-    if (r.notes) card.append(el("div", "feas-notes", `“${r.notes}” — judge: ${r.judge_source}`));
+    if (v.vlm_notes) {
+      card.append(el("div", "vlm-notes",
+        `“${esc(v.vlm_notes)}”` +
+        (v.vlm_confidence != null ? ` <span class="dim">· VLM confidence ${pct(v.vlm_confidence)}${v.vlm_judge ? " · " + esc(v.vlm_judge) : ""}</span>` : "")));
+    }
+    if (v.physics) {
+      const chips = el("div", "chip-row tight");
+      chips.append(el("span", "chip sm " + (v.physics.physics_ok ? "good" : "warn"),
+        "physics " + (v.physics.physics_ok ? "✓" : "✗")));
+      if (v.physics.flow_consistency != null)
+        chips.append(el("span", "chip sm", `flow consistency ${pct(v.physics.flow_consistency)}`));
+      if (v.physics.velocity_spike_ratio != null)
+        chips.append(el("span", "chip sm", `vel spikes ${pct(v.physics.velocity_spike_ratio)}`));
+      if (v.physics.pose_detection_rate != null)
+        chips.append(el("span", "chip sm", `pose detect ${pct(v.physics.pose_detection_rate)}`));
+      card.append(chips);
+    }
+    if (v.skills && v.skills.length) {
+      const chips = el("div", "chip-row tight");
+      for (const s of v.skills) chips.append(el("span", "chip sm skill", esc(s)));
+      card.append(chips);
+    }
     grid.append(card);
   }
-  observeReveals();
+  box.append(grid);
 }
 
-function gauge(label, value, color, inverse = false) {
-  const wrap = el("div", "gauge");
-  const canvas = document.createElement("canvas");
-  canvas.width = 172; canvas.height = 120;
-  wrap.append(canvas, el("div", "glabel", label));
-  const ctx = canvas.getContext("2d");
-  const v = Math.max(0, Math.min(1, value || 0));
-  let p = 0;
-  const target = v;
-  const tick = () => {
-    p = Math.min(target, p + Math.max(0.004, target / 40));
-    ctx.clearRect(0, 0, 172, 120);
-    ctx.lineWidth = 13; ctx.lineCap = "round";
-    ctx.strokeStyle = "#141d31";
-    ctx.beginPath(); ctx.arc(86, 100, 64, Math.PI, 2 * Math.PI); ctx.stroke();
-    ctx.strokeStyle = color;
-    ctx.beginPath(); ctx.arc(86, 100, 64, Math.PI, Math.PI * (1 + p)); ctx.stroke();
-    ctx.fillStyle = "#e6ecf7"; ctx.font = "700 24px Consolas, monospace"; ctx.textAlign = "center";
-    ctx.fillText(inverse ? (p * 100).toFixed(1) + "%" : (p * 100).toFixed(0) + "%", 86, 96);
-    if (p < target - 1e-4) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-  return wrap;
-}
-
-/* ----------------------------------------------------------- multi-view */
-async function loadMultiview() {
-  const data = await (await fetch("/api/multiview")).json();
-  $("#mvMock").hidden = !data.mock;
-  const container = $("#mvContainer");
-  container.innerHTML = "";
-
-  for (const s of data.sessions) {
-    const wrap = el("div", "panel mv-session reveal");
-    const title = el("div", "panel-title",
-      `session: ${s.session_id} · tier <b style="color:#34d399">${s.tier}</b>` +
-      (s.mock ? ' <span class="badge mock">demo</span>' : ""));
-    wrap.append(title);
-
-    const grid = el("div", "mv-grid");
-    const stack = el("div", "cams-stack");
-    const syncByCam = {};
-    for (const c of (s.sync && s.sync.cameras) || []) syncByCam[c.cam_id] = c.offset_s;
-    for (const cam of s.cameras) {
-      const tile = el("div", "cam-tile");
-      tile.append(el("div", "cam-icon", "🎥"));
-      const info = el("div");
-      info.append(el("div", "cam-name", cam));
-      const off = syncByCam[cam];
-      info.append(el("div", "cam-sub",
-        `sync offset: ${off !== undefined ? (off >= 0 ? "+" : "") + (off * 1000).toFixed(1) + " ms" : "—"}` +
-        ` · calib: ${s.calibration ? s.calibration.method : "—"}`));
-      tile.append(info);
-      stack.append(tile);
+function renderPipeline(j, box) {
+  box.innerHTML = "";
+  if (!j.pipeline.length) {
+    if (rank(j.phase) >= rank("ingested")) {
+      const n = j.variants.filter((v) => v.verdict === "reject").length;
+      box.append(el("div", "dim",
+        `⊘ skipped — no videos passed verification${n ? ` (${n} rejected by the feasibility gate)` : ""}, so nothing entered the factory.`));
+    } else {
+      box.append(el("div", "dim", "waiting for accepted videos to enter the pipeline…"));
     }
-    grid.append(stack);
+    return;
+  }
+  const wrap = el("div", "pipe-rows pop");
+  for (const ep of j.pipeline) {
+    const row = el("div", "pipe-row");
+    row.append(el("span", "pipe-name", esc(ep.episode_id)));
+    const pips = el("span", "pips");
+    for (const st of V2R_STAGES) {
+      const s = ep.stages[st] || "pending";
+      const pip = el("span", `pip ${s}`);
+      pip.title = `${st}: ${s}`;
+      pips.append(pip);
+    }
+    row.append(pips);
+    row.append(el("span", "pipe-flag " + (ep.accepted ? "ok" : ep.accepted === false ? "bad" : ""),
+      ep.accepted ? "✓ accepted" : ep.accepted === false
+        ? `✗ ${esc(ep.failure_stage || "rejected")}` : "…"));
+    wrap.append(row);
+  }
+  box.append(wrap);
+  box.append(el("div", "pipe-legend dim",
+    V2R_STAGES.join(" · ")));
+}
 
-    const right = el("div");
-    const r = s.reproj || {};
-    const kpis = el("div", "mv-kpis");
-    const kpi = (k, v, cls = "accent") => {
-      const d = el("div", `kpi ${cls}`);
-      d.append(el("div", "v", v), el("div", "k", k));
-      return d;
-    };
-    kpis.append(kpi("mean reproj error", fmt(r.mean_reproj_error_px) + " px"));
-    kpis.append(kpi("p95 reproj error", fmt(r.p95_reproj_error_px) + " px"));
-    if (r.monocular_shadow_mean_px != null)
-      kpis.append(kpi("monocular shadow", fmt(r.monocular_shadow_mean_px) + " px", ""));
-    if (r.triangulation_wins != null)
-      kpis.append(kpi("triangulation wins", r.triangulation_wins ? "YES" : "NO", r.triangulation_wins ? "good" : ""));
-    right.append(kpis);
+function renderMultiview(j, box) {
+  box.innerHTML = "";
+  if (!j.reproj.length) {
+    box.append(el("div", "dim", rank(j.phase) >= rank("ingested")
+      ? "⊘ skipped — needs ≥2 accepted cameras of the same event to triangulate."
+      : "triangulating across cameras…"));
+    return;
+  }
+  for (const r of j.reproj) {
+    const row = el("div", "kpi-row pop");
+    row.append(el("div", "kpi big", `<div class="v">${fmt(r.mean_reproj_error_px)} px</div><div class="k">mean reprojection error</div>`));
+    row.append(el("div", "kpi big", `<div class="v">${fmt(r.p95_reproj_error_px)} px</div><div class="k">p95 reprojection error</div>`));
+    row.append(el("div", "kpi", `<div class="v">${r.n_frames ?? "—"}</div><div class="k">frames</div>`));
+    row.append(el("div", "kpi", `<div class="v">${r.n_joints ?? "—"}</div><div class="k">joints</div>`));
+    row.append(el("div", "kpi wide", `<div class="v mono">${esc(r.session_id)}</div><div class="k">session — accuracy is measured, not asserted</div>`));
+    box.append(row);
+  }
+}
 
-    const cw = el("div", "chart-wrap"); cw.style.height = "240px";
-    const canvas = document.createElement("canvas");
-    cw.append(canvas); right.append(cw);
-    grid.append(right);
-    wrap.append(grid);
-    container.append(wrap);
+function renderDelivery(j, box) {
+  box.innerHTML = "";
+  if (j.phase !== "delivered") {
+    box.append(el("div", "dim", "packaging LeRobot episodes…"));
+    return;
+  }
+  /* funnel chips */
+  const funnel = el("div", "chip-row");
+  for (const [k, v] of Object.entries(j.funnel || {})) {
+    funnel.append(el("span", "chip", `${esc(k)}: <b>${v}</b>`));
+  }
+  box.append(funnel);
 
-    const pf = r.per_frame || [];
-    const datasets = [{
-      label: "cross-view reproj error (px)",
-      data: pf.map((p) => p.mean_error_px),
-      borderColor: "#22d3ee", backgroundColor: "#22d3ee18",
-      fill: true, borderWidth: 2, pointRadius: 0, tension: 0.3,
-    }];
-    if (r.monocular_shadow_mean_px != null) {
+  /* all rejected: say so loudly, with the reasons, instead of an empty stage */
+  if (!j.episodes_detail.length && !j.episodes.length) {
+    const panel = el("div", "reject-panel");
+    panel.append(el("div", "reject-title",
+      "🛡 0 episodes delivered — the feasibility gate rejected every video, so none of it ships as training data."));
+    for (const v of j.variants.filter((x) => x.verdict && x.verdict !== "accept")) {
+      panel.append(el("div", "reject-row",
+        `<b>${esc(v.variant_id)}</b> · ${esc(v.verdict)} — ${esc((v.verdict_reasons || []).join("; ") || "see verification stage")}` +
+        (v.vlm_notes ? `<div class="dim">“${esc(v.vlm_notes)}”</div>` : "")));
+    }
+    panel.append(el("div", "dim",
+      "This is the gate working as designed: infeasible AI-generated motion never reaches the dataset. Try a simpler or more physically grounded prompt."));
+    box.append(panel);
+    if (j.delivery_path) {
+      box.append(el("div", "path mono big-path",
+        "rejection details: " + esc(j.delivery_path) + "\\rejected.json"));
+    }
+    return;
+  }
+
+  /* episode cards */
+  const grid = el("div", "card-grid");
+  (j.episodes_detail.length ? j.episodes_detail
+    : j.episodes.map((e) => ({ episode_id: e }))).forEach((ep, i) => {
+    const card = el("div", "mini-card deliver-card pop");
+    const head = el("div", "verify-head");
+    head.append(el("span", "mini-title", "📦 " + esc(ep.episode_id)));
+    if (ep.tier) head.append(el("span", `tier-badge ${esc(ep.tier)}`, esc(ep.tier)));
+    card.append(head);
+    if (ep.caption) card.append(el("div", "mini-prompt", `“${esc(ep.caption)}”`));
+    const chips = el("div", "chip-row tight");
+    if (ep.format) chips.append(el("span", "chip sm", esc(ep.format)));
+    for (const r of ep.robots || []) chips.append(el("span", "chip sm", "🤖 " + esc(r)));
+    for (const s of ep.skills || []) chips.append(el("span", "chip sm skill", esc(s)));
+    card.append(chips);
+    if (ep.path) card.append(el("div", "path mono", esc(ep.path)));
+    if (ep.has_trajectory) {
+      const cw = el("div", "traj-wrap");
+      const canvas = document.createElement("canvas");
+      canvas.id = `traj_${i}`;
+      cw.append(canvas);
+      card.append(cw);
+      drawTrajectory(ep.episode_id, canvas);
+    }
+    grid.append(card);
+  });
+  box.append(grid);
+
+  if (j.delivery_path) {
+    box.append(el("div", "path mono big-path",
+      "delivery folder: " + esc(j.delivery_path)));
+  }
+  if (j.dataset_card) {
+    const det = el("details", "card-details");
+    det.innerHTML = `<summary>dataset card (README.md)</summary><pre>${esc(j.dataset_card)}</pre>`;
+    box.append(det);
+  }
+}
+
+async function drawTrajectory(episodeId, canvas) {
+  if (trajDone.has(episodeId + canvas.id)) return;
+  trajDone.add(episodeId + canvas.id);
+  try {
+    const d = await (await fetch(`/api/syngen/trajectory/${encodeURIComponent(episodeId)}`)).json();
+    if (!d.hands || !d.hands.length) return;
+    const colors = { px: "#22d3ee", py: "#a78bfa", pz: "#34d399" };
+    const datasets = [];
+    const hand = d.hands.find((h) => h.hand === "right") || d.hands[0];
+    for (const axis of ["px", "py", "pz"]) {
       datasets.push({
-        label: "monocular shadow (mean)",
-        data: pf.map(() => r.monocular_shadow_mean_px),
-        borderColor: "#f87171", borderDash: [6, 5], borderWidth: 1.5, pointRadius: 0,
+        label: `${hand.hand} ${axis}`, data: hand[axis],
+        borderColor: colors[axis], borderWidth: 1.6, pointRadius: 0, tension: 0.25,
       });
     }
     new Chart(canvas.getContext("2d"), {
       type: "line",
-      data: { labels: pf.map((p) => p.frame), datasets },
+      data: { labels: hand.t, datasets },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false, animation: false,
         scales: {
-          x: { title: { display: true, text: "frame" }, grid: { color: "#141d31" } },
-          y: { title: { display: true, text: "px" }, grid: { color: "#141d31" }, beginAtZero: true },
+          x: { type: "linear", title: { display: true, text: "t (s)" }, grid: { color: "#141d31" } },
+          y: { title: { display: true, text: `${d.robot} end-effector (m)` }, grid: { color: "#141d31" } },
         },
-        plugins: { legend: { labels: { boxWidth: 12, font: { size: 10 } } } },
+        plugins: { legend: { labels: { boxWidth: 10, font: { size: 9 } } } },
       },
     });
-  }
-  observeReveals();
+  } catch (e) { /* trajectory preview is best-effort */ }
 }
 
-/* -------------------------------------------------------------- funnel */
-const STAGE_LABELS = {
-  ingest: "ingested", feasibility_judge: "feasibility_ok", geometry: "geometry_ok",
-  human_body: "body_ok", hands: "hands_ok", objects: "objects_ok", contact: "contact_ok",
-  semantics: "semantics_ok", retarget: "retarget_ok", physics_validate: "physics_ok",
-  qa: "qa_ok", package: "exported",
-};
+/* ---------------------------------------------------------------- job head */
+function renderJobHead(j) {
+  const head = $("#jobHead");
+  const running = j.runner && j.runner.running;
+  const failed = j.runner && !j.runner.running && j.runner.returncode !== 0 && j.phase !== "delivered";
+  const nothingShipped = j.phase === "delivered" &&
+    !j.episodes.length && !j.episodes_detail.length;
+  const phaseCls = nothingShipped ? "warn"
+    : j.phase === "delivered" ? "ok" : failed ? "bad" : running ? "live" : "";
+  const phaseTxt = failed ? "failed"
+    : nothingShipped ? "completed — 0 episodes (all rejected)" : esc(j.phase);
+  head.innerHTML = `
+    <div class="job-line">
+      <span class="job-id mono">${esc(j.job_id)}</span>
+      <span class="phase-badge ${phaseCls}">${phaseTxt}${running ? " …" : ""}</span>
+      <span class="chip sm">backend: ${esc(j.backend || "?")}</span>
+      ${j.variants.length && running
+        ? `<span class="chip sm">📼 ${j.variants.filter((v) => v.generated).length}/${j.variants.length} generated</span>` : ""}
+      ${j.created_at ? `<span class="chip sm">${esc(String(j.created_at).replace("T", " ").slice(0, 19))}</span>` : ""}
+    </div>
+    <div class="job-prompt">“${esc(j.prompt)}”</div>
+    ${running && j.runner.log_tail && j.runner.log_tail.length
+      ? `<div class="job-log mono">${esc(j.runner.log_tail[j.runner.log_tail.length - 1])}</div>` : ""}
+    ${failed ? `<div class="job-log mono bad">exit code ${j.runner.returncode} — ${esc((j.runner.log_tail || []).slice(-1)[0] || "see demo/.cache logs")}</div>` : ""}`;
+}
 
-async function loadFunnel() {
-  const data = await (await fetch("/api/yield")).json();
-  $("#funnelMock").hidden = !data.mock;
-  const bars = $("#funnelBars");
-  bars.innerHTML = "";
-  const max = Math.max(1, ...data.funnel.map((f) => f.count));
-  const rows = [];
-  for (const f of data.funnel) {
-    const row = el("div", "frow");
-    row.append(el("div", "fname", STAGE_LABELS[f.stage] || f.stage));
-    const track = el("div", "fbar-track");
-    const bar = el("div", "fbar");
-    track.append(bar);
-    row.append(track);
-    row.append(el("div", "fcount", String(f.count)));
-    bars.append(row);
-    rows.push([bar, (100 * f.count) / max]);
+/* ------------------------------------------------------------- render loop */
+function renderJob(j, { replay = false } = {}) {
+  $("#emptyHint").hidden = true;
+  $("#flowRoot").hidden = false;
+  if ($("#stages").dataset.job !== j.job_id) {
+    buildSkeleton(j);
+    $("#stages").dataset.job = j.job_id;
   }
-  /* animate when scrolled into view */
-  const io = new IntersectionObserver((entries) => {
-    if (entries.some((e) => e.isIntersecting)) {
-      rows.forEach(([bar, w], i) => setTimeout(() => (bar.style.width = w + "%"), i * 70));
-      io.disconnect();
+  renderJobHead(j);
+
+  let replayDelay = 0;
+  for (const st of STAGES) {
+    const sec = $("#stage_" + st.id);
+    if (!sec) continue;
+    sec.hidden = !!(st.skip && st.skip(j));
+    if (sec.hidden) continue;
+    const status = st.status(j);
+    sec.classList.toggle("pending", status === "pending");
+    sec.classList.toggle("active", status === "active");
+    sec.classList.toggle("done", status === "done");
+    sec.classList.toggle("skipped", status === "skipped");
+    sec.querySelector(".stage-state").textContent =
+      status === "done" ? "✓" : status === "active" ? "working…"
+        : status === "skipped" ? "⊘ skipped" : "";
+
+    if (status !== "pending") {
+      const sig = st.sig(j);
+      if (stageSigs[st.id] !== sig) {
+        stageSigs[st.id] = sig;
+        const box = sec.querySelector(".stage-content");
+        if (replay) {
+          setTimeout(() => { st.render(j, box); sec.classList.add("lit"); },
+            replayDelay += 240);
+        } else {
+          st.render(j, box);
+          sec.classList.add("lit");
+        }
+      }
     }
-  }, { threshold: 0.25 });
-  io.observe(bars);
-
-  const eps = $("#funnelEpisodes");
-  eps.innerHTML = "";
-  for (const e of data.episodes) {
-    const row = el("div", "ep-row");
-    row.append(el("span", "ep-name", e.episode_id));
-    for (const stage of Object.keys(STAGE_LABELS)) {
-      const pip = el("span", `stage-pip ${e.stages[stage] || ""}`);
-      pip.title = `${stage}: ${e.stages[stage] || "pending"}`;
-      row.append(pip);
-    }
-    if (e.failure_stage)
-      row.append(el("div", "ep-fail", `✗ gated at ${e.failure_stage}: ${e.failure_reason || ""}`));
-    eps.append(row);
   }
 }
 
-/* -------------------------------------------------------------- exports */
-async function loadExports() {
-  const data = await (await fetch("/api/exports")).json();
-  $("#expMock").hidden = !data.mock;
-  const grid = $("#exportGrid");
-  grid.innerHTML = "";
-  for (const x of data.exports) {
-    const card = el("div", "panel exp-card reveal");
-    const head = el("div", "exp-head");
-    head.append(el("div", "exp-name", "📦 " + x.episode_id + (x.mock ? ' <span class="badge mock">demo</span>' : "")));
-    head.append(el("span", `tier-badge ${x.tier}`, x.tier));
-    card.append(head);
-    if (x.tier_description) card.append(el("div", "exp-desc", x.tier_description));
-    const kv = el("div", "exp-kv");
-    const pairs = [
-      ["format", x.format],
-      ["robots", (x.robots || []).join(", ") || "—"],
-      ["features", String(x.n_features)],
-      ["provenance", x.synthetic ? "synthetic (CI mode)" : "estimated / measured"],
-    ];
-    for (const [k, v] of pairs) { kv.append(el("div", "k", k)); kv.append(el("div", "v", v)); }
-    card.append(kv);
-    if (x.features && x.features.length) {
-      const fl = el("div", "feat-list");
-      for (const f of x.features) fl.append(el("span", "feat", f));
-      card.append(fl);
-    }
-    grid.append(card);
-  }
-  observeReveals();
+async function fetchJobs() {
+  try { return (await (await fetch("/api/syngen")).json()).jobs || []; }
+  catch (e) { return []; }
 }
 
-/* --------------------------------------------------------------- reveal */
-let revealIO = null;
-function observeReveals() {
-  if (!revealIO) {
-    revealIO = new IntersectionObserver((entries) => {
-      for (const e of entries) if (e.isIntersecting) { e.target.classList.add("vis"); revealIO.unobserve(e.target); }
-    }, { threshold: 0.12 });
+async function refresh() {
+  const jobs = await fetchJobs();
+  populateHistory(jobs);
+  if (!currentJobId) return;
+  const j = jobs.find((x) => x.job_id === currentJobId);
+  if (!j) return;
+  renderJob(j);
+  const running = j.runner && j.runner.running;
+  const settled = j.phase === "delivered" || (j.runner && !j.runner.running);
+  if (!running && settled && pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
   }
-  document.querySelectorAll(".reveal:not(.vis)").forEach((n) => revealIO.observe(n));
 }
 
-/* ------------------------------------------------------------------ boot */
-loadOverview();
-loadVideos();
-loadFeasibility();
-loadMultiview();
-loadFunnel();
-loadExports();
+function startPolling() {
+  if (!pollTimer) pollTimer = setInterval(refresh, 3000);
+}
+
+/* ---------------------------------------------------------------- history */
+function populateHistory(jobs) {
+  const sel = $("#jobHistory");
+  const prev = sel.value;
+  const sorted = [...jobs].sort((a, b) =>
+    String(b.created_at).localeCompare(String(a.created_at)));
+  sel.innerHTML = '<option value="">— previous jobs —</option>';
+  for (const j of sorted) {
+    const opt = document.createElement("option");
+    opt.value = j.job_id;
+    const p = j.prompt.length > 42 ? j.prompt.slice(0, 42) + "…" : j.prompt;
+    opt.textContent = `${j.job_id} — ${p || "(no prompt)"} [${j.phase}]`;
+    sel.append(opt);
+  }
+  sel.value = currentJobId && sorted.some((j) => j.job_id === currentJobId)
+    ? currentJobId : prev && sorted.some((j) => j.job_id === prev) ? prev : "";
+}
+
+$("#jobHistory").addEventListener("change", async (ev) => {
+  const id = ev.target.value;
+  if (!id) return;
+  currentJobId = id;
+  const jobs = await fetchJobs();
+  const j = jobs.find((x) => x.job_id === id);
+  if (!j) return;
+  $("#stages").dataset.job = "";          // force fresh skeleton
+  renderJob(j, { replay: j.phase === "delivered" });
+  if (j.runner && j.runner.running) startPolling();
+  window.scrollTo({ top: $("#flowRoot").offsetTop - 90, behavior: "smooth" });
+});
+
+/* ------------------------------------------------------------------ submit */
+$("#sgForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const btn = $("#sgRunBtn"), status = $("#sgStatus");
+  const body = {
+    prompt: $("#sgPrompt").value.trim(),
+    variants: parseInt($("#sgVariants").value, 10) || 1,
+    cameras: parseInt($("#sgCameras").value, 10) || 2,
+    backend: $("#sgBackend").value,
+  };
+  if (!body.prompt) return;
+  btn.disabled = true; btn.textContent = "launching…";
+  status.hidden = false;
+  status.textContent = "starting the factory…";
+  try {
+    const res = await fetch("/api/syngen/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.detail || res.statusText);
+    status.textContent = `job ${out.job_id} running — ${out.plan.variants} event(s) × ${out.plan.cameras} camera(s), backend=${out.plan.backend}`;
+    currentJobId = out.job_id;
+    $("#stages").dataset.job = "";
+    await refresh();
+    startPolling();
+    setTimeout(() => window.scrollTo({ top: $("#flowRoot").offsetTop - 90, behavior: "smooth" }), 150);
+  } catch (e) {
+    status.textContent = "failed to start: " + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = "▶ Generate";
+  }
+});
+
+/* -------------------------------------------------------------------- boot */
+(async function boot() {
+  const jobs = await fetchJobs();
+  populateHistory(jobs);
+  /* if the factory is already running a job, attach to it */
+  const running = jobs.find((j) => j.runner && j.runner.running);
+  if (running) {
+    currentJobId = running.job_id;
+    renderJob(running);
+    startPolling();
+  }
+})();

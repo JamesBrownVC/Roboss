@@ -13,6 +13,8 @@ import json
 import math
 import subprocess
 import sys
+import threading
+import time
 from functools import lru_cache
 from pathlib import Path
 
@@ -20,6 +22,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 DEMO_DIR = Path(__file__).resolve().parent
 ROOT = DEMO_DIR.parent
@@ -546,6 +549,283 @@ def api_exports():
     has_real = bool(exports)
     exports.extend(MOCK_EXPORTS)
     return {"exports": exports, "mock": not has_real}
+
+
+# ---------------------------------------------------------------------------
+# Synthetic Data Studio (syngen jobs)
+# ---------------------------------------------------------------------------
+
+SYNGEN = V2R / "data" / "syngen"
+
+# jobs launched from the browser: job_id -> {running, returncode, log, started_at}
+SYNGEN_RUNS: dict[str, dict] = {}
+
+
+def _syngen_log_tail(job_id: str, n_lines: int = 6) -> list[str]:
+    run = SYNGEN_RUNS.get(job_id)
+    if not run:
+        return []
+    try:
+        lines = Path(run["log"]).read_text(encoding="utf-8", errors="replace").splitlines()
+        return [ln.strip() for ln in lines if ln.strip()][-n_lines:]
+    except Exception:
+        return []
+
+
+def _episode_pipeline(episode_id: str) -> dict | None:
+    """Per-stage status of one ingested episode (the 12 V2R stages)."""
+    ws = WORKSPACES / episode_id
+    mdir = ws / "manifests"
+    if not mdir.is_dir():
+        return None
+    stages = {}
+    for stage in FUNNEL_STAGES:
+        m = _read_json(mdir / f"{stage}.manifest.json")
+        stages[stage] = m.get("status") if m else "pending"
+    decision = _read_json(ws / "qa" / "decision.json") or {}
+    return {"episode_id": episode_id, "stages": stages,
+            "accepted": decision.get("accepted"),
+            "failure_stage": decision.get("failure_stage"),
+            "failure_reason": decision.get("failure_reason")}
+
+
+@app.get("/api/syngen")
+def api_syngen():
+    jobs = []
+    seen: set[str] = set()
+    if SYNGEN.is_dir():
+        for job_dir in sorted(SYNGEN.iterdir()):
+            spec = _read_json(job_dir / "spec.json")
+            if not spec:
+                continue
+            status = _read_json(job_dir / "status.json") or {}
+            variants = []
+            for v in spec.get("variants", []):
+                vid = v.get("variant_id", "")
+                rec = _read_json(job_dir / "verification" / f"{vid}.json") or {}
+                sidecar = _read_json(job_dir / "videos" / f"{vid}.json") or {}
+                has_mp4 = (job_dir / "videos" / f"{vid}.mp4").is_file()
+                vlm = rec.get("vlm") or {}
+                phys = rec.get("physics") or {}
+                variants.append({
+                    "variant_id": vid,
+                    "event_id": v.get("event_id"),
+                    "cam_id": v.get("cam_id"),
+                    "prompt": v.get("prompt", "")[:400],
+                    "duration_s": v.get("duration_s"),
+                    "backend": sidecar.get("backend", ""),
+                    "gen_error": sidecar.get("error", ""),
+                    "generated": has_mp4,
+                    "video_url": (f"/media/syngen/{job_dir.name}/{vid}.mp4"
+                                  if has_mp4 else None),
+                    "verdict": rec.get("verdict"),
+                    "verdict_reasons": rec.get("verdict_reasons", []),
+                    "vlm_judge": vlm.get("judge_source"),
+                    "vlm_notes": vlm.get("notes", ""),
+                    "vlm_confidence": vlm.get("confidence"),
+                    "physics": ({
+                        "physics_ok": phys.get("physics_ok"),
+                        "flow_consistency": phys.get("flow_consistency"),
+                        "velocity_spike_ratio": phys.get("velocity_spike_ratio"),
+                        "scale_jump_ratio": phys.get("scale_jump_ratio"),
+                        "pose_detection_rate": phys.get("pose_detection_rate"),
+                    } if phys else None),
+                    "skills": (rec.get("labels") or {}).get("skills", []),
+                })
+            manifest = _read_json(job_dir / "delivery" / "manifest.json") or {}
+
+            # live V2R pipeline progression: any workspace named <job_id>_*
+            pipeline = []
+            if WORKSPACES.is_dir():
+                for ws in sorted(WORKSPACES.glob(f"{job_dir.name}_*")):
+                    if ws.is_dir():
+                        p = _episode_pipeline(ws.name)
+                        if p:
+                            pipeline.append(p)
+
+            # multi-view triangulation QA per session
+            reproj = []
+            session_ids = manifest.get("sessions", [])
+            if not session_ids and SESSIONS.is_dir():
+                session_ids = [d.name for d in
+                               SESSIONS.glob(f"syngen_{job_dir.name}_*") if d.is_dir()]
+            for sid in session_ids:
+                rj = _read_json(SESSIONS / sid / "qa" / "cross_view_reproj.json")
+                if rj:
+                    reproj.append({
+                        "session_id": sid,
+                        "mean_reproj_error_px": rj.get("mean_reproj_error_px"),
+                        "p95_reproj_error_px": rj.get("p95_reproj_error_px"),
+                        "n_frames": rj.get("n_frames"),
+                        "n_joints": rj.get("n_joints"),
+                    })
+
+            # delivered episode cards
+            episodes_detail = []
+            for ep in manifest.get("episodes", []):
+                ep_dir = job_dir / "delivery" / "episodes" / ep
+                labels = (_read_json(ep_dir / "syngen_labels.json") or {}).get("labels", {})
+                meta = _read_json(ep_dir / "lerobot" / "meta.json") or {}
+                episodes_detail.append({
+                    "episode_id": ep,
+                    "caption": labels.get("caption", ""),
+                    "skills": labels.get("skills", []),
+                    "scene_type": labels.get("scene_type", ""),
+                    "tier": meta.get("tier"),
+                    "robots": meta.get("robots", []),
+                    "format": meta.get("format"),
+                    "path": str(ep_dir),
+                    "has_trajectory": any(
+                        (WORKSPACES / ep / "retargets").glob("*/ee.parquet")),
+                })
+
+            readme = job_dir / "delivery" / "README.md"
+            dataset_card = ""
+            if readme.is_file():
+                try:
+                    dataset_card = readme.read_text(encoding="utf-8")[:2500]
+                except Exception:
+                    pass
+
+            job = {
+                "job_id": spec.get("job_id", job_dir.name),
+                "prompt": spec.get("user_prompt", ""),
+                "created_at": spec.get("created_at", ""),
+                "director": spec.get("director", ""),
+                "backend": spec.get("backend", ""),
+                "n_events": len(spec.get("events", [])),
+                "n_cameras": len(spec.get("cameras", [])),
+                "cameras": spec.get("cameras", []),
+                "phase": status.get("phase", "requested"),
+                "n_videos": status.get("n_videos"),
+                "generated_ok": status.get("generated_ok"),
+                "generated_failed": status.get("generated_failed"),
+                "verification": status.get("verification", {}),
+                "accepted": status.get("accepted"),
+                "exported": status.get("exported"),
+                "funnel": manifest.get("funnel", {}),
+                "episodes": manifest.get("episodes", []),
+                "episodes_detail": episodes_detail,
+                "sessions": manifest.get("sessions", []),
+                "pipeline": pipeline,
+                "reproj": reproj,
+                "dataset_card": dataset_card,
+                "delivery_path": str(job_dir / "delivery") if readme.is_file() else None,
+                "variants": variants,
+            }
+            run = SYNGEN_RUNS.get(job_dir.name)
+            if run:
+                job["runner"] = {"running": run["running"],
+                                 "returncode": run["returncode"],
+                                 "log_tail": _syngen_log_tail(job_dir.name)}
+            seen.add(job_dir.name)
+            jobs.append(job)
+    # jobs just launched from the browser whose spec.json isn't written yet
+    for job_id, run in SYNGEN_RUNS.items():
+        if job_id in seen:
+            continue
+        jobs.append({
+            "job_id": job_id, "prompt": run.get("prompt", ""),
+            "created_at": run.get("started_at", ""), "director": "",
+            "backend": run.get("backend", ""), "n_events": 0, "n_cameras": 0,
+            "cameras": [], "phase": "starting", "verification": {},
+            "funnel": {}, "episodes": [], "episodes_detail": [], "sessions": [],
+            "pipeline": [], "reproj": [], "dataset_card": "",
+            "delivery_path": None, "variants": [],
+            "runner": {"running": run["running"], "returncode": run["returncode"],
+                       "log_tail": _syngen_log_tail(job_id)},
+        })
+    return {"jobs": jobs, "mock": not jobs}
+
+
+@app.get("/api/syngen/trajectory/{episode_id}")
+def api_syngen_trajectory(episode_id: str):
+    """End-effector trajectory of a delivered episode (retargeted robot hands)."""
+    ws = (WORKSPACES / episode_id).resolve()
+    if not str(ws).startswith(str(WORKSPACES.resolve())) or not ws.is_dir():
+        raise HTTPException(404, "episode not found")
+    ee_files = sorted((ws / "retargets").glob("*/ee.parquet"))
+    if not ee_files:
+        raise HTTPException(404, "no trajectory data")
+    import pandas as pd
+    robot = ee_files[0].parent.name
+    df = pd.read_parquet(ee_files[0])
+    hands = []
+    for hand, g in df.groupby("hand"):
+        g = g.sort_values("frame")
+        step = max(1, len(g) // 300)          # cap payload size
+        g = g.iloc[::step]
+        hands.append({
+            "hand": str(hand),
+            "t": [round(float(x), 3) for x in g["t"]],
+            "px": [round(float(x), 4) for x in g["px"]],
+            "py": [round(float(x), 4) for x in g["py"]],
+            "pz": [round(float(x), 4) for x in g["pz"]],
+            "gripper": [round(float(x), 4) for x in g["gripper_aperture_m"]],
+        })
+    return {"episode_id": episode_id, "robot": robot, "hands": hands}
+
+
+@app.get("/media/syngen/{job_id}/{filename}")
+def media_syngen(job_id: str, filename: str):
+    path = (SYNGEN / job_id / "videos" / filename).resolve()
+    if not str(path).startswith(str(SYNGEN.resolve())) or not path.is_file():
+        raise HTTPException(404, "video not found")
+    playable = _browser_playable(str(path))
+    return FileResponse(playable, media_type="video/mp4")
+
+
+class SyngenRunRequest(BaseModel):
+    prompt: str
+    variants: int = 1
+    cameras: int = 2
+    backend: str = "auto"
+    duration: int = 4
+
+
+@app.post("/api/syngen/run")
+def api_syngen_run(req: SyngenRunRequest):
+    prompt = req.prompt.strip()
+    if not prompt:
+        raise HTTPException(400, "prompt is required")
+    if req.backend not in ("auto", "mock", "omni", "veo"):
+        raise HTTPException(400, "backend must be auto|mock|omni|veo")
+    variants = max(1, min(4, req.variants))
+    cameras = max(1, min(3, req.cameras))
+    duration = max(2, min(8, req.duration))
+
+    job_id = time.strftime("web_%H%M%S")
+    while (SYNGEN / job_id).exists() or job_id in SYNGEN_RUNS:
+        job_id += "x"
+
+    log_path = CACHE / f"syngen_{job_id}.log"
+    cmd = [sys.executable, "-c",
+           "from v2r.orchestrator.cli import main; main()",
+           "syngen", "run", prompt, "--job-id", job_id,
+           "--variants", str(variants), "--cameras", str(cameras),
+           "--backend", req.backend, "--duration", str(duration),
+           "--root", str(V2R)]
+    SYNGEN_RUNS[job_id] = {
+        "running": True, "returncode": None, "log": str(log_path),
+        "prompt": prompt, "backend": req.backend,
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+
+    def _worker():
+        try:
+            with open(log_path, "w", encoding="utf-8", errors="replace") as lf:
+                proc = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT,
+                                        cwd=str(V2R))
+                rc = proc.wait()
+            SYNGEN_RUNS[job_id].update(running=False, returncode=rc)
+        except Exception as e:
+            log_path.write_text(f"launch failed: {e}", encoding="utf-8")
+            SYNGEN_RUNS[job_id].update(running=False, returncode=-1)
+
+    threading.Thread(target=_worker, daemon=True).start()
+    return {"job_id": job_id, "started": True,
+            "plan": {"variants": variants, "cameras": cameras,
+                     "backend": req.backend, "duration_s": duration}}
 
 
 # ---------------------------------------------------------------------------

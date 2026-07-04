@@ -20,6 +20,8 @@ v2r/assets/models/*.pt
 v2r/assets/body_models/*
 !v2r/assets/body_models/README.md
 v2r/assets/robots/*/meshes/
+# Menagerie binary mesh assets (~100 MB, re-downloadable; see v2r/assets/robots/README.md)
+v2r/assets/robots/*/assets/
 *.pt
 
 # Secrets

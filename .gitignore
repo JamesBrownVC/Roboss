@@ -4,4 +4,9 @@ generated/
 .env
 .venv/
 __pycache__/
+*.pyc
+*.pt
 *.local
+*_report.json
+annotated*.mp4
+.pytest_cache/

@@ -4,41 +4,38 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Space Grotesk", "ui-sans-serif", "system-ui", "sans-serif"],
-        sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "sans-serif"],
+        display: ["Geist", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["Geist", "ui-sans-serif", "system-ui", "Segoe UI", "sans-serif"],
+        mono: ["Geist Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       colors: {
-        // Cold slate neutrals, not pure black, to avoid the "OLED off" look.
+        // Geist dark scale: pure black page, near-black surfaces, 1px gray borders.
         surface: {
-          950: "#0e1214",
-          900: "#12181b",
-          850: "#171d21",
-          800: "#1f272c",
-          700: "#2b353b",
-          600: "#3a464e",
+          950: "#000000",
+          900: "#0a0a0a",
+          850: "#111111",
+          800: "#1a1a1a",
+          700: "#262626",
+          600: "#333333",
         },
-        // Steel gray for passive text / informational states (kept name "sage").
+        // Geist grays for text (kept name "sage" to limit churn).
         sage: {
-          50: "#e7edf0",
-          100: "#dbe3e7",
-          200: "#c2ced4",
-          300: "#a3b2ba",
-          400: "#8fa1ab",
-          500: "#6d7d86",
-          600: "#55636b",
+          50: "#fafafa",
+          100: "#ededed",
+          200: "#d4d4d4",
+          300: "#a1a1a1",
+          400: "#8f8f8f",
+          500: "#666666",
+          600: "#444444",
         },
-        // Hazard amber, reserved for the primary action.
+        // Amber retained strictly for warning states (Geist amber).
         accent: {
-          200: "#ffdca6",
-          300: "#ffc56b",
-          400: "#ffb638",
-          500: "#f5a524",
-          600: "#d98c12",
+          200: "#ffe3a3",
+          300: "#ffcb6b",
+          400: "#ffb224",
+          500: "#f5a623",
+          600: "#d48806",
         },
-      },
-      boxShadow: {
-        soft: "0 20px 55px rgba(4, 8, 10, 0.55)",
-        glow: "0 0 32px rgba(245, 165, 36, 0.22)",
       },
       letterSpacing: {
         label: "0.08em",

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
 import io
 import json
 import os
@@ -17,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.responses import Response, StreamingResponse
 
-from .batches import GENERATED_DIR, create_batch, get_batch, list_stats_runs
+from .batches import GENERATED_DIR, ReferenceAsset, create_batch, get_batch, list_stats_runs
 from .logs import LOG_STORE
 
 app = FastAPI(title="Roboss API", version="0.1.0")
@@ -130,6 +132,28 @@ class CreateBatchRequest(BaseModel):
     reference_video: ReferencePayload | None = None
 
 
+def decode_reference(body: CreateBatchRequest) -> ReferenceAsset | None:
+    payload = body.reference_image or body.reference_video
+    if payload is None:
+        return None
+
+    kind = "image" if body.reference_image else "video"
+    mime_type = payload.mimeType.strip().lower()
+    if kind == "image" and not mime_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Reference image must have an image MIME type.")
+    if kind == "video" and not mime_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="Reference video must have a video MIME type.")
+
+    try:
+        data = base64.b64decode(payload.data, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Reference asset is not valid base64.") from exc
+
+    if not data:
+        raise HTTPException(status_code=400, detail="Reference asset is empty.")
+    return ReferenceAsset(kind=kind, mime_type=mime_type, data=data)
+
+
 @app.get("/api/health")
 def health() -> dict[str, Any]:
     return {
@@ -154,16 +178,12 @@ def post_videos(body: CreateBatchRequest) -> dict[str, Any]:
                 "as GEMINI_API_KEY=your_key_here, then restart the backend."
             ),
         )
-    if body.reference_image or body.reference_video:
-        LOG_STORE.append(
-            "Reference asset received (not yet wired into agent pipeline)",
-            agent="api",
-            level="warn",
-        )
+    reference = decode_reference(body)
     batch = create_batch(
         prompt=prompt,
         aspect_ratio=body.aspect_ratio,
         count=body.count,
+        reference=reference,
     )
     return batch.to_dict()
 

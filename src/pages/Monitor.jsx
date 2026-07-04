@@ -44,9 +44,9 @@ const LOG_ICONS = {
 
 const LOG_TONES = {
   move: "text-sage-300",
-  detect: "text-accent-300",
+  detect: "text-sage-100",
   capture: "text-sage-200",
-  hazard: "text-red-300",
+  hazard: "text-[#ff6166]",
   info: "text-sage-300",
 };
 
@@ -67,12 +67,12 @@ function jitter(value, amount, min, max) {
 
 function TelemetryCard({ icon: Icon, label, value, tone = "text-white" }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-surface-900 p-4 shadow-soft">
-      <div className="flex items-center gap-2 text-sage-200/50">
+    <div className="rounded-lg border border-surface-700 bg-surface-900 p-4">
+      <div className="flex items-center gap-2 text-sage-400">
         <Icon size={15} aria-hidden="true" />
-        <span className="text-xs font-semibold uppercase tracking-label">{label}</span>
+        <span className="text-xs font-medium uppercase tracking-label">{label}</span>
       </div>
-      <div className={`mt-1.5 text-2xl font-bold ${tone}`}>{value}</div>
+      <div className={`mt-1.5 text-2xl font-semibold tracking-tight ${tone}`}>{value}</div>
     </div>
   );
 }
@@ -168,17 +168,17 @@ export default function Monitor() {
       >
         <div className="flex items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
               connected
-                ? "border border-red-400/30 bg-red-400/10 text-red-200"
+                ? "border border-[#e5484d]/40 bg-[#e5484d]/10 text-[#ff6166]"
                 : status === "connecting"
-                  ? "border border-accent-500/30 bg-accent-500/10 text-accent-200"
-                  : "border border-white/10 bg-surface-850 text-sage-300/70"
+                  ? "border border-accent-500/30 bg-accent-500/5 text-accent-300"
+                  : "border border-surface-600 bg-surface-850 text-sage-400"
             }`}
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                connected ? "animate-pulse bg-red-400" : status === "connecting" ? "bg-accent-400" : "bg-sage-500"
+                connected ? "animate-pulse bg-[#e5484d]" : status === "connecting" ? "bg-accent-400" : "bg-sage-500"
               }`}
             />
             {connected ? "LIVE" : status === "connecting" ? "Connecting" : "Offline"}
@@ -186,23 +186,23 @@ export default function Monitor() {
         </div>
       </PageHeader>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-white/5 bg-surface-900 p-4 shadow-soft">
-        <div className="flex items-center gap-2 text-sage-300/60">
+      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-surface-700 bg-surface-900 p-4">
+        <div className="flex items-center gap-2 text-sage-400">
           <Radio size={16} aria-hidden="true" />
-          <span className="text-xs font-semibold uppercase tracking-label">Robot endpoint</span>
+          <span className="text-xs font-medium uppercase tracking-label">Robot endpoint</span>
         </div>
         <input
           value={endpoint}
           onChange={(event) => setEndpoint(event.target.value)}
           disabled={status !== "disconnected"}
-          className="h-10 min-w-64 flex-1 rounded-lg border border-white/10 bg-surface-850 px-3 text-sm text-sage-50 outline-none transition focus:border-accent-500/60 focus:ring-4 focus:ring-accent-500/10 disabled:opacity-60"
+          className="h-10 min-w-64 flex-1 rounded-md border border-surface-600 bg-surface-950 px-3 text-sm text-sage-50 outline-none transition focus:border-sage-400 focus:ring-2 focus:ring-white/10 disabled:opacity-60"
           placeholder="ws://robot-host:port"
         />
         {connected || status === "connecting" ? (
           <button
             type="button"
             onClick={disconnect}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-red-400/25 bg-red-400/10 px-4 text-sm font-semibold text-red-200 transition hover:bg-red-400/20"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#e5484d]/40 bg-[#e5484d]/10 px-4 text-sm font-medium text-[#ff6166] transition hover:bg-[#e5484d]/20"
           >
             <Square size={15} aria-hidden="true" />
             Disconnect
@@ -211,7 +211,7 @@ export default function Monitor() {
           <button
             type="button"
             onClick={connect}
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-500 px-4 text-sm font-bold text-surface-950 shadow-glow transition hover:bg-accent-400"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-white px-4 text-sm font-medium text-black transition hover:bg-sage-200"
           >
             <Play size={15} aria-hidden="true" />
             Connect
@@ -221,12 +221,12 @@ export default function Monitor() {
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-4">
-          <div className="relative aspect-video overflow-hidden rounded-xl border border-white/5 bg-black shadow-soft">
+          <div className="relative aspect-video overflow-hidden rounded-lg border border-surface-700 bg-black">
             <div
               className="absolute inset-0 opacity-[0.12]"
               style={{
                 backgroundImage:
-                  "linear-gradient(rgba(143,161,171,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(143,161,171,0.6) 1px, transparent 1px)",
+                  "linear-gradient(rgba(161,161,161,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(161,161,161,0.6) 1px, transparent 1px)",
                 backgroundSize: "40px 40px",
               }}
             />
@@ -235,7 +235,7 @@ export default function Monitor() {
               <>
                 {detections.map((box) => {
                   const isHazard = box.tone === "hazard";
-                  const color = isHazard ? "#f0473e" : "#3fbf7f";
+                  const color = isHazard ? "#e5484d" : "#45a557";
                   return (
                     <div
                       key={box.id}
@@ -250,7 +250,7 @@ export default function Monitor() {
                       }}
                     >
                       <span
-                        className="absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold text-surface-950"
+                        className="absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
                         style={{ backgroundColor: color }}
                       >
                         {box.label} {(box.conf * 100).toFixed(0)}%
@@ -259,24 +259,24 @@ export default function Monitor() {
                   );
                 })}
 
-                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded bg-black/60 px-2 py-1 text-[11px] font-semibold text-red-300">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded bg-black/60 px-2 py-1 text-[11px] font-medium text-[#ff6166]">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#e5484d]" />
                   LIVE
                 </div>
-                <div className="absolute right-3 top-3 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-sage-200/80">
+                <div className="absolute right-3 top-3 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-sage-300">
                   {clock()} - {telemetry.fps} FPS
                 </div>
-                <div className="absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-sage-200/80">
+                <div className="absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-sage-300">
                   CAM-01 - aisle 4 / rack B
                 </div>
               </>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
-                <Cctv className="text-sage-500/50" size={34} aria-hidden="true" />
-                <p className="text-lg font-semibold text-white">
+                <Cctv className="text-sage-500" size={34} aria-hidden="true" />
+                <p className="text-lg font-medium text-white">
                   {status === "connecting" ? "Establishing link..." : "No signal"}
                 </p>
-                <p className="max-w-sm text-sm text-sage-300/50">
+                <p className="max-w-sm text-sm text-sage-400">
                   {status === "connecting"
                     ? "Handshaking with the robot stream."
                     : "Connect the robot to start the live feed and detection overlay."}
@@ -290,7 +290,7 @@ export default function Monitor() {
               icon={connected ? Wifi : WifiOff}
               label="Status"
               value={connected ? "Online" : "Offline"}
-              tone={connected ? "text-emerald-300" : "text-sage-300/70"}
+              tone={connected ? "text-[#62c073]" : "text-sage-400"}
             />
             <TelemetryCard icon={Gauge} label="FPS" value={telemetry.fps} />
             <TelemetryCard icon={Cpu} label="Latency" value={`${telemetry.latencyMs} ms`} />
@@ -298,27 +298,27 @@ export default function Monitor() {
           </div>
         </div>
 
-        <div className="flex min-h-[420px] flex-col rounded-xl border border-white/5 bg-surface-900 shadow-soft">
-          <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
-            <span className="font-display font-semibold text-white">Action log</span>
-            {connected ? <span className="font-mono text-xs text-sage-300/50">uptime {uptimeLabel}</span> : null}
+        <div className="flex min-h-[420px] flex-col rounded-lg border border-surface-700 bg-surface-900">
+          <div className="flex items-center justify-between border-b border-surface-700 px-4 py-3">
+            <span className="text-sm font-medium text-white">Action log</span>
+            {connected ? <span className="font-mono text-xs text-sage-500">uptime {uptimeLabel}</span> : null}
           </div>
           <div className="flex-1 space-y-1 overflow-y-auto p-3">
             {log.length ? (
               log.map((entry) => {
                 const Icon = LOG_ICONS[entry.kind] || Info;
                 return (
-                  <div key={entry.id} className="flex items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[0.03]">
+                  <div key={entry.id} className="flex items-start gap-2.5 rounded-md px-2 py-1.5 hover:bg-surface-850">
                     <Icon size={15} className={`mt-0.5 shrink-0 ${LOG_TONES[entry.kind] || "text-sage-300"}`} aria-hidden="true" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm leading-snug text-sage-100/90">{entry.text}</p>
-                      <span className="font-mono text-[11px] text-sage-300/40">{entry.time}</span>
+                      <p className="text-sm leading-snug text-sage-100">{entry.text}</p>
+                      <span className="font-mono text-[11px] text-sage-500">{entry.time}</span>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="flex h-full items-center justify-center px-6 text-center text-sm text-sage-300/40">
+              <div className="flex h-full items-center justify-center px-6 text-center text-sm text-sage-500">
                 The robot action log will stream here once connected.
               </div>
             )}

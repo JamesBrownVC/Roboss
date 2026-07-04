@@ -31,15 +31,28 @@ def _client():
         ) from exc
 
 
-def _build_input(prompt: str, start_frame: bytes | None):
+def _media_part(kind: str, data: bytes, mime_type: str) -> dict[str, str]:
+    return {
+        "type": kind,
+        "data": base64.b64encode(data).decode("ascii"),
+        "mime_type": mime_type,
+    }
+
+
+def _build_input(prompt: str, start_frame: bytes | None, reference: dict | None = None):
+    if reference:
+        return [
+            _media_part(
+                str(reference["kind"]),
+                reference["data"],
+                str(reference["mime_type"]),
+            ),
+            {"type": "text", "text": prompt},
+        ]
     if not start_frame:
         return prompt
     return [
-        {
-            "type": "image",
-            "data": base64.b64encode(start_frame).decode("ascii"),
-            "mime_type": "image/png",
-        },
+        _media_part("image", start_frame, "image/png"),
         {"type": "text", "text": prompt},
     ]
 
@@ -108,6 +121,7 @@ def generate_video(
     output_path: Path,
     aspect_ratio: str = "16:9",
     start_frame: bytes | None = None,
+    reference: dict | None = None,
     duration_seconds: float = 8.0,
     model: str = DEFAULT_VIDEO_MODEL,
     log=None,
@@ -122,7 +136,7 @@ def generate_video(
     try:
         interaction = client.interactions.create(
             model=model,
-            input=_build_input(prompt, start_frame),
+            input=_build_input(prompt, start_frame, reference),
             response_format={"type": "video", "aspect_ratio": aspect_ratio},
         )
     except Exception as exc:

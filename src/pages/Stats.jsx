@@ -6,6 +6,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
+  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -17,10 +19,18 @@ import { Boxes, Clock3, Film, LineChart as LineChartIcon, Percent, RefreshCw, Sh
 import PageHeader from "../components/PageHeader.jsx";
 import { getStats } from "../lib/api.js";
 
-const AMBER = "#f5a524";
-const GREEN = "#3fbf7f";
-const RED = "#f0473e";
-const AXIS_TICK = "#8fa1ab";
+// Grafana classic palette.
+const GRAFANA_GREEN = "#73bf69";
+const GRAFANA_YELLOW = "#fade2a";
+const GRAFANA_BLUE = "#5794f2";
+const GRAFANA_ORANGE = "#ff9830";
+const GRAFANA_RED = "#f2495c";
+const GRAFANA_PURPLE = "#b877d9";
+const STAGE_COLORS = [GRAFANA_GREEN, GRAFANA_YELLOW, GRAFANA_BLUE, GRAFANA_ORANGE, GRAFANA_PURPLE];
+const GREEN = GRAFANA_GREEN;
+const RED = GRAFANA_RED;
+const AXIS_TICK = "#9fa7b3";
+const GRID_STROKE = "rgba(204, 204, 220, 0.12)";
 
 const MOCK_CAMERAS = ["front_view", "rear_view", "side_view", "high_angle_inspection"];
 const MOCK_PER_DAY = [4, 6, 5, 7, 6, 8];
@@ -65,13 +75,30 @@ function buildMockRuns() {
   return runs;
 }
 
+// Grafana-style dark tooltip.
 const CHART_TOOLTIP_STYLE = {
-  backgroundColor: "#171d21",
-  border: "1px solid rgba(143, 161, 171, 0.3)",
-  borderRadius: 8,
-  color: "#e7edf0",
+  backgroundColor: "#181b1f",
+  border: "1px solid rgba(204, 204, 220, 0.2)",
+  borderRadius: 2,
+  color: "#ccccdc",
   fontSize: 12,
+  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.5)",
 };
+
+const CHART_CURSOR = { stroke: "rgba(204, 204, 220, 0.35)", strokeWidth: 1 };
+
+function renderLegend({ payload }) {
+  return (
+    <div className="mt-1 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 pl-8 text-xs text-sage-300">
+      {(payload || []).map((entry) => (
+        <span key={entry.value} className="flex items-center gap-1.5">
+          <span className="h-[3px] w-4 rounded-full" style={{ backgroundColor: entry.color }} />
+          {entry.value}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function isSuccess(run) {
   return run.status === "completed";
@@ -98,21 +125,22 @@ function average(values) {
 
 function StatCard({ icon: Icon, label, value, hint }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-surface-900 p-5 shadow-soft">
-      <div className="flex items-center gap-2 text-sage-200/50">
+    <div className="rounded-lg border border-surface-700 bg-surface-900 p-5">
+      <div className="flex items-center gap-2 text-sage-400">
         <Icon size={16} aria-hidden="true" />
-        <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
       </div>
-      <div className="mt-2 text-3xl font-bold text-white">{value}</div>
-      {hint ? <div className="mt-1 text-xs text-sage-200/40">{hint}</div> : null}
+      <div className="mt-2 text-3xl font-semibold tracking-tight text-white">{value}</div>
+      {hint ? <div className="mt-1 text-xs text-sage-500">{hint}</div> : null}
     </div>
   );
 }
 
+// Grafana-like panel: small centered title, tight body padding.
 function ChartCard({ title, children }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-surface-900 p-5 shadow-soft">
-      <h2 className="mb-4 text-sm font-semibold text-sage-200/80">{title}</h2>
+    <div className="rounded-lg border border-surface-700 bg-surface-900 px-3 pb-3 pt-2">
+      <h2 className="mb-2 text-center text-[13px] font-medium text-sage-200">{title}</h2>
       {children}
     </div>
   );
@@ -232,15 +260,15 @@ export default function Stats() {
       >
         <div className="flex items-center gap-3">
           {isDemo ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-500/30 bg-accent-500/10 px-3 py-1.5 text-xs font-semibold text-accent-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent-400" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-surface-600 bg-surface-850 px-3 py-1.5 text-xs font-medium text-sage-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-sage-400" />
               Sample data
             </span>
           ) : null}
           <button
             type="button"
             onClick={load}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-surface-850 px-4 text-sm font-semibold text-sage-200 transition hover:bg-white/5"
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-4 text-sm font-medium text-sage-200 transition hover:border-sage-500 hover:text-white"
           >
             <RefreshCw size={15} className={isLoading ? "animate-spin" : ""} aria-hidden="true" />
             Refresh
@@ -249,10 +277,10 @@ export default function Stats() {
       </PageHeader>
 
       {runs.length === 0 ? (
-        <div className="flex min-h-72 flex-col items-center justify-center gap-3 rounded-xl border border-white/5 bg-surface-900 p-10 text-center shadow-soft">
-          <LineChartIcon className="text-sage-300" size={28} aria-hidden="true" />
-          <p className="text-lg font-semibold text-white">No runs yet</p>
-          <p className="max-w-sm text-sm text-sage-200/50">
+        <div className="flex min-h-72 flex-col items-center justify-center gap-3 rounded-lg border border-surface-700 bg-surface-900 p-10 text-center">
+          <LineChartIcon className="text-sage-400" size={28} aria-hidden="true" />
+          <p className="text-lg font-medium text-white">No runs yet</p>
+          <p className="max-w-sm text-sm text-sage-400">
             Generate your first videos from the Studio page and the dashboard will start
             filling up with latency, dataset and success metrics.
           </p>
@@ -290,32 +318,41 @@ export default function Stats() {
             <div className="xl:col-span-2">
               <ChartCard title="Generations over time">
                 <ResponsiveContainer width="100%" height={260}>
-                  <AreaChart data={timeline} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+                  <AreaChart data={timeline} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                     <defs>
                       <linearGradient id="videosFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={AMBER} stopOpacity={0.45} />
-                        <stop offset="100%" stopColor={AMBER} stopOpacity={0.02} />
+                        <stop offset="0%" stopColor={GRAFANA_GREEN} stopOpacity={0.25} />
+                        <stop offset="100%" stopColor={GRAFANA_GREEN} stopOpacity={0.02} />
+                      </linearGradient>
+                      <linearGradient id="datasetsFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={GRAFANA_BLUE} stopOpacity={0.25} />
+                        <stop offset="100%" stopColor={GRAFANA_BLUE} stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid stroke="rgba(143,161,171,0.1)" vertical={false} />
+                    <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="day" tick={{ fill: AXIS_TICK, fontSize: 11 }} tickLine={false} axisLine={false} />
                     <YAxis allowDecimals={false} tick={{ fill: AXIS_TICK, fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+                    <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={CHART_CURSOR} />
+                    <Legend content={renderLegend} />
                     <Area
                       type="monotone"
                       dataKey="videos"
                       name="Videos"
-                      stroke={AMBER}
-                      strokeWidth={2}
+                      stroke={GRAFANA_GREEN}
+                      strokeWidth={1.5}
                       fill="url(#videosFill)"
+                      dot={{ r: 2, fill: GRAFANA_GREEN, strokeWidth: 0 }}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
                     />
                     <Area
                       type="monotone"
                       dataKey="datasets"
                       name="Datasets"
-                      stroke={GREEN}
-                      strokeWidth={2}
-                      fill="transparent"
+                      stroke={GRAFANA_BLUE}
+                      strokeWidth={1.5}
+                      fill="url(#datasetsFill)"
+                      dot={{ r: 2, fill: GRAFANA_BLUE, strokeWidth: 0 }}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -329,10 +366,11 @@ export default function Stats() {
                     data={outcome}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={62}
-                    outerRadius={92}
-                    paddingAngle={3}
-                    strokeWidth={0}
+                    innerRadius={64}
+                    outerRadius={94}
+                    paddingAngle={1}
+                    stroke="#0a0a0a"
+                    strokeWidth={2}
                   >
                     {outcome.map((slice) => (
                       <Cell key={slice.name} fill={slice.color} />
@@ -341,13 +379,20 @@ export default function Stats() {
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="mt-2 flex justify-center gap-5 text-xs text-sage-200/60">
-                {outcome.map((slice) => (
-                  <span key={slice.name} className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: slice.color }} />
-                    {slice.name}: {slice.value}
-                  </span>
-                ))}
+              <div className="mt-1 flex flex-col gap-1 px-2 text-xs text-sage-300">
+                {outcome.map((slice) => {
+                  const total = outcome.reduce((sum, item) => sum + item.value, 0);
+                  const pct = total ? Math.round((slice.value / total) * 100) : 0;
+                  return (
+                    <span key={slice.name} className="flex items-center gap-1.5">
+                      <span className="h-[3px] w-4 rounded-full" style={{ backgroundColor: slice.color }} />
+                      <span className="flex-1">{slice.name}</span>
+                      <span className="font-mono text-sage-400">
+                        {slice.value} ({pct}%)
+                      </span>
+                    </span>
+                  );
+                })}
               </div>
             </ChartCard>
           </div>
@@ -355,17 +400,39 @@ export default function Stats() {
           <div className="grid gap-6 xl:grid-cols-3">
             <ChartCard title="Average latency per stage">
               <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={latencyByStage} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
-                  <CartesianGrid stroke="rgba(143,161,171,0.1)" vertical={false} />
-                  <XAxis dataKey="stage" tick={{ fill: AXIS_TICK, fontSize: 11 }} tickLine={false} axisLine={false} />
-                  <YAxis
+                <BarChart
+                  data={latencyByStage}
+                  layout="vertical"
+                  margin={{ top: 8, right: 40, bottom: 0, left: 8 }}
+                >
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" horizontal={false} />
+                  <XAxis
+                    type="number"
                     tick={{ fill: AXIS_TICK, fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
                     unit="s"
                   />
-                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={{ fill: "rgba(143,161,171,0.08)" }} />
-                  <Bar dataKey="seconds" name="Seconds" fill={AMBER} radius={[6, 6, 0, 0]} maxBarSize={48} />
+                  <YAxis
+                    type="category"
+                    dataKey="stage"
+                    width={72}
+                    tick={{ fill: AXIS_TICK, fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={{ fill: "rgba(204,204,220,0.06)" }} />
+                  <Bar dataKey="seconds" name="Seconds" radius={[0, 2, 2, 0]} maxBarSize={22}>
+                    {latencyByStage.map((row, index) => (
+                      <Cell key={row.stage} fill={STAGE_COLORS[index % STAGE_COLORS.length]} />
+                    ))}
+                    <LabelList
+                      dataKey="seconds"
+                      position="right"
+                      formatter={(value) => `${value}s`}
+                      style={{ fill: AXIS_TICK, fontSize: 11 }}
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -375,27 +442,27 @@ export default function Stats() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead>
-                      <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-sage-300/50">
-                        <th className="pb-2 pr-4 font-semibold">Date</th>
-                        <th className="pb-2 pr-4 font-semibold">Camera</th>
-                        <th className="pb-2 pr-4 font-semibold">Status</th>
-                        <th className="pb-2 pr-4 font-semibold">Zones</th>
-                        <th className="pb-2 font-semibold">Latency</th>
+                      <tr className="border-b border-surface-600 text-xs uppercase tracking-wide text-sage-500">
+                        <th className="pb-2 pr-4 font-medium">Date</th>
+                        <th className="pb-2 pr-4 font-medium">Camera</th>
+                        <th className="pb-2 pr-4 font-medium">Status</th>
+                        <th className="pb-2 pr-4 font-medium">Zones</th>
+                        <th className="pb-2 font-medium">Latency</th>
                       </tr>
                     </thead>
                     <tbody>
                       {recentRuns.map((run) => (
-                        <tr key={run.id} className="border-b border-white/5 text-sage-200/70">
+                        <tr key={run.id} className="border-b border-surface-700 text-sage-300">
                           <td className="py-2.5 pr-4 text-xs">
                             {String(run.createdAt || "").replace("T", " ").slice(0, 16) || "-"}
                           </td>
                           <td className="py-2.5 pr-4 text-xs">{run.cameraVariant || "-"}</td>
                           <td className="py-2.5 pr-4">
                             <span
-                              className={`rounded px-2 py-0.5 text-xs font-semibold ${
+                              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
                                 isSuccess(run)
-                                  ? "bg-emerald-400/15 text-emerald-300"
-                                  : "bg-red-400/10 text-red-300"
+                                  ? "border-[#45a557]/40 bg-[#45a557]/10 text-[#62c073]"
+                                  : "border-[#e5484d]/40 bg-[#e5484d]/10 text-[#ff6166]"
                               }`}
                             >
                               {run.status || "unknown"}

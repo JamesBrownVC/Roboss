@@ -7,23 +7,23 @@ const LEVELS = ["all", "info", "warn", "error"];
 
 const LEVEL_TONES = {
   info: "text-sage-200",
-  warn: "text-amber-300",
-  error: "text-red-300",
+  warn: "text-accent-300",
+  error: "text-[#ff6166]",
 };
 
 const AGENT_TONES = {
-  intent: "bg-violet-500/15 text-violet-200",
-  contract: "bg-indigo-500/15 text-indigo-200",
-  scenarios: "bg-blue-500/15 text-blue-200",
-  validator: "bg-amber-500/15 text-amber-200",
-  compiler: "bg-cyan-500/15 text-cyan-200",
-  canvas: "bg-pink-500/15 text-pink-200",
-  omni: "bg-accent-500/15 text-accent-200",
-  veo: "bg-accent-500/15 text-accent-200",
-  verifier: "bg-emerald-500/15 text-emerald-200",
-  pipeline: "bg-sage-500/15 text-sage-200",
-  api: "bg-white/10 text-sage-100",
-  system: "bg-white/10 text-sage-200/80",
+  intent: "border-violet-400/30 text-violet-300",
+  contract: "border-indigo-400/30 text-indigo-300",
+  scenarios: "border-blue-400/30 text-blue-300",
+  validator: "border-accent-500/30 text-accent-300",
+  compiler: "border-cyan-400/30 text-cyan-300",
+  canvas: "border-pink-400/30 text-pink-300",
+  omni: "border-sage-500 text-sage-200",
+  veo: "border-sage-500 text-sage-200",
+  verifier: "border-[#45a557]/40 text-[#62c073]",
+  pipeline: "border-surface-600 text-sage-300",
+  api: "border-surface-600 text-sage-200",
+  system: "border-surface-600 text-sage-400",
 };
 
 function formatTime(ts) {
@@ -159,16 +159,16 @@ export default function AgentLogsPanel() {
   return (
     <section className="mt-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-surface-900 px-3 py-2 text-xs font-semibold">
+        <div className="flex items-center gap-2 rounded-md border border-surface-600 bg-surface-900 px-3 py-2 text-xs font-medium">
           {live ? (
             <>
-              <Radio className="text-emerald-400" size={14} aria-hidden="true" />
-              <span className="text-emerald-300">Live</span>
+              <Radio className="text-[#45a557]" size={14} aria-hidden="true" />
+              <span className="text-[#62c073]">Live</span>
             </>
           ) : (
             <>
-              <WifiOff className="text-red-400" size={14} aria-hidden="true" />
-              <span className="text-red-300">Offline</span>
+              <WifiOff className="text-[#e5484d]" size={14} aria-hidden="true" />
+              <span className="text-[#ff6166]">Offline</span>
             </>
           )}
         </div>
@@ -176,7 +176,7 @@ export default function AgentLogsPanel() {
         <select
           value={levelFilter}
           onChange={(event) => setLevelFilter(event.target.value)}
-          className="h-9 rounded-lg border border-white/10 bg-surface-900 px-3 text-xs font-semibold text-sage-100 outline-none focus:border-accent-500/60"
+          className="h-9 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-100 outline-none transition focus:border-sage-400"
         >
           {LEVELS.map((level) => (
             <option key={level} value={level}>
@@ -188,7 +188,7 @@ export default function AgentLogsPanel() {
         <select
           value={agentFilter}
           onChange={(event) => setAgentFilter(event.target.value)}
-          className="h-9 rounded-lg border border-white/10 bg-surface-900 px-3 text-xs font-semibold text-sage-100 outline-none focus:border-accent-500/60"
+          className="h-9 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-100 outline-none transition focus:border-sage-400"
         >
           {agents.map((agent) => (
             <option key={agent} value={agent}>
@@ -202,13 +202,13 @@ export default function AgentLogsPanel() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search messages..."
-          className="h-9 min-w-[200px] flex-1 rounded-lg border border-white/10 bg-surface-900 px-3 text-xs text-sage-100 outline-none placeholder:text-sage-300/40 focus:border-accent-500/60"
+          className="h-9 min-w-[200px] flex-1 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs text-sage-100 outline-none transition placeholder:text-sage-500 focus:border-sage-400"
         />
 
         <button
           type="button"
           onClick={() => setPaused((value) => !value)}
-          className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-surface-900 px-3 text-xs font-semibold text-sage-200 transition hover:bg-white/5"
+          className="inline-flex h-9 items-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-200 transition hover:border-sage-500 hover:text-white"
         >
           {paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}
           {paused ? "Resume scroll" : "Auto-scroll"}
@@ -217,7 +217,7 @@ export default function AgentLogsPanel() {
         <button
           type="button"
           onClick={clearLogs}
-          className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-surface-900 px-3 text-xs font-semibold text-sage-200 transition hover:bg-white/5"
+          className="inline-flex h-9 items-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-200 transition hover:border-sage-500 hover:text-white"
         >
           <Trash2 size={14} aria-hidden="true" />
           Clear
@@ -227,20 +227,20 @@ export default function AgentLogsPanel() {
           <button
             type="button"
             onClick={reconnect}
-            className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent-500/15 px-3 text-xs font-semibold text-accent-200 transition hover:bg-accent-500/25"
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-white px-3 text-xs font-medium text-black transition hover:bg-sage-200"
           >
             Reconnect
           </button>
         ) : null}
       </div>
 
-      <div className="flex min-h-[420px] flex-col rounded-xl border border-white/5 bg-surface-900 shadow-soft">
-        <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
+      <div className="flex min-h-[420px] flex-col rounded-lg border border-surface-700 bg-surface-900">
+        <div className="flex items-center justify-between border-b border-surface-700 px-4 py-3">
           <div className="flex items-center gap-2">
             <ScrollText size={16} className="text-sage-300" aria-hidden="true" />
-            <span className="font-display font-semibold text-white">Agent activity</span>
+            <span className="text-sm font-medium text-white">Agent activity</span>
           </div>
-          <span className="text-xs text-sage-300/50">
+          <span className="text-xs text-sage-500">
             {filtered.length} / {entries.length} entries
           </span>
         </div>
@@ -254,11 +254,11 @@ export default function AgentLogsPanel() {
             filtered.map((entry) => (
               <div
                 key={entry.id}
-                className="grid grid-cols-[auto_auto_1fr] items-start gap-x-3 gap-y-1 rounded-lg px-2 py-1.5 hover:bg-white/[0.02]"
+                className="grid grid-cols-[auto_auto_1fr] items-start gap-x-3 gap-y-1 rounded-md px-2 py-1.5 hover:bg-surface-850"
               >
-                <span className="whitespace-nowrap text-sage-400/70">{formatTime(entry.ts)}</span>
+                <span className="whitespace-nowrap text-sage-500">{formatTime(entry.ts)}</span>
                 <span
-                  className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${agentTone(entry.agent)}`}
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${agentTone(entry.agent)}`}
                 >
                   {entry.agent || "system"}
                 </span>
@@ -267,7 +267,7 @@ export default function AgentLogsPanel() {
                     {entry.message}
                   </p>
                   {entry.batch_id || entry.job_id ? (
-                    <p className="mt-0.5 text-[10px] text-sage-400/50">
+                    <p className="mt-0.5 text-[10px] text-sage-500">
                       {[entry.batch_id, entry.job_id].filter(Boolean).join(" - ")}
                     </p>
                   ) : null}
@@ -275,8 +275,8 @@ export default function AgentLogsPanel() {
               </div>
             ))
           ) : (
-            <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-2 text-center text-sm text-sage-300/50">
-              <ScrollText size={28} className="text-sage-400/30" aria-hidden="true" />
+            <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-2 text-center text-sm text-sage-400">
+              <ScrollText size={28} className="text-sage-500" aria-hidden="true" />
               <p>Agent logs will appear here when the backend runs a batch.</p>
               <p className="text-xs">Start a generation from Studio to see live activity.</p>
             </div>

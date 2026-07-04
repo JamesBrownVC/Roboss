@@ -7,6 +7,7 @@ import os
 import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,7 @@ from .logs import LOG_STORE, batch_logger
 
 GENERATED_DIR = Path("generated")
 RUNS_FILE = GENERATED_DIR / "runs.json"
+DEFAULT_MAX_PARALLEL_JOBS = 3
 
 _batches: dict[str, "BatchState"] = {}
 _lock = threading.Lock()
@@ -59,6 +61,14 @@ def _annotation_count(label: dict | None) -> int:
     return sum(len(frame.get("annotations") or []) for frame in frames)
 
 
+def _parallel_job_limit(count: int) -> int:
+    try:
+        configured = int(os.environ.get("ROBOSS_MAX_PARALLEL_JOBS", DEFAULT_MAX_PARALLEL_JOBS))
+    except ValueError:
+        configured = DEFAULT_MAX_PARALLEL_JOBS
+    return max(1, min(count, configured))
+
+
 def _build_label(evidence, scenario: dict, report: dict) -> dict[str, Any]:
     frames: list[dict[str, Any]] = []
     step = max(1, evidence.n_frames // 20)
@@ -86,6 +96,27 @@ def _build_label(evidence, scenario: dict, report: dict) -> dict[str, Any]:
         "labels": scenario.get("expected_labels") or [],
         "frames": frames,
     }
+
+
+@dataclass
+class ReferenceAsset:
+    kind: str
+    mime_type: str
+    data: bytes
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "mimeType": self.mime_type,
+            "size": len(self.data),
+        }
+
+    def to_video_gen_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "mime_type": self.mime_type,
+            "data": self.data,
+        }
 
 
 @dataclass
@@ -131,6 +162,7 @@ class BatchState:
     aspect_ratio: str
     prompt: str
     jobs: list[JobState] = field(default_factory=list)
+    reference: ReferenceAsset | None = None
     completed: int = 0
     failed: int = 0
     created_at: float = field(default_factory=time.time)
@@ -145,6 +177,7 @@ class BatchState:
             "failed": self.failed,
             "aspect_ratio": self.aspect_ratio,
             "error": self.error,
+            "reference": self.reference.to_public_dict() if self.reference else None,
             "jobs": [job.to_dict() for job in self.jobs],
         }
 
@@ -158,7 +191,13 @@ def list_stats_runs() -> list[dict[str, Any]]:
     return _load_runs()
 
 
-def create_batch(*, prompt: str, aspect_ratio: str, count: int) -> BatchState:
+def create_batch(
+    *,
+    prompt: str,
+    aspect_ratio: str,
+    count: int,
+    reference: ReferenceAsset | None = None,
+) -> BatchState:
     batch_id = uuid.uuid4().hex[:12]
     safe_count = max(1, min(5000, int(count)))
     batch = BatchState(
@@ -167,6 +206,7 @@ def create_batch(*, prompt: str, aspect_ratio: str, count: int) -> BatchState:
         count=safe_count,
         aspect_ratio=aspect_ratio if aspect_ratio in ("16:9", "9:16") else "16:9",
         prompt=prompt.strip(),
+        reference=reference,
         jobs=[
             JobState(id=f"{batch_id}-job-{index + 1}", index=index + 1)
             for index in range(safe_count)
@@ -179,6 +219,12 @@ def create_batch(*, prompt: str, aspect_ratio: str, count: int) -> BatchState:
         agent="api",
         batch_id=batch_id,
     )
+    if reference:
+        LOG_STORE.append(
+            f"Uploaded {reference.kind} reference attached ({reference.mime_type}, {len(reference.data)} bytes)",
+            agent="api",
+            batch_id=batch_id,
+        )
     worker = threading.Thread(
         target=_run_batch,
         args=(batch_id,),
@@ -223,25 +269,26 @@ def _update_counters(batch: BatchState) -> None:
 
 
 def _persist_job_run(batch: BatchState, job: JobState, started_at: float) -> None:
-    runs = _load_runs()
-    known = {run["id"] for run in runs}
-    if job.id in known:
-        return
     total_seconds = max(1, round(time.time() - started_at))
-    runs.append(
-        {
-            "id": job.id,
-            "createdAt": _utc_now(),
-            "status": job.status,
-            "labelStatus": job.labelStatus,
-            "reviewStatus": job.reviewStatus,
-            "cameraVariant": (job.cameraVariant or {}).get("name"),
-            "aspectRatio": batch.aspect_ratio,
-            "zoneCount": _annotation_count(job.label),
-            "totalSeconds": total_seconds,
-        }
-    )
-    _save_runs(runs)
+    with _lock:
+        runs = _load_runs()
+        known = {run["id"] for run in runs}
+        if job.id in known:
+            return
+        runs.append(
+            {
+                "id": job.id,
+                "createdAt": _utc_now(),
+                "status": job.status,
+                "labelStatus": job.labelStatus,
+                "reviewStatus": job.reviewStatus,
+                "cameraVariant": (job.cameraVariant or {}).get("name"),
+                "aspectRatio": batch.aspect_ratio,
+                "zoneCount": _annotation_count(job.label),
+                "totalSeconds": total_seconds,
+            }
+        )
+        _save_runs(runs)
 
 
 def _run_batch(batch_id: str) -> None:
@@ -307,16 +354,18 @@ def _run_batch(batch_id: str) -> None:
         agent="pipeline",
     )
 
-    for job in batch.jobs:
-        scenario = scenarios[(job.index - 1) % len(scenarios)]
-        job.scenario_id = scenario.get("scenario_id")
-        angle = scenario.get("camera", {}).get("angle", "front_view")
-        job.cameraVariant = {
-            "name": angle,
-            "title": scenario.get("title") or f"Video {job.index}",
-        }
+    with _lock:
+        jobs = list(batch.jobs)
+        for job in jobs:
+            scenario = scenarios[(job.index - 1) % len(scenarios)]
+            job.scenario_id = scenario.get("scenario_id")
+            angle = scenario.get("camera", {}).get("angle", "front_view")
+            job.cameraVariant = {
+                "name": angle,
+                "title": scenario.get("title") or f"Video {job.index}",
+            }
 
-    for job in batch.jobs:
+    def run_job(job: JobState) -> None:
         scenario = scenarios[(job.index - 1) % len(scenarios)]
         job_log = batch_logger(batch_id, job.id)
         job_started = time.time()
@@ -340,12 +389,20 @@ def _run_batch(batch_id: str) -> None:
             start_frame = Path(result.canvas_path).read_bytes()
             job_log("Start frame missing; using canvas anchor instead", agent="canvas")
 
+        reference = batch.reference.to_video_gen_dict() if batch.reference else None
+        if reference:
+            job_log(
+                f"Gemini Omni: using uploaded {reference['kind']} reference ({reference['mime_type']})",
+                agent="omni",
+            )
+
         try:
             generate_video(
                 prompt=scenario["video_prompt"],
                 output_path=raw_path,
                 aspect_ratio=batch.aspect_ratio,
                 start_frame=start_frame,
+                reference=reference,
                 duration_seconds=float(
                     scenario.get("camera", {}).get("duration_seconds", 8.0)
                 ),
@@ -359,7 +416,7 @@ def _run_batch(batch_id: str) -> None:
                 job.error = message
                 _update_counters(batch)
             _persist_job_run(batch, job, job_started)
-            continue
+            return
 
         rel_raw = f"/generated/{batch_id}/{job.id}/{raw_path.name}"
         with _lock:
@@ -452,6 +509,31 @@ def _run_batch(batch_id: str) -> None:
                 _update_counters(batch)
 
         _persist_job_run(batch, job, job_started)
+
+    max_workers = _parallel_job_limit(len(jobs))
+    log(
+        f"Starting {len(jobs)} video job(s) with {max_workers} parallel worker(s)",
+        agent="api",
+    )
+    with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix=f"batch-{batch_id}") as executor:
+        futures = {executor.submit(run_job, job): job for job in jobs}
+        for future in as_completed(futures):
+            job = futures[future]
+            try:
+                future.result()
+            except Exception as exc:
+                job_log = batch_logger(batch_id, job.id)
+                message = f"Job worker crashed: {type(exc).__name__}: {exc}"
+                job_log(message, level="error", agent="api")
+                with _lock:
+                    job.status = "failed"
+                    job.error = message
+                    if job.reviewStatus == "pending":
+                        job.reviewStatus = "failed"
+                    if job.labelStatus == "pending":
+                        job.labelStatus = "failed"
+                    _update_counters(batch)
+                _persist_job_run(batch, job, time.time())
 
     elapsed = round(time.time() - batch_started)
     with _lock:

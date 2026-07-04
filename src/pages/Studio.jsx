@@ -29,7 +29,7 @@ const DEFAULT_PROMPT =
   "shrink wrap stretched unevenly. The pallet shifts, tips forward and the load falls onto " +
   "the warehouse floor in realistic slow motion, leaving damaged boxes and scattered products.";
 
-const LABEL_CLASS = "text-xs font-semibold uppercase tracking-label text-sage-300/70";
+const LABEL_CLASS = "text-xs font-medium uppercase tracking-label text-sage-400";
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -63,15 +63,46 @@ function batchErrorMessage(nextBatch) {
   );
 }
 
+function compactBatchForStorage(nextBatch) {
+  if (!nextBatch?.id) {
+    return null;
+  }
+  return {
+    id: nextBatch.id,
+    status: nextBatch.status,
+    count: nextBatch.count,
+    completed: nextBatch.completed,
+    failed: nextBatch.failed,
+    aspect_ratio: nextBatch.aspect_ratio,
+    error: nextBatch.error,
+    reference: nextBatch.reference,
+    jobs: (nextBatch.jobs || []).map((job) => ({
+      id: job.id,
+      index: job.index,
+      status: job.status,
+      error: job.error,
+      videoUrl: job.videoUrl,
+      labeledVideoUrl: job.labeledVideoUrl,
+      labelStatus: job.labelStatus,
+      reviewStatus: job.reviewStatus,
+      labelError: job.labelError,
+      renderError: job.renderError,
+      cameraVariant: job.cameraVariant,
+    })),
+  };
+}
+
 export default function Studio() {
   const { health } = useOutletContext();
   const savedStudioState = useMemo(() => readStudioState(), []);
   const [prompt, setPrompt] = useState(savedStudioState.prompt || DEFAULT_PROMPT);
   const [aspectRatio, setAspectRatio] = useState(savedStudioState.aspectRatio || "16:9");
-  const [datasetCount, setDatasetCount] = useState(() => clampDataset(savedStudioState.datasetCount || 10));
+  const [datasetCount, setDatasetCount] = useState(() =>
+    clampDataset(savedStudioState.datasetCount || savedStudioState.batch?.count || 10),
+  );
   const [reference, setReference] = useState(null);
   const [referenceNotice, setReferenceNotice] = useState("");
-  const [batch, setBatch] = useState(null);
+  const [batch, setBatch] = useState(() => savedStudioState.batch || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
@@ -109,16 +140,17 @@ export default function Studio() {
 
   useEffect(() => {
     if (batch?.id) {
-      saveStudioState({ batchId: batch.id });
+      saveStudioState({ batchId: batch.id, batch: compactBatchForStorage(batch) });
     }
-  }, [batch?.id]);
+  }, [batch]);
 
   useEffect(() => {
     if (resumeAttemptedRef.current) {
       return undefined;
     }
     resumeAttemptedRef.current = true;
-    const activeBatchId = savedStudioState.batchId || readActiveBatchId();
+    const cachedBatch = savedStudioState.batch;
+    const activeBatchId = savedStudioState.batchId || cachedBatch?.id || readActiveBatchId();
     if (!activeBatchId) {
       return undefined;
     }
@@ -137,10 +169,12 @@ export default function Studio() {
         if (nextBatch.status === "failed" || nextBatch.status === "partial") {
           setError(batchErrorMessage(nextBatch));
         }
-      } catch {
+      } catch (resumeError) {
         if (!cancelled) {
-          clearActiveBatchId(activeBatchId);
-          saveStudioState({ batchId: null });
+          if (cachedBatch?.id === activeBatchId) {
+            setBatch(cachedBatch);
+          }
+          setError(resumeError.message || "Could not refresh the active batch.");
         }
       }
     }
@@ -167,8 +201,6 @@ export default function Studio() {
           setError(batchErrorMessage(nextBatch));
         }
       } catch (pollError) {
-        clearActiveBatchId(batch.id);
-        saveStudioState({ batchId: null });
         setError(pollError.message || "Could not fetch status.");
       }
     }, POLL_INTERVAL_MS);
@@ -277,6 +309,7 @@ export default function Studio() {
         aspectRatio,
         datasetCount: safeDatasetCount,
         batchId: nextBatch.id,
+        batch: compactBatchForStorage(nextBatch),
       });
       setBatch(nextBatch);
     } catch (submitError) {
@@ -301,8 +334,8 @@ export default function Studio() {
       />
 
       {apiKeyMissing ? (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-sm text-amber-100">
-          <AlertTriangle className="mt-0.5 shrink-0 text-amber-300" size={18} aria-hidden="true" />
+        <div className="mb-6 flex items-start gap-3 rounded-md border border-accent-500/30 bg-accent-500/5 px-4 py-3 text-sm text-accent-200">
+          <AlertTriangle className="mt-0.5 shrink-0 text-accent-300" size={18} aria-hidden="true" />
           <p>
             Missing Gemini API key. Add `GEMINI_API_KEY=your_key_here` to the project root `.env`
             file, then restart the backend.
@@ -313,7 +346,7 @@ export default function Studio() {
       <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
         <form
           onSubmit={handleSubmit}
-          className="flex h-fit flex-col gap-6 rounded-xl border border-white/5 bg-surface-900 p-5 shadow-soft"
+          className="flex h-fit flex-col gap-6 rounded-lg border border-surface-700 bg-surface-900 p-5"
         >
           <label className="flex flex-col gap-2">
             <span className={LABEL_CLASS}>Prompt</span>
@@ -321,7 +354,7 @@ export default function Studio() {
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               maxLength={4000}
-              className="min-h-44 resize-y rounded-lg border border-white/10 bg-surface-850 px-3 py-3 text-sm leading-6 text-sage-50 outline-none transition placeholder:text-sage-300/30 focus:border-accent-500/60 focus:ring-4 focus:ring-accent-500/10"
+              className="min-h-44 resize-y rounded-md border border-surface-600 bg-surface-950 px-3 py-3 text-sm leading-6 text-sage-50 outline-none transition placeholder:text-sage-500 focus:border-sage-400 focus:ring-2 focus:ring-white/10"
               placeholder="Describe the industrial incident to generate..."
             />
           </label>
@@ -329,7 +362,7 @@ export default function Studio() {
           <div className="flex flex-col gap-2">
             <span className={LABEL_CLASS}>Reference (optional)</span>
             {reference ? (
-              <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-surface-850 p-2.5">
+              <div className="flex items-center gap-3 rounded-md border border-surface-600 bg-surface-850 p-2.5">
                 {reference.kind === "video" ? (
                   <video
                     src={reference.previewUrl}
@@ -340,11 +373,11 @@ export default function Studio() {
                 ) : (
                   <img src={reference.previewUrl} alt="Reference preview" className="h-12 w-12 rounded-md object-cover" />
                 )}
-                <span className="min-w-0 flex-1 truncate text-xs text-sage-200/80">{reference.name}</span>
+                <span className="min-w-0 flex-1 truncate text-xs text-sage-300">{reference.name}</span>
                 <button
                   type="button"
                   onClick={clearReference}
-                  className="rounded-md p-1.5 text-sage-300/60 transition hover:bg-white/5 hover:text-sage-100"
+                  className="rounded-md p-1.5 text-sage-400 transition hover:bg-surface-800 hover:text-white"
                   aria-label="Remove reference"
                 >
                   <X size={16} aria-hidden="true" />
@@ -354,7 +387,7 @@ export default function Studio() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-white/15 bg-surface-850 px-3 py-4 text-xs font-semibold text-sage-300/70 transition hover:border-accent-500/50 hover:text-sage-100"
+                className="flex items-center justify-center gap-2 rounded-md border border-dashed border-surface-600 bg-surface-950 px-3 py-4 text-xs font-medium text-sage-400 transition hover:border-sage-400 hover:text-white"
               >
                 <ImagePlus size={16} aria-hidden="true" />
                 Add an image or video reference
@@ -367,7 +400,7 @@ export default function Studio() {
               onChange={handleFileChange}
               className="hidden"
             />
-            {referenceNotice ? <p className="text-xs text-amber-300/90">{referenceNotice}</p> : null}
+            {referenceNotice ? <p className="text-xs text-accent-300">{referenceNotice}</p> : null}
           </div>
 
           <div className="flex flex-col gap-3">
@@ -379,10 +412,10 @@ export default function Studio() {
                   type="button"
                   disabled={busy}
                   onClick={() => setAspectRatio(ratio)}
-                  className={`rounded-full px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                  className={`rounded-md border px-4 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-45 ${
                     aspectRatio === ratio
-                      ? "bg-accent-500/10 text-accent-200 ring-1 ring-accent-500/40"
-                      : "bg-surface-850 text-sage-300/60 hover:text-sage-100"
+                      ? "border-sage-300 bg-surface-800 text-white"
+                      : "border-surface-600 bg-surface-950 text-sage-400 hover:border-sage-500 hover:text-white"
                   }`}
                 >
                   {ratio}
@@ -394,7 +427,7 @@ export default function Studio() {
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className={LABEL_CLASS}>Dataset size</span>
-              <span className="text-xs font-semibold text-sage-300/60">videos</span>
+              <span className="text-xs font-medium text-sage-500">videos</span>
             </div>
             <input
               type="number"
@@ -404,7 +437,7 @@ export default function Studio() {
               disabled={busy}
               onChange={(event) => setDatasetCount(event.target.value === "" ? "" : clampDataset(event.target.value))}
               onBlur={() => setDatasetCount((value) => clampDataset(value || MIN_DATASET))}
-              className="h-11 rounded-lg border border-white/10 bg-surface-850 px-3 text-sm text-sage-50 outline-none transition disabled:cursor-not-allowed disabled:text-sage-300/35 focus:border-accent-500/60 focus:ring-4 focus:ring-accent-500/10"
+              className="h-11 rounded-md border border-surface-600 bg-surface-950 px-3 text-sm text-sage-50 outline-none transition disabled:cursor-not-allowed disabled:text-sage-500 focus:border-sage-400 focus:ring-2 focus:ring-white/10"
               placeholder="Number of videos to generate"
             />
           </div>
@@ -412,28 +445,28 @@ export default function Studio() {
           <button
             type="submit"
             disabled={busy || !canSubmit}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-accent-500 px-4 text-base font-bold text-surface-950 shadow-glow transition hover:bg-accent-400 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:text-sage-300/30 disabled:shadow-none"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-medium text-black transition hover:bg-sage-200 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:text-sage-500"
           >
             {apiKeyMissing ? (
               <>
-                <AlertTriangle size={20} aria-hidden="true" />
+                <AlertTriangle size={16} aria-hidden="true" />
                 Missing API key
               </>
             ) : busy ? (
               <>
-                <LoaderCircle className="animate-spin" size={20} aria-hidden="true" />
+                <LoaderCircle className="animate-spin" size={16} aria-hidden="true" />
                 Generating {progress.done}/{progress.total}
               </>
             ) : (
               <>
-                <Play size={20} aria-hidden="true" />
+                <Play size={16} aria-hidden="true" />
                 Generate dataset
               </>
             )}
           </button>
 
-          <div className="flex items-start gap-2.5 rounded-lg border border-sage-400/15 bg-white/[0.02] p-3 text-xs leading-relaxed text-sage-200/80">
-            <Info size={15} className="mt-0.5 shrink-0 text-sage-300" aria-hidden="true" />
+          <div className="flex items-start gap-2.5 rounded-md border border-surface-700 bg-surface-850 p-3 text-xs leading-relaxed text-sage-300">
+            <Info size={15} className="mt-0.5 shrink-0 text-sage-400" aria-hidden="true" />
             <p>
               Videos share the same incident and environment with varied camera angles and details.
               Each one is automatically verified and annotated. The preview shows the first
@@ -442,29 +475,29 @@ export default function Studio() {
           </div>
         </form>
 
-        <div className="flex min-h-[540px] flex-col rounded-xl border border-white/5 bg-surface-900 p-4 shadow-soft">
-          <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-3">
+        <div className="flex min-h-[540px] flex-col rounded-lg border border-surface-700 bg-surface-900 p-4">
+          <div className="flex items-center justify-between gap-4 border-b border-surface-700 pb-3">
             <div className="flex items-center gap-3">
-              <span className="font-display font-semibold text-white">Output</span>
-              <span className="text-xs text-sage-300/50">{STATUS_LABELS[currentStatus]}</span>
+              <span className="text-sm font-medium text-white">Output</span>
+              <span className="text-xs text-sage-500">{STATUS_LABELS[currentStatus]}</span>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={handleDownloadAll}
                 disabled={!batch?.id || downloadableVideoCount === 0}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-surface-850 px-3 text-xs font-semibold text-sage-200 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:text-sage-300/30"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-200 transition hover:border-sage-500 hover:text-white disabled:cursor-not-allowed disabled:text-sage-500 disabled:hover:border-surface-600"
               >
                 <Download size={14} aria-hidden="true" />
                 Download all videos
               </button>
               <div className="h-1.5 w-40 overflow-hidden rounded-full bg-surface-700">
                 <div
-                  className="h-full rounded-full bg-accent-500 transition-all duration-500"
+                  className="h-full rounded-full bg-white transition-all duration-500"
                   style={{ width: `${progress.pct}%` }}
                 />
               </div>
-              <span className="text-xs font-semibold text-sage-200/70">
+              <span className="text-xs font-medium text-sage-300">
                 {progress.done}/{progress.total}
               </span>
             </div>
@@ -482,18 +515,18 @@ export default function Studio() {
                 {Array.from({ length: placeholderCount }, (_, index) => (
                   <div
                     key={index}
-                    className="flex flex-col overflow-hidden rounded-xl border border-dashed border-white/10 bg-surface-850/60"
+                    className="flex flex-col overflow-hidden rounded-lg border border-dashed border-surface-600 bg-surface-900"
                   >
                     <div
                       className={`flex items-center justify-center ${
                         aspectRatio === "9:16" ? "aspect-[9/16] max-h-96" : "aspect-video"
                       }`}
                     >
-                      <span className="font-display text-5xl font-bold text-sage-500/30">{index + 1}</span>
+                      <span className="text-5xl font-semibold text-surface-600">{index + 1}</span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-xs font-semibold text-sage-300/60">Sample {index + 1}</span>
-                      <span className="text-xs text-sage-300/35">Waiting</span>
+                    <div className="flex items-center justify-between border-t border-surface-700 px-4 py-3">
+                      <span className="text-xs font-medium text-sage-400">Sample {index + 1}</span>
+                      <span className="text-xs text-sage-500">Waiting</span>
                     </div>
                   </div>
                 ))}
@@ -501,7 +534,7 @@ export default function Studio() {
             )}
           </div>
 
-          <p className="border-t border-white/5 pt-3 text-center text-xs text-sage-300/40">
+          <p className="border-t border-surface-700 pt-3 text-center text-xs text-sage-500">
             {previewJobs.length
               ? `Previewing the first ${previewJobs.length} of ${progress.total} videos in this dataset.`
               : `Submit a prompt to generate a dataset of ${safeDatasetCount} videos (previewing the first ${placeholderCount}).`}
@@ -510,7 +543,7 @@ export default function Studio() {
       </div>
 
       {error ? (
-        <div className="mt-6 flex items-start gap-3 rounded-lg border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-200">
+        <div className="mt-6 flex items-start gap-3 rounded-md border border-[#e5484d]/40 bg-[#e5484d]/10 px-4 py-3 text-sm text-[#ff6166]">
           <AlertTriangle className="mt-0.5 shrink-0" size={18} aria-hidden="true" />
           <p>{error}</p>
         </div>

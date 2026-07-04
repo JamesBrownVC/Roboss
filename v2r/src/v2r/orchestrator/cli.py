@@ -124,6 +124,31 @@ def label_bench(
     console.print(table)
 
 
+@app.command("twin-fit")
+def twin_fit(
+    episode: str = typer.Option(..., "--episode", help="Episode id with animal keypoints (e.g. demo_dog_quadruped)"),
+    robot: str = typer.Option("go2", "--robot", help="Quadruped robot from config/robots.yaml"),
+    iters: int = typer.Option(40, "--iters", help="Twin optimizer iterations"),
+    root: Optional[Path] = typer.Option(None, "--root", help="V2R repo root"),
+):
+    """Digital-twin motion fit: take a dog's tracked gait time series and find
+    the Go2 joint trajectory that MINIMIZES foot-path tracking loss inside the
+    MuJoCo twin, then write the go2 retarget contract (qpos + base twist)."""
+    from ..twin.runner import run_twin_fit
+
+    cfg = V2RConfig.load(root)
+    rep = run_twin_fit(cfg, episode, robot=robot, iters=iters, log=_safe_print)
+    table = Table(title=f"Twin fit - {episode} -> {robot}")
+    table.add_column("field")
+    table.add_column("value")
+    for k in ("gait", "n_frames", "stride_period_s", "body_speed_bl_s",
+              "loss_initial", "loss_final", "loss_reduction_pct", "optimizer_iters"):
+        if k in rep:
+            v = rep[k]
+            table.add_row(k, f"{v:.4f}" if isinstance(v, float) else str(v))
+    console.print(table)
+
+
 @app.command("run")
 def run_pipeline(
     episode: Path = typer.Option(..., "--episode", help="Path to source video (or glob — single file for now)"),

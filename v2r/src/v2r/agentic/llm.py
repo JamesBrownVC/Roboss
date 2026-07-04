@@ -44,15 +44,14 @@ CRUSOE_MODELS = {
 }
 CRUSOE_MULTIMODAL = {"nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"}
 
+# Genuine NVIDIA NIM branch (only used for keys starting with "nvapi-")
 NIM_BASE = "https://integrate.api.nvidia.com/v1"
 NIM_MODELS = {
     "orchestrator": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
     "fast": "moonshotai/kimi-k2.6",
     "vision": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
 }
-NIM_MULTIMODAL = {"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-                  "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
-                  "nvidia/nemotron-nano-12b-v2-vl"}
+NIM_MULTIMODAL = {"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"}
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 
@@ -75,7 +74,8 @@ def _env_lookup(names: list[str], root: Optional[Path] = None) -> Optional[str]:
         val = os.environ.get(name)
         if val:
             return val
-    start = Path(root) if root else Path(__file__).resolve()
+    # resolve() so relative roots still yield parents for the upward search
+    start = Path(root).resolve() if root else Path(__file__).resolve()
     for cand in [start, *start.parents]:
         env = cand / ".env"
         if env.is_file():

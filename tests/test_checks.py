@@ -301,8 +301,10 @@ def test_parse_gate2_response():
         "violations": [
             {"type": "anatomical_anomaly", "severity": 0.9,
              "frame_numbers": [12, 13], "reason": "The person has three arms."},
-            {"type": "magic_effect", "severity": 1.7,   # clamped to 1.0
+            {"type": "magic_effect", "severity": 1.7,
              "frame_numbers": [40], "reason": "The box glows and floats."},
+            {"type": "scene_inconsistency", "severity": 0.6,
+             "frame_numbers": [50], "reason": "Weak uncertain note."},
             {"type": "not_a_real_type", "severity": 0.5,
              "frame_numbers": [1], "reason": "ignored"},
         ],
@@ -312,8 +314,11 @@ def test_parse_gate2_response():
     v = parse_gate2_response(data)
     assert len(v) == 2
     assert all(x.gate == "semantic" for x in v)
-    assert v[0].severity == 1.0 and v[0].type == "magic_effect"
-    assert v[1].frames == [12, 13]
+    # Gate 2 is advisory: weak notes are dropped and remaining severities
+    # are scaled down so the VLM can never hard-reject on its own.
+    assert all(x.severity <= 0.40 for x in v)
+    assert v[0].severity == 0.4 and v[0].type == "magic_effect"
+    assert sorted(f for x in v for f in x.frames) == [12, 13, 40]
 
 
 # ----------------------------------------------------------------------

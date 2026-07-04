@@ -11,6 +11,13 @@ from __future__ import annotations
 from .config import RISK_SEVERITIES
 
 
+ROBOT_RESPONSE_KEYWORDS = [
+    "react", "respond", "stop", "halt", "slow", "yield", "avoid", "reroute",
+    "back", "retreat", "stabilize", "secure", "assist", "wait", "brake",
+    "pause", "move_away", "sidestep",
+]
+
+
 def _range_for(policy: dict, entity_id: str) -> dict | None:
     for item in policy.get("allowed_position_deltas", []):
         if item.get("entity_id") == entity_id:
@@ -25,24 +32,48 @@ def _inside(value: float, bounds: list | None) -> bool:
     return lo <= value <= hi
 
 
+def _robot_entity_ids(entities: list[dict]) -> set[str]:
+    return {
+        e["id"]
+        for e in entities
+        if "robot" in str(e.get("id", "")).lower()
+        or "robot" in str(e.get("type", "")).lower()
+    }
+
+
+def _norm(value: str) -> str:
+    return value.lower().replace("_", " ").replace("-", " ")
+
+
+def validate_contract(contract: dict) -> list[str]:
+    """Contract-level invariants, checked once per pipeline run (they can
+    never be fixed by regenerating scenarios, so they don't belong in the
+    per-scenario repair loop)."""
+    errors: list[str] = []
+    entity_ids = {e["id"] for e in contract["world_contract"]["locked_entities"]}
+    registry_ids = {a.get("entity_id") for a in contract.get(
+        "object_registry", [])}
+    if registry_ids != entity_ids:
+        errors.append("object_registry must contain exactly the locked "
+                      f"entities: expected {sorted(entity_ids)}, got "
+                      f"{sorted(registry_ids)}")
+    if not contract.get("scene_registry", {}).get("scene_id"):
+        errors.append("scene_registry.scene_id is required")
+    if not contract.get("identity_checks"):
+        errors.append("identity_checks must not be empty")
+    if not _robot_entity_ids(contract["world_contract"]["locked_entities"]):
+        errors.append("world_contract.locked_entities must include at least "
+                      "one robot entity because every scenario requires a "
+                      "robot response")
+    return errors
+
+
 def validate_scenario(contract: dict, scenario: dict) -> list[str]:
     """Returns a list of violation messages; empty list = valid."""
     errors: list[str] = []
     wc = contract["world_contract"]
     policy = contract["variation_policy"]
     entity_ids = {e["id"] for e in wc["locked_entities"]}
-    registry_ids = {a.get("entity_id") for a in contract.get(
-        "object_registry", [])}
-
-    if registry_ids and registry_ids != entity_ids:
-        errors.append("object_registry must contain exactly the locked "
-                      f"entities: expected {sorted(entity_ids)}, got "
-                      f"{sorted(registry_ids)}")
-    scene = contract.get("scene_registry", {})
-    if not scene.get("scene_id"):
-        errors.append("scene_registry.scene_id is required")
-    if not contract.get("identity_checks"):
-        errors.append("identity_checks must not be empty")
 
     # identity contract: every locked entity must be referenced
     referenced = set(scenario.get("referenced_entities", []))
@@ -125,6 +156,34 @@ def validate_scenario(contract: dict, scenario: dict) -> list[str]:
             errors.append(f"action_timeline[{i}]: actor "
                           f"'{step.get('actor')}' is not a locked entity")
 
+    # robot response contract: the scenario must be a situation that causes
+    # an observable robot reaction after the trigger.
+    expected_response = str(scenario.get("expected_robot_response", "")).strip()
+    robot_ids = _robot_entity_ids(wc["locked_entities"])
+    if not expected_response:
+        errors.append("expected_robot_response is required")
+    if not robot_ids:
+        errors.append("no robot entity is available to react to the event")
+    response_text = _norm(expected_response)
+    response_terms = {w for w in response_text.split() if len(w) >= 3}
+    has_robot_response = False
+    for step in timeline:
+        if step.get("actor") not in robot_ids:
+            continue
+        if float(step.get("t_start", -1)) + 1e-6 < trigger:
+            continue
+        action_text = _norm(str(step.get("action", "")))
+        if (
+            any(k in action_text for k in ROBOT_RESPONSE_KEYWORDS)
+            or any(term in action_text for term in response_terms)
+        ):
+            has_robot_response = True
+            break
+    if not has_robot_response:
+        errors.append("action_timeline must include an observable robot "
+                      "response step after the event trigger matching "
+                      "expected_robot_response")
+
     # label contract
     if not scenario.get("expected_labels"):
         errors.append("expected_labels is empty")
@@ -135,15 +194,20 @@ def validate_scenario(contract: dict, scenario: dict) -> list[str]:
 
 
 def validate_all(contract: dict,
-                 scenarios: list[dict]) -> dict[str, list[str]]:
-    """scenario_id -> error list. Also catches duplicate ids."""
-    results: dict[str, list[str]] = {}
+                 scenarios: list[dict]) -> list[tuple[str, list[str]]]:
+    """One (scenario_id, errors) pair per input scenario, index-aligned.
+
+    Duplicate ids only invalidate the *later* copies — the first occurrence
+    stays valid, so a legitimate scenario is never lost to a duplicate.
+    """
+    results: list[tuple[str, list[str]]] = []
     seen: set[str] = set()
     for i, sc in enumerate(scenarios):
         sid = str(sc.get("scenario_id") or f"index_{i}")
         errs = validate_scenario(contract, sc)
         if sid in seen:
-            errs.append(f"duplicate scenario_id '{sid}'")
+            errs.append(f"duplicate scenario_id '{sid}' — keep the first "
+                        f"occurrence, give this one a new id")
         seen.add(sid)
-        results[sid] = errs
+        results.append((sid, errs))
     return results

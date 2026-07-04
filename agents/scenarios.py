@@ -23,6 +23,11 @@ Hard rules:
 - Vary only: camera angle (from the allowed list), event type (from the
   allowed list), event timing, risk severity, small position shifts within
   the allowed deltas, and the action timeline.
+- The camera angle must remain the allowed overhead/top-down view. Do not
+  propose front, side, close-up, robot POV, handheld, edited, or cinematic
+  camera plans.
+- Each scenario must describe the situation as one continuous unedited take
+  with a static overhead camera that clearly shows robot movement paths.
 - If any entity moves from its default position before the action starts,
   include it in position_deltas with dx/dy inside allowed_position_deltas.
   Use zero or omit position_deltas for locked static objects.
@@ -32,6 +37,11 @@ Hard rules:
   actors are locked entity ids only, all within the camera duration.
 - The event trigger time must lie inside the allowed timing window and the
   timeline must show the event happening at that time.
+- Every scenario must contain a clear situation/event that the robot reacts
+  to. The expected_robot_response must be specific, and action_timeline must
+  include at least one robot actor step AFTER the trigger time showing that
+  response, such as stopping, rerouting, slowing, yielding, stabilizing an
+  object, backing away, or assisting.
 - expected_labels: 3-6 short snake_case labels a downstream dataset
   annotator should be able to extract from the finished video.
 - scenario_id: sc_<number>_<short_event_slug>.
@@ -53,7 +63,7 @@ def plan_scenarios(contract: dict, count: int, cfg: AgentConfig) -> list[dict]:
         user_parts=[text_part(_contract_text(contract, count))],
         schema=SCENARIOS_SCHEMA,
         max_output_tokens=cfg.max_output_tokens,
-        temperature=cfg.variation_temperature,
+        thinking_level=cfg.variation_thinking_level,
     )
     return data["scenarios"]
 
@@ -75,6 +85,6 @@ def repair_scenarios(contract: dict, invalid: list[dict],
             + "\n\nValidation errors per scenario_id:\n" + error_text)],
         schema=SCENARIOS_SCHEMA,
         max_output_tokens=cfg.max_output_tokens,
-        temperature=cfg.plan_temperature,  # precision mode for repairs
+        thinking_level=cfg.plan_thinking_level,  # precision mode for repairs
     )
     return data["scenarios"]

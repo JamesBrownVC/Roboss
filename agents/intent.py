@@ -24,7 +24,7 @@ def parse_intent(intention: str, cfg: AgentConfig,
         user_parts=[text_part(f"User intention:\n{intention}")],
         schema=INTENT_SCHEMA,
         max_output_tokens=cfg.max_output_tokens,
-        temperature=cfg.plan_temperature,
+        thinking_level=cfg.intent_thinking_level,
     )
     if count_override:
         intent["variation_count"] = count_override

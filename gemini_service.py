@@ -99,6 +99,25 @@ No boxes for audio labels.
 # Generation Logic
 # ---------------------------------------------------------------------------
 
+VIDEO_CONTINUITY_RULES = """
+
+Mandatory video continuity constraints:
+- One single continuous shot in one unchanged scene from start to finish.
+- No montage, no edits, no cuts, no shot changes, no jump cuts, no scene changes.
+- The camera must stay fixed in a static top-down overhead view.
+- Do not switch to close-ups, side views, front views, robot POV, or cinematic angles.
+- The same floor layout, walls, lighting, objects, people, and robot must remain visible and spatially consistent across all frames.
+- Show the robot's movement path continuously in the same frame; do not reframe or change perspective.
+"""
+
+
+def enforce_video_continuity_prompt(prompt: str) -> str:
+    """Append non-negotiable continuity rules to every generated video prompt."""
+    if "Mandatory video continuity constraints:" in prompt:
+        return prompt
+    return f"{prompt.rstrip()}{VIDEO_CONTINUITY_RULES}"
+
+
 def _extract_video(interaction) -> dict:
     video = getattr(interaction, "output_video", None)
     if video is not None and (getattr(video, "data", None) or getattr(video, "uri", None)):
@@ -123,6 +142,7 @@ def _resolve_video_bytes(video: dict) -> bytes:
 
 def generate_video(prompt: str, aspect_ratio: str = "16:9") -> bytes:
     """Generate a video and return its raw MP4 bytes."""
+    prompt = enforce_video_continuity_prompt(prompt)
     print(f"[Generator] Generating video for prompt: '{prompt}'")
     client = genai.Client()
     input_parts = [{"type": "text", "text": prompt}]

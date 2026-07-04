@@ -18,7 +18,7 @@ from .contract import build_contract
 from .intent import parse_intent
 from .llm import AgentError
 from .scenarios import plan_scenarios, repair_scenarios
-from .validator import validate_all
+from .validator import validate_all, validate_contract
 
 
 @dataclass
@@ -38,13 +38,38 @@ def _write_json(path: Path, data) -> None:
                     encoding="utf-8")
 
 
+def _repair_loop(contract: dict, scenarios: list[dict], cfg: AgentConfig,
+                 progress) -> list[dict]:
+    """Validate; feed failures back to the model; pair fixes positionally.
+
+    Positional pairing (invalid slot i <- repaired scenario i) is immune to
+    the model renaming scenario_ids, which id-based matching silently lost.
+    """
+    for round_no in range(cfg.max_repair_rounds):
+        results = validate_all(contract, scenarios)
+        invalid_idx = [i for i, (_, errs) in enumerate(results) if errs]
+        if not invalid_idx:
+            break
+        progress(f"      {len(invalid_idx)} scenario(s) violate the "
+                 f"contract, repair round {round_no + 1} ...")
+        invalid = [scenarios[i] for i in invalid_idx]
+        errors = {results[i][0]: results[i][1] for i in invalid_idx}
+        try:
+            repaired = repair_scenarios(contract, invalid, errors, cfg)
+        except AgentError as e:
+            progress(f"      repair call failed ({e}); keeping originals")
+            break
+        for pos, fixed in zip(invalid_idx, repaired):
+            scenarios[pos] = fixed
+    return scenarios
+
+
 def run_pipeline(intention: str,
                  out_dir: str,
                  cfg: AgentConfig,
                  count: int | None = None,
                  make_canvas: bool = False,
                  make_start_frames: bool = False,
-                 start_frame_workers: int = 1,
                  progress=print) -> PipelineResult:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -55,6 +80,10 @@ def run_pipeline(intention: str,
 
     progress("[2/5] Building world contract ...")
     contract = build_contract(intent, cfg)
+    contract_errors = validate_contract(contract)
+    if contract_errors:
+        raise AgentError("contract failed validation: "
+                         + "; ".join(contract_errors))
     _write_json(out / "contract.json", contract)
     n_entities = len(contract["world_contract"]["locked_entities"])
     progress(f"      world '{contract['world_contract']['world_id']}', "
@@ -63,35 +92,14 @@ def run_pipeline(intention: str,
     progress(f"[3/5] Planning {intent['variation_count']} scenario "
              f"variations ...")
     scenarios = plan_scenarios(contract, intent["variation_count"], cfg)
-
-    # deterministic validation with LLM repair loop
-    for round_no in range(cfg.max_repair_rounds + 1):
-        results = validate_all(contract, scenarios)
-        invalid_ids = [sid for sid, errs in results.items() if errs]
-        if not invalid_ids:
-            break
-        if round_no == cfg.max_repair_rounds:
-            progress(f"      dropping {len(invalid_ids)} scenario(s) that "
-                     f"still violate the contract: {invalid_ids}")
-            break
-        progress(f"      {len(invalid_ids)} scenario(s) violate the "
-                 f"contract, repair round {round_no + 1} ...")
-        invalid = [s for s in scenarios
-                   if str(s.get("scenario_id")) in invalid_ids]
-        errors = {sid: results[sid] for sid in invalid_ids}
-        try:
-            fixed = {str(s.get("scenario_id")): s
-                     for s in repair_scenarios(contract, invalid, errors, cfg)}
-        except AgentError as e:
-            progress(f"      repair call failed ({e}); keeping originals")
-            break
-        scenarios = [fixed.get(str(s.get("scenario_id")), s)
-                     for s in scenarios]
+    scenarios = _repair_loop(contract, scenarios, cfg, progress)
 
     results = validate_all(contract, scenarios)
-    dropped = {sid: errs for sid, errs in results.items() if errs}
-    valid = [s for s in scenarios
-             if not results.get(str(s.get("scenario_id")), ["missing"])]
+    dropped = {sid: errs for sid, errs in results if errs}
+    if dropped:
+        progress(f"      dropping {len(dropped)} scenario(s) that still "
+                 f"violate the contract: {sorted(dropped)}")
+    valid = [scenarios[i] for i, (_, errs) in enumerate(results) if not errs]
 
     progress(f"[4/5] Compiling prompts, keyframes and verifier packets for "
              f"{len(valid)} scenario(s) ...")
@@ -115,45 +123,8 @@ def run_pipeline(intention: str,
             canvas_path.write_bytes(canvas)
             result.canvas_path = str(canvas_path)
             if make_start_frames:
-                frames_dir = out / "frames"
-                frames_dir.mkdir(exist_ok=True)
-                workers = max(1, int(start_frame_workers or 1))
-
-                def _make_frame(sc: dict) -> tuple[str, bytes | None, str | None]:
-                    sid = sc["scenario_id"]
-                    try:
-                        frame = generate_start_frame(canvas, sc, cfg)
-                    except AgentError as e:
-                        return sid, None, str(e)
-                    return sid, frame, None
-
-                frame_results: dict[str, bytes] = {}
-                if workers == 1 or len(compiled) <= 1:
-                    for sc in compiled:
-                        sid, frame, err = _make_frame(sc)
-                        if err:
-                            progress(f"      start frame {sid} failed: {err}")
-                        elif frame:
-                            frame_results[sid] = frame
-                else:
-                    progress(f"      generating start frames with {workers} worker(s)")
-                    with ThreadPoolExecutor(max_workers=workers) as executor:
-                        futures = [executor.submit(_make_frame, sc)
-                                   for sc in compiled]
-                        for future in as_completed(futures):
-                            sid, frame, err = future.result()
-                            if err:
-                                progress(f"      start frame {sid} failed: {err}")
-                            elif frame:
-                                frame_results[sid] = frame
-
-                for sc in compiled:
-                    sid = sc["scenario_id"]
-                    frame = frame_results.get(sid)
-                    if frame:
-                        p = frames_dir / f"{sid}_start.png"
-                        p.write_bytes(frame)
-                        result.start_frame_paths[sid] = str(p)
+                _make_start_frames(canvas, compiled, out, cfg, result,
+                                   progress)
     else:
         progress("[5/5] Visual anchors skipped (use --canvas / "
                  "--start-frames)")
@@ -178,6 +149,13 @@ def run_pipeline(intention: str,
         "canvas": result.canvas_path,
         "canvas_error": result.canvas_error,
         "start_frames": result.start_frame_paths,
+        "generation": {
+            "text_model": cfg.text_model,
+            "image_model": cfg.image_model,
+            "video_model": cfg.video_model,
+            "strategy": "image-to-video from per-scenario start frames "
+                        "derived from one canonical canvas",
+        },
         "files": {
             "intent": "intent.json",
             "contract": "contract.json",
@@ -186,3 +164,43 @@ def run_pipeline(intention: str,
         },
     })
     return result
+
+
+def _make_start_frames(canvas: bytes, compiled: list[dict], out: Path,
+                       cfg: AgentConfig, result: PipelineResult,
+                       progress) -> None:
+    frames_dir = out / "frames"
+    frames_dir.mkdir(exist_ok=True)
+    workers = max(1, int(cfg.start_frame_workers or 1))
+
+    def make_frame(sc: dict) -> tuple[str, bytes | None, str | None]:
+        sid = sc["scenario_id"]
+        try:
+            return sid, generate_start_frame(canvas, sc, cfg), None
+        # Exception, not just AgentError: a transport error escaping one
+        # worker must not kill the whole pipeline after a good canvas.
+        except Exception as e:  # noqa: BLE001
+            return sid, None, f"{type(e).__name__}: {e}"
+
+    frame_bytes: dict[str, bytes] = {}
+    if workers == 1 or len(compiled) <= 1:
+        outcomes = map(make_frame, compiled)
+    else:
+        progress(f"      generating {len(compiled)} start frames with "
+                 f"{workers} worker(s)")
+        pool = ThreadPoolExecutor(max_workers=workers)
+        with pool:
+            futures = [pool.submit(make_frame, sc) for sc in compiled]
+            outcomes = [f.result() for f in as_completed(futures)]
+    for sid, frame, err in outcomes:
+        if err:
+            progress(f"      start frame {sid} failed: {err}")
+        elif frame:
+            frame_bytes[sid] = frame
+
+    for sc in compiled:  # write in scenario order
+        frame = frame_bytes.get(sc["scenario_id"])
+        if frame:
+            p = frames_dir / f"{sc['scenario_id']}_start.png"
+            p.write_bytes(frame)
+            result.start_frame_paths[sc["scenario_id"]] = str(p)

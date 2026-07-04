@@ -181,7 +181,11 @@ def run_video_pipeline(prompt: str,
                        robot_data_mode: str = "synthetic",
                        robot_data_stages: str = "all",
                        progress=print) -> VideoPipelineResult:
-    from gemini_service import generate_video, label_video
+    from gemini_service import (
+        enforce_video_continuity_prompt,
+        generate_video,
+        label_video,
+    )
 
     storage = get_storage()
     settings = get_settings()
@@ -191,7 +195,9 @@ def run_video_pipeline(prompt: str,
     if scenario_path and scenario is None:
         scenario = _read_json(Path(scenario_path))
 
-    generation_prompt = scenario_generation_prompt(scenario, prompt)
+    generation_prompt = enforce_video_continuity_prompt(
+        scenario_generation_prompt(scenario, prompt)
+    )
     scenario_id = (
         str(scenario.get("scenario_id"))
         if scenario and scenario.get("scenario_id") else None

@@ -18,6 +18,8 @@ import json
 import cv2
 import numpy as np
 
+from env_loader import load_dotenv
+
 from .config import Thresholds
 from .tracks import Evidence, Violation
 
@@ -189,6 +191,7 @@ def run_gate2(video_path: str,
     meta = {"status": "ok", "model": th.gate2_model,
             "frames_sent": [f for f, _, _ in frames]}
     try:
+        load_dotenv()
         client = genai.Client()
         response = client.models.generate_content(
             model=th.gate2_model,
@@ -204,7 +207,7 @@ def run_gate2(video_path: str,
             ),
         )
     # TypeError: the SDK raises it when no credentials can be resolved.
-    except (errors.APIError, TypeError, ValueError) as e:
+    except (errors.APIError, RuntimeError, TypeError, ValueError) as e:
         return [], {"status": "error", "error": f"{type(e).__name__}: {e}"}
 
     text = response.text

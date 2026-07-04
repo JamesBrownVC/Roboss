@@ -1,0 +1,18 @@
+{
+  "domain": "industrial robotics safety",
+  "environment": "warehouse",
+  "main_task": "humanoid robot carrying a box",
+  "risk_focus": "unpredictable human behavior and near-miss collisions",
+  "actors": [
+    "humanoid robot",
+    "human worker"
+  ],
+  "objects": [
+    "cardboard box"
+  ],
+  "variation_count": 3,
+  "duration_seconds": 6.0,
+  "camera_style": "static surveillance-like",
+  "notes": "Scenarios should depict rare safety events where the human worker makes sudden, unpredictable movements such as tripping, crossing paths abruptly, or stepping backward into the robot's trajectory while the humanoid robot is transporting a box.",
+  "raw_intention": "Generate rare safety scenarios where a humanoid robot carries a box in a warehouse and a human worker behaves unpredictably"
+}

@@ -1,0 +1,25 @@
+# Multi-view session thresholds (master prompt section 7).
+sync:
+  min_confidence: 0.6
+  max_offset_s: 2.0
+  audio_sample_rate: 8000
+
+calibration:
+  min_confidence: 0.7
+  checkerboard_squares: [9, 6]
+  colmap_min_images: 20
+
+triangulation:
+  min_views: 2
+  ransac_reproj_threshold_px: 8.0
+  max_reproj_px: 12.0
+  min_joint_conf: 0.3
+
+fusion:
+  primary_cam: cam0
+  ensemble_strategy: best_frame  # best_frame | mean_confidence
+  # Multi-gen same event: align variants per cam, pick highest cross-view conf
+
+benchmark:
+  log_monocular_shadow: true
+  require_triangulation_wins: false

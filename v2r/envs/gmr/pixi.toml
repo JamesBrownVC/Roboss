@@ -1,0 +1,41 @@
+# V2R stage env: retarget H1 humanoid_wholebody (GMR).
+# Linux host (CUDA optional for GMR itself). See NOTES.md.
+
+[project]
+name = "v2r-env-gmr"
+version = "0.1.0"
+description = "GMR: general motion retargeting, SMPL-X -> humanoid (G1, H1, T1, GR3, ...)"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[activation.env]
+# TODO(operator): pin to the exact commit; recorded in the retarget manifest.
+PINNED_COMMIT = "PINNED_COMMIT_GMR"
+GMR_REPO = "https://github.com/YanjieZe/GMR.git"
+# Operator-provided SMPL-X body models (never scraped):
+V2R_BODY_MODELS = "../../assets/body_models"
+# Robot MJCF/URDF assets (Unitree / MuJoCo Menagerie), operator-placed:
+V2R_ROBOT_ASSETS = "../../assets/robots"
+
+[dependencies]
+python = "3.10.*"
+pip = "*"
+git = "*"
+
+[pypi-dependencies]
+mujoco = ">=3.1.6"
+smplx = ">=0.1.28"
+torch = ">=2.0"          # CPU wheel is fine; GMR retargeting is IK, not learning
+numpy = "<2"
+rich = ">=13"
+
+[tasks]
+clone = "git clone $GMR_REPO tool && git -C tool checkout $PINNED_COMMIT"
+install = "python -m pip install -e ./tool"
+link-body-models = "ln -sfn $(realpath $V2R_BODY_MODELS) tool/assets/body_models"
+link-robots = "ln -sfn $(realpath $V2R_ROBOT_ASSETS) tool/assets/robots"
+selftest = "python -c \"import mujoco, smplx; print('gmr env ok')\""
+
+# No license-gated weights: GMR is MIT (config/licensing.yaml:
+# commercial: yes). It still NEEDS the operator-provided SMPL-X models above
+# and the robot MJCF assets; neither is downloaded here.

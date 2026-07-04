@@ -1,0 +1,106 @@
+# Embodiment registry (master prompt section 6.H).
+# NOTE: joint lists follow the vendor MJCF/URDF naming. joint_limits here are
+# conservative placeholders used by Tier-1 kinematic checks when the MJCF is
+# not present; when assets/robots/{name}/ contains the model, limits are read
+# from the model and these values are ignored.
+robots:
+  g1:
+    class: humanoid_wholebody
+    model_path: assets/robots/g1/g1_29dof.xml
+    control_rate_hz: 50.0
+    dof:
+      - left_hip_pitch_joint
+      - left_hip_roll_joint
+      - left_hip_yaw_joint
+      - left_knee_joint
+      - left_ankle_pitch_joint
+      - left_ankle_roll_joint
+      - right_hip_pitch_joint
+      - right_hip_roll_joint
+      - right_hip_yaw_joint
+      - right_knee_joint
+      - right_ankle_pitch_joint
+      - right_ankle_roll_joint
+      - waist_yaw_joint
+      - waist_roll_joint
+      - waist_pitch_joint
+      - left_shoulder_pitch_joint
+      - left_shoulder_roll_joint
+      - left_shoulder_yaw_joint
+      - left_elbow_joint
+      - left_wrist_roll_joint
+      - left_wrist_pitch_joint
+      - left_wrist_yaw_joint
+      - right_shoulder_pitch_joint
+      - right_shoulder_roll_joint
+      - right_shoulder_yaw_joint
+      - right_elbow_joint
+      - right_wrist_roll_joint
+      - right_wrist_pitch_joint
+      - right_wrist_yaw_joint
+    key_body_map:
+      pelvis: pelvis
+      torso: torso_link
+      head: head_link
+      left_hand: left_wrist_yaw_link
+      right_hand: right_wrist_yaw_link
+      left_foot: left_ankle_roll_link
+      right_foot: right_ankle_roll_link
+    joint_limits_default: [-3.14, 3.14]
+    feet_links: [left_ankle_roll_link, right_ankle_roll_link]
+
+  franka:
+    class: ee_manipulator
+    model_path: assets/robots/franka/panda.xml
+    control_rate_hz: 100.0
+    dof:
+      - panda_joint1
+      - panda_joint2
+      - panda_joint3
+      - panda_joint4
+      - panda_joint5
+      - panda_joint6
+      - panda_joint7
+      - panda_finger_joint1
+    key_body_map:
+      ee: panda_hand
+    joint_limits:
+      panda_joint1: [-2.8973, 2.8973]
+      panda_joint2: [-1.7628, 1.7628]
+      panda_joint3: [-2.8973, 2.8973]
+      panda_joint4: [-3.0718, -0.0698]
+      panda_joint5: [-2.8973, 2.8973]
+      panda_joint6: [-0.0175, 3.7525]
+      panda_joint7: [-2.8973, 2.8973]
+      panda_finger_joint1: [0.0, 0.04]
+    ee_source_hand: right     # which human hand drives the EE channel
+    gripper_from_aperture: true
+
+  go2:
+    class: quadruped
+    model_path: assets/robots/go2/go2.xml
+    control_rate_hz: 50.0
+    dof:
+      - FL_hip_joint
+      - FL_thigh_joint
+      - FL_calf_joint
+      - FR_hip_joint
+      - FR_thigh_joint
+      - FR_calf_joint
+      - RL_hip_joint
+      - RL_thigh_joint
+      - RL_calf_joint
+      - RR_hip_joint
+      - RR_thigh_joint
+      - RR_calf_joint
+    key_body_map:
+      base: base
+      FL_foot: FL_foot
+      FR_foot: FR_foot
+      RL_foot: RL_foot
+      RR_foot: RR_foot
+    joint_limits_default: [-2.7, 2.7]
+    feet_links: [FL_foot, FR_foot, RL_foot, RR_foot]
+    # Human video -> quadruped: gait is NOT transferred; base twist commands
+    # only (master prompt H3b). Locomotion controller owns the gait.
+    human_video_policy: command_abstraction

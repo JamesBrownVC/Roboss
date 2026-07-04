@@ -1,0 +1,116 @@
+# Curated human & animal video sources for timeseries extraction.
+# Each entry: id, subject (human|animal), license, import method, limits.
+#
+# Import methods:
+#   direct_url  - download MP4 from a public URL
+#   huggingface - stream video column from a HF dataset
+#   youtube     - yt-dlp download (Creative Commons / permissive only)
+
+data_root: data/raw
+
+sources:
+  # --- Human action / pose (direct samples) ---------------------------------
+  - id: human_pexels_walk
+    subject: human
+    license: Pexels License
+    description: Person walking outdoors
+    method: direct_url
+    urls:
+      - https://videos.pexels.com/video-files/3195394/3195394-hd_1280_720_25fps.mp4
+      - https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_25fps.mp4
+      - https://videos.pexels.com/video-files/3195394/3195394-hd_1920_1080_25fps.mp4
+
+  - id: human_pexels_sports
+    subject: human
+    license: Pexels License
+    description: Human sports and exercise clips
+    method: direct_url
+    urls:
+      - https://videos.pexels.com/video-files/3571264/3571264-hd_1280_720_30fps.mp4
+      - https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_25fps.mp4
+      - https://videos.pexels.com/video-files/3195394/3195394-hd_1280_720_25fps.mp4
+
+  - id: human_pexels_dance
+    subject: human
+    license: Pexels License
+    description: Dance and expressive motion
+    method: direct_url
+    urls:
+      - https://videos.pexels.com/video-files/3571264/3571264-hd_1280_720_30fps.mp4
+      - https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_25fps.mp4
+
+  # --- HuggingFace human / egocentric ---------------------------------------
+  - id: hf_lerobot_pusht
+    subject: human
+    license: Apache-2.0
+    description: LeRobot pusht demo (proxy manipulation motion)
+    method: huggingface
+    dataset: lerobot/pusht
+    split: train
+    video_column: observation.image
+    max_episodes: 5
+
+  - id: hf_nateraw_ucf101
+    subject: human
+    license: UCF-101 terms (research)
+    description: UCF-101 action recognition clips (human actions)
+    method: huggingface
+    dataset: nateraw/ucf101
+    split: train
+    video_column: video
+    max_episodes: 20
+
+  # --- Animal behavior (direct samples) -------------------------------------
+  - id: animal_pexels
+    subject: animal
+    license: Pexels License
+    description: Dogs, cats, birds in natural motion
+    method: direct_url
+    urls:
+      - https://videos.pexels.com/video-files/854548/854548-hd_1280_720_25fps.mp4
+      - https://videos.pexels.com/video-files/854548/854548-hd_1920_1080_25fps.mp4
+      - https://videos.pexels.com/video-files/857195/857195-hd_1280_720_25fps.mp4
+
+  - id: animal_pexels_wildlife
+    subject: animal
+    license: Pexels License
+    description: Wildlife locomotion
+    method: direct_url
+    urls:
+      - https://videos.pexels.com/video-files/857195/857195-hd_1280_720_25fps.mp4
+      - https://videos.pexels.com/video-files/854548/854548-hd_1280_720_25fps.mp4
+
+  # --- HuggingFace animal ---------------------------------------------------
+  - id: hf_animal_kingdom
+    subject: animal
+    license: Animal Kingdom dataset terms (research)
+    description: Animal Kingdom action clips
+    method: huggingface
+    dataset: Voxel51/animal-kingdom
+    split: validation
+    video_column: filepath
+    max_episodes: 15
+    note: filepath may require local clone; falls back to direct URLs on failure
+
+  - id: hf_ap10k
+    subject: animal
+    license: AP-10K terms (research)
+    description: AP-10K animal pose benchmark clips
+    method: huggingface
+    dataset: cpone/AP-10K
+    split: train
+    video_column: image
+    max_episodes: 10
+
+# Extraction settings (applied by v2r extract-timeseries)
+extraction:
+  canonical_hz: 30.0
+  human:
+    model: mediapipe_pose
+    min_detection_confidence: 0.5
+    min_tracking_confidence: 0.5
+  animal:
+    model: yolo_detect_track
+    yolo_weights: yolo11n.pt
+    min_confidence: 0.15
+    classes: null  # all COCO animal classes

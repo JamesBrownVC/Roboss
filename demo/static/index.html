@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>V2R Factory — Video to Robot Training Data</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><span class="brand-dot"></span>V2R <b>FACTORY</b></div>
+  <div class="navlinks">
+    <a href="#dataset">Dataset</a>
+    <a href="#timeseries">Timeseries</a>
+    <a href="#feasibility">Judge</a>
+    <a href="#multiview">Multi-View</a>
+    <a href="#funnel">Yield</a>
+    <a href="#exports">Export</a>
+  </div>
+</nav>
+
+<!-- ============ 1. HERO ============ -->
+<header class="hero">
+  <div class="hero-glow"></div>
+  <h1 class="hero-title">Turn <span class="grad">any video</span><br/>into robot training data.</h1>
+  <p class="hero-sub">Human &amp; animal video → pose &amp; geometry → physics-checked retargeting → LeRobot-ready episodes.
+  An automated factory with an AI feasibility gate and a triangulated multi-view ground-truth tier.</p>
+
+  <svg id="pipelineSvg" viewBox="0 0 1000 190" class="pipeline-svg" aria-label="pipeline diagram">
+    <defs>
+      <linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/>
+      </linearGradient>
+    </defs>
+    <path id="flowPath" d="M 120 95 H 880" stroke="url(#flowGrad)" stroke-width="2" stroke-dasharray="6 8" opacity="0.5" fill="none"/>
+    <g class="pipe-node" transform="translate(70,95)">
+      <circle r="46" class="node-c"/>
+      <g class="node-icon">
+        <rect x="-18" y="-13" width="36" height="26" rx="4" fill="none" stroke="#22d3ee" stroke-width="2"/>
+        <path d="M -4 -7 L 8 0 L -4 7 Z" fill="#22d3ee"/>
+      </g>
+      <text y="72" class="node-label">RAW VIDEO</text>
+    </g>
+    <g class="pipe-node" transform="translate(310,95)">
+      <circle r="46" class="node-c"/>
+      <g class="node-icon" id="heroSkel"></g>
+      <text y="72" class="node-label">POSE + GEOMETRY</text>
+    </g>
+    <g class="pipe-node" transform="translate(550,95)">
+      <circle r="46" class="node-c"/>
+      <g class="node-icon">
+        <path d="M -16 12 C -16 -6 -4 -14 0 -14 C 4 -14 16 -6 16 12" fill="none" stroke="#a78bfa" stroke-width="2"/>
+        <path d="M -8 12 L -2 -2 M 8 12 L 2 -2" stroke="#a78bfa" stroke-width="2"/>
+        <circle cx="0" cy="-14" r="4" fill="#a78bfa"/>
+      </g>
+      <text y="72" class="node-label">RETARGET + PHYSICS</text>
+    </g>
+    <g class="pipe-node" transform="translate(790,95)">
+      <circle r="46" class="node-c"/>
+      <g class="node-icon">
+        <rect x="-14" y="-16" width="28" height="22" rx="5" fill="none" stroke="#34d399" stroke-width="2"/>
+        <circle cx="-6" cy="-6" r="2.6" fill="#34d399"/><circle cx="6" cy="-6" r="2.6" fill="#34d399"/>
+        <path d="M -10 12 H 10 M -6 12 V 17 M 6 12 V 17" stroke="#34d399" stroke-width="2"/>
+      </g>
+      <text y="72" class="node-label">ROBOT DATASET</text>
+    </g>
+    <circle class="flow-dot" r="4" fill="#22d3ee"><animateMotion dur="4s" repeatCount="indefinite"><mpath href="#flowPath"/></animateMotion></circle>
+    <circle class="flow-dot" r="4" fill="#818cf8"><animateMotion dur="4s" begin="1.3s" repeatCount="indefinite"><mpath href="#flowPath"/></animateMotion></circle>
+    <circle class="flow-dot" r="4" fill="#a78bfa"><animateMotion dur="4s" begin="2.6s" repeatCount="indefinite"><mpath href="#flowPath"/></animateMotion></circle>
+  </svg>
+
+  <div class="stats-row" id="statsRow"></div>
+</header>
+
+<main>
+
+<!-- ============ 2. DATASET EXPLORER ============ -->
+<section id="dataset">
+  <div class="sec-head">
+    <h2><span class="sec-num">01</span> Dataset Explorer</h2>
+    <p>Curated human &amp; animal clips imported from Pexels and HuggingFace. Click a card to load it into the timeseries viewer.</p>
+    <span class="mock-flag" id="videosMock" hidden>demo data</span>
+  </div>
+  <div class="video-grid" id="videoGrid"></div>
+</section>
+
+<!-- ============ 3. TIMESERIES VIEWER ============ -->
+<section id="timeseries">
+  <div class="sec-head">
+    <h2><span class="sec-num">02</span> Timeseries Viewer</h2>
+    <p>Per-frame pose (MediaPipe, 33 joints) or track (YOLO) extraction — the raw signal fed into retargeting.</p>
+    <span class="mock-flag" id="tsMock" hidden>demo data</span>
+  </div>
+  <div class="ts-layout">
+    <div class="panel ts-video-panel">
+      <div class="panel-title" id="tsVideoTitle">Skeleton overlay</div>
+      <div class="video-stage" id="videoStage">
+        <video id="tsVideo" muted loop playsinline></video>
+        <canvas id="overlayCanvas"></canvas>
+        <div class="stage-placeholder" id="stagePlaceholder">Select a video above</div>
+      </div>
+      <div class="ts-controls">
+        <button class="btn" id="btnPlay">▶ Play</button>
+        <span class="ts-meta" id="tsMeta"></span>
+      </div>
+    </div>
+    <div class="panel ts-chart-panel">
+      <div class="panel-title" id="tsChartTitle">Joint trajectories</div>
+      <div class="chart-wrap"><canvas id="tsChart"></canvas></div>
+      <div class="joint-picker" id="jointPicker"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. FEASIBILITY JUDGE ============ -->
+<section id="feasibility">
+  <div class="sec-head">
+    <h2><span class="sec-num">03</span> Feasibility Judge</h2>
+    <p>Every clip passes an LLM-as-judge + physics-heuristics gate <em>before</em> expensive analysis — AI-generated and physically impossible video is rejected early.</p>
+    <span class="mock-flag" id="feasMock" hidden>demo data</span>
+  </div>
+  <div class="feas-grid" id="feasGrid"></div>
+</section>
+
+<!-- ============ 5. MULTI-VIEW TIER ============ -->
+<section id="multiview">
+  <div class="sec-head">
+    <h2><span class="sec-num">04</span> Multi-View Ground-Truth Tier</h2>
+    <p>Same event, multiple cameras → RANSAC triangulation. Accuracy is <em>measured</em> via cross-view reprojection error — not self-asserted confidence.</p>
+    <span class="mock-flag" id="mvMock" hidden>demo data</span>
+  </div>
+  <div id="mvContainer"></div>
+</section>
+
+<!-- ============ 6. YIELD FUNNEL ============ -->
+<section id="funnel">
+  <div class="sec-head">
+    <h2><span class="sec-num">05</span> Yield Funnel</h2>
+    <p>Every episode is gated stage-by-stage. What survives to export is trustworthy by construction.</p>
+    <span class="mock-flag" id="funnelMock" hidden>demo data</span>
+  </div>
+  <div class="panel">
+    <div id="funnelBars"></div>
+    <div id="funnelEpisodes"></div>
+  </div>
+</section>
+
+<!-- ============ 7. EXPORT SHOWCASE ============ -->
+<section id="exports">
+  <div class="sec-head">
+    <h2><span class="sec-num">06</span> Export Showcase</h2>
+    <p>LeRobot v3 dataset fragments, tier-tagged: <b>monocular</b> (estimated kinematics) or <b>multiview_gt</b> (triangulated, error-bounded).</p>
+    <span class="mock-flag" id="expMock" hidden>demo data</span>
+  </div>
+  <div class="export-grid" id="exportGrid"></div>
+</section>
+
+</main>
+
+<footer>V2R Factory — RAISE Summit hackathon demo · reads live pipeline artifacts from <code>v2r/</code>, falls back to demo data where marked.</footer>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+# Licensing / compliance configuration (master prompt section 10).
+# permissive_only=true must produce a fully permissive pipeline with
+# degraded-confidence fallbacks (e.g. FoundationPose -> mask+depth ICP).
+permissive_only: false
+
+# License audit map: every third-party repo / weights file the pipeline can
+# touch. `commercial` is one of: yes | no | verify.
+audit:
+  - {name: ViPE,            kind: repo,    ref: github.com/nv-tlabs/vipe,            license: "Apache-2.0 (code); check model weights",   commercial: verify}
+  - {name: GVHMR,           kind: repo,    ref: github.com/zju3dv/GVHMR,             license: "research-only (check repo)",               commercial: verify}
+  - {name: WHAM,            kind: repo,    ref: github.com/yohanshin/WHAM,           license: "research-only (check repo)",               commercial: verify}
+  - {name: WiLoR,           kind: repo,    ref: github.com/rolpotamias/WiLoR,        license: "CC-BY-NC (weights)",                       commercial: no}
+  - {name: HaMeR,           kind: repo,    ref: github.com/geopavlakos/hamer,        license: "MIT (code); weights research-only",        commercial: verify}
+  - {name: GroundingDINO,   kind: repo,    ref: github.com/IDEA-Research/GroundingDINO, license: "Apache-2.0",                            commercial: yes}
+  - {name: SAM2,            kind: repo,    ref: github.com/facebookresearch/sam2,    license: "Apache-2.0",                               commercial: yes}
+  - {name: FoundationPose,  kind: repo,    ref: github.com/NVlabs/FoundationPose,    license: "NVIDIA non-commercial",                    commercial: no}
+  - {name: BundleSDF,       kind: repo,    ref: github.com/NVlabs/BundleSDF,         license: "NVIDIA non-commercial",                    commercial: no}
+  - {name: Qwen2.5-VL,      kind: weights, ref: huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct, license: "Apache-2.0",                        commercial: yes}
+  - {name: GMR,             kind: repo,    ref: github.com/YanjieZe/GMR,             license: "MIT",                                      commercial: yes}
+  - {name: mink,            kind: repo,    ref: github.com/kevinzakka/mink,          license: "Apache-2.0",                               commercial: yes}
+  - {name: LeRobot,         kind: repo,    ref: github.com/huggingface/lerobot,      license: "Apache-2.0",                               commercial: yes}
+  - {name: MuJoCo,          kind: repo,    ref: github.com/google-deepmind/mujoco,   license: "Apache-2.0",                               commercial: yes}
+  - {name: rerun,           kind: repo,    ref: github.com/rerun-io/rerun,           license: "MIT/Apache-2.0",                           commercial: yes}
+  - {name: PySceneDetect,   kind: repo,    ref: github.com/Breakthrough/PySceneDetect, license: "BSD-3",                                  commercial: yes}
+  - {name: EgoBlur,         kind: repo,    ref: github.com/facebookresearch/EgoBlur, license: "Apache-2.0",                               commercial: yes}
+  - {name: SMPL-X,          kind: weights, ref: smpl-x.is.tue.mpg.de,                license: "MPI research license; commercial via Meshcapade", commercial: verify}
+  - {name: MANO,            kind: weights, ref: mano.is.tue.mpg.de,                  license: "MPI research license; commercial via Meshcapade", commercial: verify}
+  - {name: Sapiens,         kind: repo,    ref: github.com/facebookresearch/sapiens, license: "CC-BY-NC (weights)",                       commercial: no}
+  - {name: ViTPose,         kind: repo,    ref: github.com/ViTAE-Transformer/ViTPose, license: "Apache-2.0",                              commercial: yes}
+
+# Substitutions applied when permissive_only=true.
+# Each replacement runs with degraded confidence (conf_multiplier).
+permissive_fallbacks:
+  FoundationPose: {replacement: "mask + depth ICP tracking (Open3D, custom)", conf_multiplier: 0.6}
+  BundleSDF:      {replacement: "SAM 3D coarse mesh + ICP",                   conf_multiplier: 0.6}
+  WiLoR:          {replacement: "HaMeR (verify weights license) or 2D-only hands", conf_multiplier: 0.8}
+  Sapiens:        {replacement: "ViTPose",                                    conf_multiplier: 0.9}

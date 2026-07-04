@@ -1,0 +1,29 @@
+# Fixed caption/skill verb vocabulary. Semantics stage output MUST be one of
+# these; anything else is a schema violation.
+verbs:
+  - reach
+  - grasp
+  - release
+  - lift
+  - lower
+  - place
+  - push
+  - pull
+  - slide
+  - rotate
+  - open
+  - close
+  - pour
+  - insert
+  - remove
+  - press
+  - wipe
+  - stir
+  - cut
+  - fold
+  - shake
+  - hand_over
+  - hold
+  - walk
+  - turn
+  - idle

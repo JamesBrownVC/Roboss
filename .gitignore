@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+build/
+dist/
+
+# Large / generated data
+v2r/data/
+v2r/workspaces/
+v2r/.gpu_locks/
+demo/.cache/
+
+# Model weights
+v2r/assets/models/*.task
+v2r/assets/models/*.pt
+!v2r/assets/models/.gitkeep
+v2r/assets/body_models/*
+!v2r/assets/body_models/README.md
+v2r/assets/robots/*/meshes/
+*.pt
+
+# Secrets
+.env
+.env.*
+credentials*.json
+
+# OS
+.DS_Store
+Thumbs.db

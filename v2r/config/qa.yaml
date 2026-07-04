@@ -1,0 +1,55 @@
+# Quality-gate thresholds. Every stage gate and every QA cross-check reads
+# thresholds from here; nothing is hard-coded in stage code.
+ingest:
+  min_height: 720
+  min_fps: 15.0
+  min_duration_s: 3.0
+  max_duration_s: 900.0
+  max_corrupt_frames: 0
+
+geometry:
+  min_tracked_ratio: 0.90
+  min_depth_coverage: 0.60
+
+human_body:
+  max_reproj_px: 12.0
+  # max joint acceleration (jitter proxy), m/s^2
+  max_jitter_m_s2: 50.0
+
+hands:
+  min_mean_conf: 0.30
+  max_invalid_ratio: 0.60
+
+objects:
+  min_track_conf: 0.30
+
+contact:
+  dist_on_m: 0.005      # contact=true if min distance < 5 mm ...
+  sustain_frames: 3     # ... sustained >= 3 frames
+  dist_off_m: 0.010     # hysteresis on release
+
+physics:
+  max_joint_vel_rad_s: 20.0
+  max_joint_acc_rad_s2: 400.0
+  max_ground_penetration_m: 0.02
+  max_foot_slide_m_per_frame: 0.01
+  # Tier-2 (tracking policy) premium flag threshold
+  max_tracking_error_m: 0.08
+
+crosschecks:
+  max_reproj_px: 15.0
+  max_depth_disagreement_m: 0.15
+  max_quat_norm_err: 1.0e-3
+  max_jitter_m_s2: 80.0
+
+export:
+  require_consent: true
+  require_blur: true
+
+feasibility:
+  physics_violation_frame_ratio_max: 0.25
+  max_joint_vel_m_s: 8.0
+  max_joint_acc_m_s2: 40.0
+  max_foot_slide_m_per_frame: 0.01
+  max_scale_jump_ratio: 1.5
+  reject_on_recommendation: true

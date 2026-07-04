@@ -12,6 +12,8 @@ class CompileRequest(BaseModel):
     count: int | None = Field(default=None, ge=1, le=20)
     outdir: str | None = None
     start_frames: bool = True
+    deterministic: bool | None = None
+    start_frame_workers: int | None = Field(default=None, ge=1, le=8)
 
 
 class VideoPipelineRequest(BaseModel):
@@ -33,6 +35,10 @@ class E2ERequest(BaseModel):
     count: int | None = Field(default=3, ge=1, le=20)
     run_name: str | None = None
     start_frames: bool = True
+    deterministic: bool | None = None
+    start_frame_workers: int | None = Field(default=None, ge=1, le=8)
+    video_workers: int | None = Field(default=None, ge=1, le=8)
+    require_acceptance: bool = True
     gate2: bool = True
     label: bool = True
     device: str | None = None

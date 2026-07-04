@@ -16,6 +16,16 @@ def _bool_env(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _int_env(name: str, default: int, minimum: int = 1) -> int:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return max(minimum, int(value))
+    except ValueError:
+        return default
+
+
 @dataclass(frozen=True)
 class Settings:
     root_dir: Path
@@ -25,6 +35,9 @@ class Settings:
     label_model: str
     gate2_enabled: bool
     label_on_accept: bool
+    deterministic_agents: bool
+    start_frame_workers: int
+    video_workers: int
 
 
 def get_settings() -> Settings:
@@ -40,5 +53,8 @@ def get_settings() -> Settings:
         label_model=os.environ.get("ROBOSS_LABEL_MODEL", "gemini-3.5-flash"),
         gate2_enabled=_bool_env("ROBOSS_GATE2_ENABLED", True),
         label_on_accept=_bool_env("ROBOSS_LABEL_ON_ACCEPT", True),
+        deterministic_agents=_bool_env("ROBOSS_DETERMINISTIC_AGENTS", True),
+        start_frame_workers=_int_env("ROBOSS_START_FRAME_WORKERS", 2),
+        video_workers=_int_env("ROBOSS_VIDEO_WORKERS", 2),
     )
 

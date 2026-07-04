@@ -106,6 +106,8 @@ def create_scenario_bundle(req: CompileRequest) -> PipelineResponse:
             outdir=req.outdir,
             count=req.count,
             start_frames=req.start_frames,
+            deterministic=req.deterministic,
+            start_frame_workers=req.start_frame_workers,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -150,6 +152,10 @@ def create_verified_video_batch(req: E2ERequest) -> PipelineResponse:
             count=req.count,
             run_name=req.run_name,
             start_frames=req.start_frames,
+            deterministic=req.deterministic,
+            start_frame_workers=req.start_frame_workers,
+            video_workers=req.video_workers,
+            require_acceptance=req.require_acceptance,
             gate2=req.gate2,
             label=req.label,
             device=req.device,

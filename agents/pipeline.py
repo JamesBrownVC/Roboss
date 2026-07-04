@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -43,6 +44,7 @@ def run_pipeline(intention: str,
                  count: int | None = None,
                  make_canvas: bool = False,
                  make_start_frames: bool = False,
+                 start_frame_workers: int = 1,
                  progress=print) -> PipelineResult:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -115,13 +117,39 @@ def run_pipeline(intention: str,
             if make_start_frames:
                 frames_dir = out / "frames"
                 frames_dir.mkdir(exist_ok=True)
-                for sc in compiled:
+                workers = max(1, int(start_frame_workers or 1))
+
+                def _make_frame(sc: dict) -> tuple[str, bytes | None, str | None]:
                     sid = sc["scenario_id"]
                     try:
                         frame = generate_start_frame(canvas, sc, cfg)
                     except AgentError as e:
-                        progress(f"      start frame {sid} failed: {e}")
-                        continue
+                        return sid, None, str(e)
+                    return sid, frame, None
+
+                frame_results: dict[str, bytes] = {}
+                if workers == 1 or len(compiled) <= 1:
+                    for sc in compiled:
+                        sid, frame, err = _make_frame(sc)
+                        if err:
+                            progress(f"      start frame {sid} failed: {err}")
+                        elif frame:
+                            frame_results[sid] = frame
+                else:
+                    progress(f"      generating start frames with {workers} worker(s)")
+                    with ThreadPoolExecutor(max_workers=workers) as executor:
+                        futures = [executor.submit(_make_frame, sc)
+                                   for sc in compiled]
+                        for future in as_completed(futures):
+                            sid, frame, err = future.result()
+                            if err:
+                                progress(f"      start frame {sid} failed: {err}")
+                            elif frame:
+                                frame_results[sid] = frame
+
+                for sc in compiled:
+                    sid = sc["scenario_id"]
+                    frame = frame_results.get(sid)
                     if frame:
                         p = frames_dir / f"{sid}_start.png"
                         p.write_bytes(frame)

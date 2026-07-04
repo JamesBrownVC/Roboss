@@ -35,11 +35,21 @@ def export_video_to_robot_data(video_path: str | Path,
 
     source_video = Path(video_path).resolve()
     if not source_video.is_file():
-        raise FileNotFoundError(source_video)
+        raise FileNotFoundError(f"video file not found: {source_video}")
 
     robot_list = robots or ["g1"]
     cfg = V2RConfig.load(v2r_root)
     stage_set = resolve_stages(stages)
+
+    storage = get_storage()
+    if outdir is None:
+        dest = source_video.parent / "robot_data"
+    else:
+        dest = Path(outdir)
+    dest = dest.resolve()
+
+    workspace_root = dest.parent / "_v2r_workspaces"
+    cfg.pipeline.workspaces_root = str(workspace_root)
 
     progress(f"[V2R] Running robot-data export for {source_video.name} ...")
     result = run_episode(
@@ -51,15 +61,13 @@ def export_video_to_robot_data(video_path: str | Path,
         log=progress,
     )
 
-    storage = get_storage()
-    if outdir is None:
-        dest = storage.root / "robot_data" / result.episode_id
-    else:
-        dest = Path(outdir)
-    dest = dest.resolve()
     if dest.exists():
         shutil.rmtree(dest)
-    shutil.copytree(result.workspace, dest)
+    shutil.move(str(result.workspace), str(dest))
+    try:
+        workspace_root.rmdir()
+    except OSError:
+        pass
 
     stages_out = {
         name: status.value if hasattr(status, "value") else str(status)
@@ -74,7 +82,8 @@ def export_video_to_robot_data(video_path: str | Path,
         "stages": stages_out,
         "errors": result.errors,
         "source_video": str(source_video),
-        "v2r_workspace": str(result.workspace),
+        "v2r_workspace": str(dest),
+        "workspace_root": str(dest.parent),
         "lerobot_url": storage.url_for(dest / "export" / "lerobot")
         if (dest / "export" / "lerobot").exists() else None,
         "yield_report_url": storage.url_for(dest / "qa" / "yield_report.md")
@@ -88,7 +97,8 @@ def export_video_to_robot_data(video_path: str | Path,
         "mode": mode,
         "stages": stages_out,
         "errors": result.errors,
-        "source_workspace": str(result.workspace),
+        "source_workspace": str(dest),
+        "workspace_root": str(dest.parent),
         "outdir": str(dest),
         "manifest": manifest.url,
         "files": storage.collect_files(dest),

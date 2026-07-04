@@ -19,6 +19,7 @@ import {
 const POLL_INTERVAL_MS = 3000;
 const PREVIEW_LIMIT = 4;
 const MIN_DATASET = 1;
+const DEFAULT_DATASET_COUNT = 1;
 const MAX_DATASET = 5000;
 const TERMINAL_STATUSES = ["completed", "failed", "partial"];
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -100,7 +101,7 @@ export default function Studio() {
   const [prompt, setPrompt] = useState(savedStudioState.prompt || DEFAULT_PROMPT);
   const [aspectRatio, setAspectRatio] = useState(savedStudioState.aspectRatio || "16:9");
   const [datasetCount, setDatasetCount] = useState(() =>
-    clampDataset(savedStudioState.datasetCount || savedStudioState.batch?.count || 10),
+    clampDataset(savedStudioState.batch?.count || DEFAULT_DATASET_COUNT),
   );
   const [reference, setReference] = useState(() => studioReferenceCache);
   const [referenceNotice, setReferenceNotice] = useState("");

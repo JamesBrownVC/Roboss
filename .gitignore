@@ -1,0 +1,7 @@
+node_modules/
+dist/
+generated/
+.env
+.venv/
+__pycache__/
+*.local

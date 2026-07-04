@@ -1,733 +1,715 @@
 {
   "scenarios": [
     {
-      "scenario_id": "sc_01_sudden_trip",
-      "title": "Worker Sudden Trip in Robot Path",
+      "scenario_id": "sc_1_sudden_step_in_front",
+      "title": "Worker Stepping in Front of Carrying Robot",
       "referenced_entities": [
-        "robot_01",
-        "worker_01",
-        "box_01"
+        "humanoid_robot_01",
+        "human_worker_01",
+        "cardboard_box_01"
       ],
       "camera": {
-        "angle": "corner_security_camera",
+        "angle": "overhead_view",
         "movement": "static",
-        "duration_seconds": 6.0
+        "duration_seconds": 8.0
       },
       "event": {
-        "type": "sudden_trip",
+        "type": "sudden_step_in_front",
         "trigger_time_seconds": 2.5,
-        "risk_severity": "high",
-        "description": "The human worker trips over a small floor joint and stumbles directly into the oncoming path of the robot carrying the cardboard box."
+        "risk_severity": "medium",
+        "description": "The human worker suddenly steps backward directly into the robot's lane without looking, seeking to grab a tool from the opposite rack."
       },
       "position_deltas": [
         {
-          "entity_id": "robot_01",
+          "entity_id": "humanoid_robot_01",
           "dx": 0.0,
-          "dy": 0.1,
-          "reason": "Slightly forward start point to reduce distance to potential collision area."
+          "dy": 0.2,
+          "dz": 0.0,
+          "reason": "Slight shift forward to simulate an ongoing path execution."
         },
         {
-          "entity_id": "worker_01",
+          "entity_id": "human_worker_01",
           "dx": -0.2,
-          "dy": 0.3,
-          "reason": "Shifted closer to the center aisle to facilitate the tripping event path."
+          "dy": -0.5,
+          "dz": 0.0,
+          "reason": "Worker is positioned slightly further down the aisle to allow for back-stepping space."
         }
       ],
       "action_timeline": [
         {
           "t_start": 0.0,
           "t_end": 2.5,
-          "actor": "robot_01",
-          "action": "robot_01 walks forward along the aisle carrying box_01 with both hands while worker_01 walks parallel to the racks."
+          "actor": "humanoid_robot_01",
+          "action": "Walks forward down the center path at 0.8 m/s while carrying cardboard_box_01 at chest height."
         },
         {
           "t_start": 2.5,
-          "t_end": 3.8,
-          "actor": "worker_01",
-          "action": "worker_01 trips and stumbles leftward, losing balance and falling directly into the path of robot_01."
+          "t_end": 3.2,
+          "actor": "human_worker_01",
+          "action": "Steps abruptly backward into the center of the path without looking behind."
         },
         {
-          "t_start": 3.8,
-          "t_end": 6.0,
-          "actor": "robot_01",
-          "action": "robot_01 detects the obstacle, initiates an emergency stop, and braces box_01 to prevent it from sliding out of its grip."
+          "t_start": 3.2,
+          "t_end": 4.5,
+          "actor": "humanoid_robot_01",
+          "action": "Detects the worker's intrusion, triggers emergency decelerating stop, and pulls cardboard_box_01 tighter to its torso to stabilize it."
+        },
+        {
+          "t_start": 4.5,
+          "t_end": 8.0,
+          "actor": "human_worker_01",
+          "action": "Realizes the robot's presence, stops, steps forward back towards the rack, and lets the robot hold position."
         }
       ],
       "expected_labels": [
-        "sudden_trip",
-        "emergency_stop",
-        "humanoid_avoidance",
-        "warehouse_safety"
+        "sudden_step",
+        "robot_emergency_stop",
+        "payload_stabilization",
+        "pedestrian_avoidance"
       ],
-      "expected_robot_response": "The robot immediately halts its forward motion, engages its joint brakes, and shifts its weight backward to secure the cardboard box and prevent contact with the fallen worker.",
-      "inherits_world_contract": "warehouse_robot_safety_world",
-      "video_prompt": "Realistic, slightly grainy surveillance camera footage, static high-angle perspective, natural color grading, non-cinematic, authentic warehouse security feed aesthetic. Setting: A straight warehouse aisle, 3.2 meters wide, bordered on both sides by tall, industrial steel storage racks painted orange and blue. The racks are filled with wooden pallets holding various shrink-wrapped brown boxes., Polished, light grey industrial concrete floor with visible expansion joints and painted bright yellow safety boundary lines running parallel to the racks on both sides. floor, Even, bright overhead industrial fluorescent tube lighting fixtures, casting realistic, soft-edged shadows directly beneath the objects and actors.. Scene identity anchor: linear_aisle_with_flanking_racks; orange_and_blue_steel_racks_with_palletized_inventory; overhead_fluorescent_grid_cool_white_5000k. Identical across all videos of this series: the same A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. (matte composite plastic, brushed aluminum, and tempered glass); the same A male warehouse worker of medium build, wearing a bright neon yellow high-visibility safety vest over a long-sleeved navy blue shirt, dark grey rugged work pants, brown steel-toed boots, and a white industrial hard hat. No visible logos or branding. (fabric, polyester safety mesh, and hard plastic); the same A plain, medium-sized rectangular corrugated cardboard box, light brown in color, measuring 0.4m x 0.4m x 0.3m. The box is sealed along the top center seam with clear, slightly reflective packing tape. It has no text, labels, or barcodes. (corrugated cardboard and adhesive plastic tape). Object identity anchors: robot_01 = shape bipedal_humanoid_proportions_slender_limbs, material non_reflective_matte_white_and_dark_grey_panels, color white_grey_silver_blue_led; worker_01 = shape average_male_bipedal_silhouette, material matte_fabric_and_hard_reflective_plastic_helmet, color neon_yellow_navy_blue_dark_grey_white; box_01 = shape perfect_rectangular_prism, material matte_fibrous_cardboard_with_specular_tape_strip, color kraft_brown. Camera: corner security camera, static, 6 seconds. From 0s to 2.5s the A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. robot_01 walks forward along the aisle carrying box_01 with both hands while worker_01 walks parallel to the racks.. From 2.5s to 3.8s the A male warehouse worker of medium build, wearing a bright neon yellow high-visibility safety vest over a long-sleeved navy blue shirt, dark grey rugged work pants, brown steel-toed boots, and a white industrial hard hat. No visible logos or branding. worker_01 trips and stumbles leftward, losing balance and falling directly into the path of robot_01.. From 3.8s to 6s the A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. robot_01 detects the obstacle, initiates an emergency stop, and braces box_01 to prevent it from sliding out of its grip.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
+      "expected_robot_response": "The humanoid robot must execute an immediate stop, pull the cardboard box closer to its center of mass to prevent slipping, and remain stationary until the path is cleared.",
+      "inherits_world_contract": "warehouse_safety_world_01",
+      "video_prompt": "Industrial security camera style, realistic CCTV footage, high-angle overhead perspective, neutral color grading, non-cinematic. Setting: A narrow warehouse aisle bounded by tall steel racks stacked with pallets on both sides, creating a central 2.5-meter-wide pedestrian floor path., Polished concrete floor, light gray, with painted yellow safety boundary lines along the rack bases. floor, Overhead diffuse industrial fluorescent lighting casting soft shadows directly downwards, high clarity, no dramatic flares.. Scene identity anchor: linear_aisle_corridor_flanked_by_vertical_shelving; industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory; continuous_overhead_cool_white_fluorescent_array. Identical across all videos of this series: the same A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. (aluminum, matte plastic); the same A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. (fabric, plastic); the same A cubical brown corrugated cardboard box measuring 0.4 meters on each side, sealed with thick transparent packing tape.. Object identity anchors: humanoid_robot_01 = shape bipedal_humanoid_torso_with_slender_limbs, material brushed_aluminum_and_matte_polymer, color binary_white_and_dark_charcoal_gray; human_worker_01 = shape standard_adult_male_silhouette_with_hard_hat, material woven_cotton_polyester_and_high_vis_vinyl, color fluorescent_yellow_navy_blue_stone_gray; cardboard_box_01 = shape perfect_cube_geometry, material rough_pressed_cellulose_fiber, color natural_kraft_brown. Camera: overhead view, static, 8 seconds. Camera requirement: static top-down overhead view from above the scene, wide enough to show the full robot body, nearby humans, objects, floor layout, and the robot's movement path throughout the situation. Single continuous unedited take, no montage, no cuts, no shot changes, no zooms, no close-ups, no first-person or robot POV. Robot reaction requirement: the video must show the event situation 'The human worker suddenly steps backward directly into the robot's lane without looking, seeking to grab a tool from the opposite rack.' and then show the robot's observable response: The humanoid robot must execute an immediate stop, pull the cardboard box closer to its center of mass to prevent slipping, and remain stationary until the path is cleared.. From 0s to 2.5s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Walks forward down the center path at 0.8 m/s while carrying cardboard_box_01 at chest height.. From 2.5s to 3.2s the A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. Steps abruptly backward into the center of the path without looking behind.. From 3.2s to 4.5s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Detects the worker's intrusion, triggers emergency decelerating stop, and pulls cardboard_box_01 tighter to its torso to stabilize it.. From 4.5s to 8s the A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. Realizes the robot's presence, stops, steps forward back towards the rack, and lets the robot hold position.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
       "keyframes": [
         {
           "time": 0.0,
-          "state": "robot_01: robot_01 walks forward along the aisle carrying box_01 with both hands while worker_01 walks parallel to the racks."
+          "state": "humanoid_robot_01: Walks forward down the center path at 0.8 m/s while carrying cardboard_box_01 at chest height."
         },
         {
           "time": 2.5,
-          "state": "The human worker trips over a small floor joint and stumbles directly into the oncoming path of the robot carrying the cardboard box."
+          "state": "The human worker suddenly steps backward directly into the robot's lane without looking, seeking to grab a tool from the opposite rack."
         },
         {
-          "time": 6.0,
-          "state": "robot_01: robot_01 detects the obstacle, initiates an emergency stop, and braces box_01 to prevent it from sliding out of its grip."
+          "time": 8.0,
+          "state": "human_worker_01: Realizes the robot's presence, stops, steps forward back towards the rack, and lets the robot hold position."
         }
       ],
       "verifier_packet": {
-        "scenario_prompt": "Worker Sudden Trip in Robot Path",
+        "scenario_prompt": "Worker Stepping in Front of Carrying Robot",
+        "video_prompt": "Industrial security camera style, realistic CCTV footage, high-angle overhead perspective, neutral color grading, non-cinematic. Setting: A narrow warehouse aisle bounded by tall steel racks stacked with pallets on both sides, creating a central 2.5-meter-wide pedestrian floor path., Polished concrete floor, light gray, with painted yellow safety boundary lines along the rack bases. floor, Overhead diffuse industrial fluorescent lighting casting soft shadows directly downwards, high clarity, no dramatic flares.. Scene identity anchor: linear_aisle_corridor_flanked_by_vertical_shelving; industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory; continuous_overhead_cool_white_fluorescent_array. Identical across all videos of this series: the same A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. (aluminum, matte plastic); the same A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. (fabric, plastic); the same A cubical brown corrugated cardboard box measuring 0.4 meters on each side, sealed with thick transparent packing tape.. Object identity anchors: humanoid_robot_01 = shape bipedal_humanoid_torso_with_slender_limbs, material brushed_aluminum_and_matte_polymer, color binary_white_and_dark_charcoal_gray; human_worker_01 = shape standard_adult_male_silhouette_with_hard_hat, material woven_cotton_polyester_and_high_vis_vinyl, color fluorescent_yellow_navy_blue_stone_gray; cardboard_box_01 = shape perfect_cube_geometry, material rough_pressed_cellulose_fiber, color natural_kraft_brown. Camera: overhead view, static, 8 seconds. Camera requirement: static top-down overhead view from above the scene, wide enough to show the full robot body, nearby humans, objects, floor layout, and the robot's movement path throughout the situation. Single continuous unedited take, no montage, no cuts, no shot changes, no zooms, no close-ups, no first-person or robot POV. Robot reaction requirement: the video must show the event situation 'The human worker suddenly steps backward directly into the robot's lane without looking, seeking to grab a tool from the opposite rack.' and then show the robot's observable response: The humanoid robot must execute an immediate stop, pull the cardboard box closer to its center of mass to prevent slipping, and remain stationary until the path is cleared.. From 0s to 2.5s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Walks forward down the center path at 0.8 m/s while carrying cardboard_box_01 at chest height.. From 2.5s to 3.2s the A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. Steps abruptly backward into the center of the path without looking behind.. From 3.2s to 4.5s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Detects the worker's intrusion, triggers emergency decelerating stop, and pulls cardboard_box_01 tighter to its torso to stabilize it.. From 4.5s to 8s the A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. Realizes the robot's presence, stops, steps forward back towards the rack, and lets the robot hold position.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
         "expected_objects": [
-          "humanoid robot",
-          "human worker",
-          "cardboard box"
+          "robot",
+          "human",
+          "container"
         ],
-        "expected_action": "sudden_trip",
-        "expected_outcome": "The robot immediately halts its forward motion, engages its joint brakes, and shifts its weight backward to secure the cardboard box and prevent contact with the fallen worker.",
-        "scenario_id": "sc_01_sudden_trip",
-        "world_id": "warehouse_robot_safety_world",
+        "expected_action": "sudden_step_in_front",
+        "expected_outcome": "The humanoid robot must execute an immediate stop, pull the cardboard box closer to its center of mass to prevent slipping, and remain stationary until the path is cleared.",
+        "scenario_id": "sc_1_sudden_step_in_front",
+        "world_id": "warehouse_safety_world_01",
         "object_registry": [
           {
-            "entity_id": "robot_01",
-            "shape_signature": "bipedal_humanoid_proportions_slender_limbs",
-            "material_signature": "non_reflective_matte_white_and_dark_grey_panels",
-            "color_signature": "white_grey_silver_blue_led",
-            "surface_details": "Fine panel gaps on the torso, subtle metallic sheen on the exposed joint actuators, circular blue light emission from the chest.",
-            "scale_signature": "height_1.75m_shoulder_width_0.45m",
+            "entity_id": "humanoid_robot_01",
+            "shape_signature": "bipedal_humanoid_torso_with_slender_limbs",
+            "material_signature": "brushed_aluminum_and_matte_polymer",
+            "color_signature": "binary_white_and_dark_charcoal_gray",
+            "surface_details": "Dual joint hinges visible on knees, seamless composite chest plate, reflective visor head.",
+            "scale_signature": "height_1.7m_width_0.5m",
             "reference_views": [
-              "front_standing_pose",
-              "side_profile_carrying_pose",
-              "rear_view_walking"
+              "top_down_static",
+              "profile_view_static"
             ],
             "negative_drift": [
-              "chassis turning glossy or metallic silver",
-              "LED ring changing color to red or green",
-              "robot growing wheels or tracks instead of legs"
+              "changes_to_glowing_led_strips",
+              "transformation_to_wheeled_base",
+              "color_change_to_yellow"
             ]
           },
           {
-            "entity_id": "worker_01",
-            "shape_signature": "average_male_bipedal_silhouette",
-            "material_signature": "matte_fabric_and_hard_reflective_plastic_helmet",
-            "color_signature": "neon_yellow_navy_blue_dark_grey_white",
-            "surface_details": "Fabric folds on the navy blue sleeves, mesh texture on the safety vest, reflective silver stripes on the vest.",
-            "scale_signature": "height_1.80m_medium_build",
+            "entity_id": "human_worker_01",
+            "shape_signature": "standard_adult_male_silhouette_with_hard_hat",
+            "material_signature": "woven_cotton_polyester_and_high_vis_vinyl",
+            "color_signature": "fluorescent_yellow_navy_blue_stone_gray",
+            "surface_details": "Silver retroreflective bands horizontal across the torso vest, textured gray cargo pockets.",
+            "scale_signature": "height_1.8m_shoulder_width_0.45m",
             "reference_views": [
-              "front_standing_worker",
-              "back_view_walking",
-              "side_view_tripping"
+              "top_down_worker_static",
+              "isometric_worker_static"
             ],
             "negative_drift": [
-              "vest changing to orange or red",
-              "hard hat disappearing or changing color",
-              "worker wearing shorts or t-shirt"
+              "removal_of_hard_hat",
+              "color_shift_of_pants_to_jeans",
+              "disappearance_of_yellow_vest"
             ]
           },
           {
-            "entity_id": "box_01",
-            "shape_signature": "perfect_rectangular_prism",
-            "material_signature": "matte_fibrous_cardboard_with_specular_tape_strip",
-            "color_signature": "kraft_brown",
-            "surface_details": "Subtle corrugated ridges visible under close inspection, single strip of clear tape reflecting overhead lights.",
-            "scale_signature": "width_0.4m_depth_0.4m_height_0.3m",
+            "entity_id": "cardboard_box_01",
+            "shape_signature": "perfect_cube_geometry",
+            "material_signature": "rough_pressed_cellulose_fiber",
+            "color_signature": "natural_kraft_brown",
+            "surface_details": "Subtle linear corrugation lines, single strip of semi-gloss translucent tape sealing top flaps.",
+            "scale_signature": "width_0.4m_depth_0.4m_height_0.4m",
             "reference_views": [
-              "isometric_held_view",
-              "top_down_sealed_view"
+              "top_down_box_held",
+              "orthogonal_box_view"
             ],
             "negative_drift": [
-              "box morphing into a plastic crate",
-              "shipping labels or black text appearing on the box",
-              "box changing size or aspect ratio during the video"
+              "sagging_corners",
+              "transformation_to_plastic_bin",
+              "appearance_of_brand_logos"
             ]
           }
         ],
         "scene_registry": {
           "scene_id": "warehouse_aisle_01",
-          "layout_signature": "linear_aisle_with_flanking_racks",
-          "background_signature": "orange_and_blue_steel_racks_with_palletized_inventory",
-          "lighting_signature": "overhead_fluorescent_grid_cool_white_5000k",
-          "spatial_map": "Aisle center line runs along the Y-axis. Racks are positioned at X = -1.6m and X = 1.6m. Robot starts at Y = 4.0m moving towards Y = 0.0m. Worker starts at X = 1.2m, Y = 2.0m.",
+          "layout_signature": "linear_aisle_corridor_flanked_by_vertical_shelving",
+          "background_signature": "industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory",
+          "lighting_signature": "continuous_overhead_cool_white_fluorescent_array",
+          "spatial_map": "2.5m_wide_center_aisle_bounded_by_x_minus_1.25m_and_x_plus_1.25m_racks_y_axis_running_north_south",
           "reference_views": [
-            "high_angle_aisle_looking_down",
-            "ground_level_aisle_view"
+            "master_overhead_canvas",
+            "left_rack_detail",
+            "right_rack_detail"
           ],
           "negative_drift": [
-            "racks changing color to green or grey",
-            "floor changing to wood or dark asphalt",
-            "addition of windows or natural daylight"
+            "aisle_widening",
+            "shelving_color_change_from_orange_to_blue",
+            "floor_texture_gaining_water_puddles"
           ]
         },
         "reference_assets": [
           {
-            "asset_id": "canonical_canvas_01",
+            "asset_id": "master_canvas_01",
             "kind": "canvas",
-            "target": "entire_scene",
-            "description": "The master layout image showing the empty warehouse aisle with correct lighting, rack placement, and floor markings."
+            "target": "warehouse_aisle_01",
+            "description": "The master background plate showing the empty warehouse aisle from a high-angle overhead position, capturing floor textures and rack layouts."
           },
           {
-            "asset_id": "robot_ref_front",
+            "asset_id": "ref_view_robot",
             "kind": "object_view",
-            "target": "robot_01",
-            "description": "Front view of the humanoid robot standing upright, showing the matte white panels and the blue chest LED."
+            "target": "humanoid_robot_01",
+            "description": "High-angle orthographic view of the humanoid robot standing upright with neutral arm posture.",
+            "source_entity_id": "humanoid_robot_01"
           },
           {
-            "asset_id": "worker_ref_front",
+            "asset_id": "ref_view_worker",
             "kind": "object_view",
-            "target": "worker_01",
-            "description": "Front view of the worker wearing the neon yellow vest and white hard hat."
+            "target": "human_worker_01",
+            "description": "Top-down reference profile of the human worker in standard protective gear.",
+            "source_entity_id": "human_worker_01"
           },
           {
-            "asset_id": "box_ref_iso",
-            "kind": "object_view",
-            "target": "box_01",
-            "description": "Isometric view of the plain brown cardboard box showing the clear tape seam."
-          },
-          {
-            "asset_id": "scenario_01_start",
+            "asset_id": "start_frame_scen_1",
             "kind": "start_frame",
-            "target": "entire_scene",
-            "description": "Initial frame for Scenario 1: Robot carrying the box down the center, worker standing near the right rack."
+            "target": "warehouse_aisle_01",
+            "description": "Initial composition setup where the humanoid robot is at y=-2.0 carrying the box, and the worker is at y=1.5 on the right lane."
           }
         ],
         "identity_checks": [
           {
-            "check_id": "robot_color_consistency",
+            "check_id": "chk_robot_color_constancy",
             "scope": "object",
-            "target_id": "robot_01",
-            "method": "VLM color histogram and keypoint tracking on the robot chassis panels.",
-            "pass_condition": "The chassis must maintain a matte white and dark grey color profile with a blue LED indicator across all frames, with no red or green drift."
+            "target_id": "humanoid_robot_01",
+            "method": "color_histogram_comparison_of_segmented_robot_crop",
+            "pass_condition": "At least 92% structural and color similarity to master_canvas_01 robot overlay across all sequence frames."
           },
           {
-            "check_id": "worker_vest_detection",
-            "scope": "object",
-            "target_id": "worker_01",
-            "method": "Object detection bounding box tracking combined with color segmentation for neon yellow.",
-            "pass_condition": "The worker must wear a neon yellow vest in 100% of the frames where they are visible."
-          },
-          {
-            "check_id": "box_rigidity_check",
-            "scope": "object",
-            "target_id": "box_01",
-            "method": "Optical flow and geometry consistency check on the box boundaries.",
-            "pass_condition": "The box must remain a rigid rectangular prism of constant scale while held by the robot."
-          },
-          {
-            "check_id": "background_static_check",
+            "check_id": "chk_aisle_geometry_stability",
             "scope": "scene",
             "target_id": "warehouse_aisle_01",
-            "method": "Frame-to-frame structural similarity index (SSIM) on the background racks and floor.",
-            "pass_condition": "SSIM of the background regions must exceed 0.95 across the entire video duration, confirming a static camera and environment."
+            "method": "edge_detection_and_hough_transform_on_safety_lines",
+            "pass_condition": "Yellow aisle safety boundary lines must not shift or skew by more than 1 pixel relative to camera coordinates."
+          },
+          {
+            "check_id": "chk_box_holding_continuity",
+            "scope": "series",
+            "target_id": "cardboard_box_01",
+            "method": "relative_distance_constraint_evaluation_between_robot_hands_and_box",
+            "pass_condition": "Box must remain fixed relative to robot torso frame until an explicit drop event is triggered."
           }
         ],
         "consistency_policy": {
           "locked_entity_ids": [
-            "robot_01",
-            "worker_01",
-            "box_01"
+            "humanoid_robot_01",
+            "human_worker_01",
+            "cardboard_box_01"
           ],
           "locked_scene_id": "warehouse_aisle_01",
           "forbidden_changes": [
-            "robot_chassis_color",
-            "worker_vest_color",
-            "aisle_rack_structure",
-            "camera_movement_type",
-            "box_material",
-            "adding_extra_actors"
+            "adding_new_human_actors",
+            "altering_the_high_angle_overhead_perspective",
+            "changing_the_clothing_colors_of_the_human_worker",
+            "modifying_the_cardboard_box_into_a_different_object_type"
           ],
           "consistency_requirements": [
-            "The humanoid robot must maintain its matte white and grey chassis and blue LED ring.",
-            "The worker must wear the high-visibility neon yellow vest and white hard hat.",
-            "The warehouse aisle layout, rack positions, and concrete floor markings must remain identical across all variations.",
-            "The camera must remain completely static, simulating a fixed security camera."
+            "The high-angle overhead camera perspective must remain perfectly static without jitter, zoom, or rotation.",
+            "The industrial floor texture, rack positions, and fluorescent light source placements must be identical across all three generated variations.",
+            "The humanoid robot model must preserve its dual-joint knee mechanics and matte-white texture layout throughout the scene."
           ]
         }
       }
     },
     {
-      "scenario_id": "sc_02_abrupt_crossing",
-      "title": "Worker Abrupt Path Crossing",
+      "scenario_id": "sc_2_stumble_and_fall",
+      "title": "Worker Stumbles and Falls in Aisle",
       "referenced_entities": [
-        "robot_01",
-        "worker_01",
-        "box_01"
+        "humanoid_robot_01",
+        "human_worker_01",
+        "cardboard_box_01"
       ],
       "camera": {
-        "angle": "three_quarter_view",
+        "angle": "overhead_view",
         "movement": "static",
-        "duration_seconds": 6.0
+        "duration_seconds": 9.0
       },
       "event": {
-        "type": "abrupt_path_crossing",
+        "type": "stumble_and_fall",
         "trigger_time_seconds": 3.0,
-        "risk_severity": "medium",
-        "description": "The worker abruptly turns and crosses the safety line into the robot's lane without looking, prompting an immediate path deflection."
+        "risk_severity": "high",
+        "description": "The human worker loses footing on a slick surface and stumbles forward, landing prone in front of the advancing humanoid robot."
       },
       "position_deltas": [
         {
-          "entity_id": "robot_01",
+          "entity_id": "humanoid_robot_01",
           "dx": -0.05,
-          "dy": -0.2,
-          "reason": "Starting slightly further back to allow space for path crossing detection."
+          "dy": -0.3,
+          "dz": 0.0,
+          "reason": "Positioned slightly further back to allow space for the worker's stumble dynamics."
         },
         {
-          "entity_id": "worker_01",
-          "dx": 0.4,
-          "dy": -0.3,
-          "reason": "Positioned deeper in the side storage rack area before initiating the crossing."
+          "entity_id": "human_worker_01",
+          "dx": -0.4,
+          "dy": 0.2,
+          "dz": 0.0,
+          "reason": "Positioned closer to the left pallet rack where the trip hazard occurs."
         }
       ],
       "action_timeline": [
         {
           "t_start": 0.0,
           "t_end": 3.0,
-          "actor": "robot_01",
-          "action": "robot_01 carries box_01 steadily down the center of the aisle while worker_01 stands near the right-hand storage racks."
+          "actor": "humanoid_robot_01",
+          "action": "Advances slowly along the yellow safety boundary line carrying cardboard_box_01."
         },
         {
           "t_start": 3.0,
           "t_end": 4.5,
-          "actor": "worker_01",
-          "action": "worker_01 turns suddenly and walks across the yellow safety line directly into the center of the aisle."
+          "actor": "human_worker_01",
+          "action": "Trips on a rack base protrusion and falls prone onto hands and knees in the robot's trajectory."
         },
         {
           "t_start": 4.5,
           "t_end": 6.0,
-          "actor": "robot_01",
-          "action": "robot_01 decelerates, pivots slightly to the left to clear the worker, and tightly stabilizes box_01 to keep it secure."
+          "actor": "humanoid_robot_01",
+          "action": "Executes rapid deceleration, takes a wide stance shift backward to secure its balance and prevent dropping cardboard_box_01."
+        },
+        {
+          "t_start": 6.0,
+          "t_end": 9.0,
+          "actor": "humanoid_robot_01",
+          "action": "Holds its position, activates warning flashers, and monitors the human worker to ensure safe separation distance."
         }
       ],
       "expected_labels": [
-        "abrupt_path_crossing",
-        "path_deflection",
-        "robot_carrying",
-        "safety_boundary_breach"
+        "pedestrian_fall",
+        "emergency_stop",
+        "safety_clearance",
+        "industrial_accident"
       ],
-      "expected_robot_response": "The robot decelerates rapidly, pivots to the left within its safety margin, and dynamically stabilizes the cardboard box to prevent a collision with the crossing worker.",
-      "inherits_world_contract": "warehouse_robot_safety_world",
-      "video_prompt": "Realistic, slightly grainy surveillance camera footage, static high-angle perspective, natural color grading, non-cinematic, authentic warehouse security feed aesthetic. Setting: A straight warehouse aisle, 3.2 meters wide, bordered on both sides by tall, industrial steel storage racks painted orange and blue. The racks are filled with wooden pallets holding various shrink-wrapped brown boxes., Polished, light grey industrial concrete floor with visible expansion joints and painted bright yellow safety boundary lines running parallel to the racks on both sides. floor, Even, bright overhead industrial fluorescent tube lighting fixtures, casting realistic, soft-edged shadows directly beneath the objects and actors.. Scene identity anchor: linear_aisle_with_flanking_racks; orange_and_blue_steel_racks_with_palletized_inventory; overhead_fluorescent_grid_cool_white_5000k. Identical across all videos of this series: the same A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. (matte composite plastic, brushed aluminum, and tempered glass); the same A male warehouse worker of medium build, wearing a bright neon yellow high-visibility safety vest over a long-sleeved navy blue shirt, dark grey rugged work pants, brown steel-toed boots, and a white industrial hard hat. No visible logos or branding. (fabric, polyester safety mesh, and hard plastic); the same A plain, medium-sized rectangular corrugated cardboard box, light brown in color, measuring 0.4m x 0.4m x 0.3m. The box is sealed along the top center seam with clear, slightly reflective packing tape. It has no text, labels, or barcodes. (corrugated cardboard and adhesive plastic tape). Object identity anchors: robot_01 = shape bipedal_humanoid_proportions_slender_limbs, material non_reflective_matte_white_and_dark_grey_panels, color white_grey_silver_blue_led; worker_01 = shape average_male_bipedal_silhouette, material matte_fabric_and_hard_reflective_plastic_helmet, color neon_yellow_navy_blue_dark_grey_white; box_01 = shape perfect_rectangular_prism, material matte_fibrous_cardboard_with_specular_tape_strip, color kraft_brown. Camera: three quarter view, static, 6 seconds. From 0s to 3s the A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. robot_01 carries box_01 steadily down the center of the aisle while worker_01 stands near the right-hand storage racks.. From 3s to 4.5s the A male warehouse worker of medium build, wearing a bright neon yellow high-visibility safety vest over a long-sleeved navy blue shirt, dark grey rugged work pants, brown steel-toed boots, and a white industrial hard hat. No visible logos or branding. worker_01 turns suddenly and walks across the yellow safety line directly into the center of the aisle.. From 4.5s to 6s the A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. robot_01 decelerates, pivots slightly to the left to clear the worker, and tightly stabilizes box_01 to keep it secure.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
+      "expected_robot_response": "The robot must detect the fallen human at a low height, perform a sudden stop combined with a backward step to preserve distance, and sound a warning alert.",
+      "inherits_world_contract": "warehouse_safety_world_01",
+      "video_prompt": "Industrial security camera style, realistic CCTV footage, high-angle overhead perspective, neutral color grading, non-cinematic. Setting: A narrow warehouse aisle bounded by tall steel racks stacked with pallets on both sides, creating a central 2.5-meter-wide pedestrian floor path., Polished concrete floor, light gray, with painted yellow safety boundary lines along the rack bases. floor, Overhead diffuse industrial fluorescent lighting casting soft shadows directly downwards, high clarity, no dramatic flares.. Scene identity anchor: linear_aisle_corridor_flanked_by_vertical_shelving; industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory; continuous_overhead_cool_white_fluorescent_array. Identical across all videos of this series: the same A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. (aluminum, matte plastic); the same A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. (fabric, plastic); the same A cubical brown corrugated cardboard box measuring 0.4 meters on each side, sealed with thick transparent packing tape.. Object identity anchors: humanoid_robot_01 = shape bipedal_humanoid_torso_with_slender_limbs, material brushed_aluminum_and_matte_polymer, color binary_white_and_dark_charcoal_gray; human_worker_01 = shape standard_adult_male_silhouette_with_hard_hat, material woven_cotton_polyester_and_high_vis_vinyl, color fluorescent_yellow_navy_blue_stone_gray; cardboard_box_01 = shape perfect_cube_geometry, material rough_pressed_cellulose_fiber, color natural_kraft_brown. Camera: overhead view, static, 9 seconds. Camera requirement: static top-down overhead view from above the scene, wide enough to show the full robot body, nearby humans, objects, floor layout, and the robot's movement path throughout the situation. Single continuous unedited take, no montage, no cuts, no shot changes, no zooms, no close-ups, no first-person or robot POV. Robot reaction requirement: the video must show the event situation 'The human worker loses footing on a slick surface and stumbles forward, landing prone in front of the advancing humanoid robot.' and then show the robot's observable response: The robot must detect the fallen human at a low height, perform a sudden stop combined with a backward step to preserve distance, and sound a warning alert.. From 0s to 3s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Advances slowly along the yellow safety boundary line carrying cardboard_box_01.. From 3s to 4.5s the A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. Trips on a rack base protrusion and falls prone onto hands and knees in the robot's trajectory.. From 4.5s to 6s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Executes rapid deceleration, takes a wide stance shift backward to secure its balance and prevent dropping cardboard_box_01.. From 6s to 9s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Holds its position, activates warning flashers, and monitors the human worker to ensure safe separation distance.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
       "keyframes": [
         {
           "time": 0.0,
-          "state": "robot_01: robot_01 carries box_01 steadily down the center of the aisle while worker_01 stands near the right-hand storage racks."
+          "state": "humanoid_robot_01: Advances slowly along the yellow safety boundary line carrying cardboard_box_01."
         },
         {
           "time": 3.0,
-          "state": "The worker abruptly turns and crosses the safety line into the robot's lane without looking, prompting an immediate path deflection."
+          "state": "The human worker loses footing on a slick surface and stumbles forward, landing prone in front of the advancing humanoid robot."
         },
         {
-          "time": 6.0,
-          "state": "robot_01: robot_01 decelerates, pivots slightly to the left to clear the worker, and tightly stabilizes box_01 to keep it secure."
+          "time": 9.0,
+          "state": "humanoid_robot_01: Holds its position, activates warning flashers, and monitors the human worker to ensure safe separation distance."
         }
       ],
       "verifier_packet": {
-        "scenario_prompt": "Worker Abrupt Path Crossing",
+        "scenario_prompt": "Worker Stumbles and Falls in Aisle",
+        "video_prompt": "Industrial security camera style, realistic CCTV footage, high-angle overhead perspective, neutral color grading, non-cinematic. Setting: A narrow warehouse aisle bounded by tall steel racks stacked with pallets on both sides, creating a central 2.5-meter-wide pedestrian floor path., Polished concrete floor, light gray, with painted yellow safety boundary lines along the rack bases. floor, Overhead diffuse industrial fluorescent lighting casting soft shadows directly downwards, high clarity, no dramatic flares.. Scene identity anchor: linear_aisle_corridor_flanked_by_vertical_shelving; industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory; continuous_overhead_cool_white_fluorescent_array. Identical across all videos of this series: the same A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. (aluminum, matte plastic); the same A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. (fabric, plastic); the same A cubical brown corrugated cardboard box measuring 0.4 meters on each side, sealed with thick transparent packing tape.. Object identity anchors: humanoid_robot_01 = shape bipedal_humanoid_torso_with_slender_limbs, material brushed_aluminum_and_matte_polymer, color binary_white_and_dark_charcoal_gray; human_worker_01 = shape standard_adult_male_silhouette_with_hard_hat, material woven_cotton_polyester_and_high_vis_vinyl, color fluorescent_yellow_navy_blue_stone_gray; cardboard_box_01 = shape perfect_cube_geometry, material rough_pressed_cellulose_fiber, color natural_kraft_brown. Camera: overhead view, static, 9 seconds. Camera requirement: static top-down overhead view from above the scene, wide enough to show the full robot body, nearby humans, objects, floor layout, and the robot's movement path throughout the situation. Single continuous unedited take, no montage, no cuts, no shot changes, no zooms, no close-ups, no first-person or robot POV. Robot reaction requirement: the video must show the event situation 'The human worker loses footing on a slick surface and stumbles forward, landing prone in front of the advancing humanoid robot.' and then show the robot's observable response: The robot must detect the fallen human at a low height, perform a sudden stop combined with a backward step to preserve distance, and sound a warning alert.. From 0s to 3s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Advances slowly along the yellow safety boundary line carrying cardboard_box_01.. From 3s to 4.5s the A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. Trips on a rack base protrusion and falls prone onto hands and knees in the robot's trajectory.. From 4.5s to 6s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Executes rapid deceleration, takes a wide stance shift backward to secure its balance and prevent dropping cardboard_box_01.. From 6s to 9s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Holds its position, activates warning flashers, and monitors the human worker to ensure safe separation distance.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
         "expected_objects": [
-          "humanoid robot",
-          "human worker",
-          "cardboard box"
+          "robot",
+          "human",
+          "container"
         ],
-        "expected_action": "abrupt_path_crossing",
-        "expected_outcome": "The robot decelerates rapidly, pivots to the left within its safety margin, and dynamically stabilizes the cardboard box to prevent a collision with the crossing worker.",
-        "scenario_id": "sc_02_abrupt_crossing",
-        "world_id": "warehouse_robot_safety_world",
+        "expected_action": "stumble_and_fall",
+        "expected_outcome": "The robot must detect the fallen human at a low height, perform a sudden stop combined with a backward step to preserve distance, and sound a warning alert.",
+        "scenario_id": "sc_2_stumble_and_fall",
+        "world_id": "warehouse_safety_world_01",
         "object_registry": [
           {
-            "entity_id": "robot_01",
-            "shape_signature": "bipedal_humanoid_proportions_slender_limbs",
-            "material_signature": "non_reflective_matte_white_and_dark_grey_panels",
-            "color_signature": "white_grey_silver_blue_led",
-            "surface_details": "Fine panel gaps on the torso, subtle metallic sheen on the exposed joint actuators, circular blue light emission from the chest.",
-            "scale_signature": "height_1.75m_shoulder_width_0.45m",
+            "entity_id": "humanoid_robot_01",
+            "shape_signature": "bipedal_humanoid_torso_with_slender_limbs",
+            "material_signature": "brushed_aluminum_and_matte_polymer",
+            "color_signature": "binary_white_and_dark_charcoal_gray",
+            "surface_details": "Dual joint hinges visible on knees, seamless composite chest plate, reflective visor head.",
+            "scale_signature": "height_1.7m_width_0.5m",
             "reference_views": [
-              "front_standing_pose",
-              "side_profile_carrying_pose",
-              "rear_view_walking"
+              "top_down_static",
+              "profile_view_static"
             ],
             "negative_drift": [
-              "chassis turning glossy or metallic silver",
-              "LED ring changing color to red or green",
-              "robot growing wheels or tracks instead of legs"
+              "changes_to_glowing_led_strips",
+              "transformation_to_wheeled_base",
+              "color_change_to_yellow"
             ]
           },
           {
-            "entity_id": "worker_01",
-            "shape_signature": "average_male_bipedal_silhouette",
-            "material_signature": "matte_fabric_and_hard_reflective_plastic_helmet",
-            "color_signature": "neon_yellow_navy_blue_dark_grey_white",
-            "surface_details": "Fabric folds on the navy blue sleeves, mesh texture on the safety vest, reflective silver stripes on the vest.",
-            "scale_signature": "height_1.80m_medium_build",
+            "entity_id": "human_worker_01",
+            "shape_signature": "standard_adult_male_silhouette_with_hard_hat",
+            "material_signature": "woven_cotton_polyester_and_high_vis_vinyl",
+            "color_signature": "fluorescent_yellow_navy_blue_stone_gray",
+            "surface_details": "Silver retroreflective bands horizontal across the torso vest, textured gray cargo pockets.",
+            "scale_signature": "height_1.8m_shoulder_width_0.45m",
             "reference_views": [
-              "front_standing_worker",
-              "back_view_walking",
-              "side_view_tripping"
+              "top_down_worker_static",
+              "isometric_worker_static"
             ],
             "negative_drift": [
-              "vest changing to orange or red",
-              "hard hat disappearing or changing color",
-              "worker wearing shorts or t-shirt"
+              "removal_of_hard_hat",
+              "color_shift_of_pants_to_jeans",
+              "disappearance_of_yellow_vest"
             ]
           },
           {
-            "entity_id": "box_01",
-            "shape_signature": "perfect_rectangular_prism",
-            "material_signature": "matte_fibrous_cardboard_with_specular_tape_strip",
-            "color_signature": "kraft_brown",
-            "surface_details": "Subtle corrugated ridges visible under close inspection, single strip of clear tape reflecting overhead lights.",
-            "scale_signature": "width_0.4m_depth_0.4m_height_0.3m",
+            "entity_id": "cardboard_box_01",
+            "shape_signature": "perfect_cube_geometry",
+            "material_signature": "rough_pressed_cellulose_fiber",
+            "color_signature": "natural_kraft_brown",
+            "surface_details": "Subtle linear corrugation lines, single strip of semi-gloss translucent tape sealing top flaps.",
+            "scale_signature": "width_0.4m_depth_0.4m_height_0.4m",
             "reference_views": [
-              "isometric_held_view",
-              "top_down_sealed_view"
+              "top_down_box_held",
+              "orthogonal_box_view"
             ],
             "negative_drift": [
-              "box morphing into a plastic crate",
-              "shipping labels or black text appearing on the box",
-              "box changing size or aspect ratio during the video"
+              "sagging_corners",
+              "transformation_to_plastic_bin",
+              "appearance_of_brand_logos"
             ]
           }
         ],
         "scene_registry": {
           "scene_id": "warehouse_aisle_01",
-          "layout_signature": "linear_aisle_with_flanking_racks",
-          "background_signature": "orange_and_blue_steel_racks_with_palletized_inventory",
-          "lighting_signature": "overhead_fluorescent_grid_cool_white_5000k",
-          "spatial_map": "Aisle center line runs along the Y-axis. Racks are positioned at X = -1.6m and X = 1.6m. Robot starts at Y = 4.0m moving towards Y = 0.0m. Worker starts at X = 1.2m, Y = 2.0m.",
+          "layout_signature": "linear_aisle_corridor_flanked_by_vertical_shelving",
+          "background_signature": "industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory",
+          "lighting_signature": "continuous_overhead_cool_white_fluorescent_array",
+          "spatial_map": "2.5m_wide_center_aisle_bounded_by_x_minus_1.25m_and_x_plus_1.25m_racks_y_axis_running_north_south",
           "reference_views": [
-            "high_angle_aisle_looking_down",
-            "ground_level_aisle_view"
+            "master_overhead_canvas",
+            "left_rack_detail",
+            "right_rack_detail"
           ],
           "negative_drift": [
-            "racks changing color to green or grey",
-            "floor changing to wood or dark asphalt",
-            "addition of windows or natural daylight"
+            "aisle_widening",
+            "shelving_color_change_from_orange_to_blue",
+            "floor_texture_gaining_water_puddles"
           ]
         },
         "reference_assets": [
           {
-            "asset_id": "canonical_canvas_01",
+            "asset_id": "master_canvas_01",
             "kind": "canvas",
-            "target": "entire_scene",
-            "description": "The master layout image showing the empty warehouse aisle with correct lighting, rack placement, and floor markings."
+            "target": "warehouse_aisle_01",
+            "description": "The master background plate showing the empty warehouse aisle from a high-angle overhead position, capturing floor textures and rack layouts."
           },
           {
-            "asset_id": "robot_ref_front",
+            "asset_id": "ref_view_robot",
             "kind": "object_view",
-            "target": "robot_01",
-            "description": "Front view of the humanoid robot standing upright, showing the matte white panels and the blue chest LED."
+            "target": "humanoid_robot_01",
+            "description": "High-angle orthographic view of the humanoid robot standing upright with neutral arm posture.",
+            "source_entity_id": "humanoid_robot_01"
           },
           {
-            "asset_id": "worker_ref_front",
+            "asset_id": "ref_view_worker",
             "kind": "object_view",
-            "target": "worker_01",
-            "description": "Front view of the worker wearing the neon yellow vest and white hard hat."
+            "target": "human_worker_01",
+            "description": "Top-down reference profile of the human worker in standard protective gear.",
+            "source_entity_id": "human_worker_01"
           },
           {
-            "asset_id": "box_ref_iso",
-            "kind": "object_view",
-            "target": "box_01",
-            "description": "Isometric view of the plain brown cardboard box showing the clear tape seam."
-          },
-          {
-            "asset_id": "scenario_01_start",
+            "asset_id": "start_frame_scen_1",
             "kind": "start_frame",
-            "target": "entire_scene",
-            "description": "Initial frame for Scenario 1: Robot carrying the box down the center, worker standing near the right rack."
+            "target": "warehouse_aisle_01",
+            "description": "Initial composition setup where the humanoid robot is at y=-2.0 carrying the box, and the worker is at y=1.5 on the right lane."
           }
         ],
         "identity_checks": [
           {
-            "check_id": "robot_color_consistency",
+            "check_id": "chk_robot_color_constancy",
             "scope": "object",
-            "target_id": "robot_01",
-            "method": "VLM color histogram and keypoint tracking on the robot chassis panels.",
-            "pass_condition": "The chassis must maintain a matte white and dark grey color profile with a blue LED indicator across all frames, with no red or green drift."
+            "target_id": "humanoid_robot_01",
+            "method": "color_histogram_comparison_of_segmented_robot_crop",
+            "pass_condition": "At least 92% structural and color similarity to master_canvas_01 robot overlay across all sequence frames."
           },
           {
-            "check_id": "worker_vest_detection",
-            "scope": "object",
-            "target_id": "worker_01",
-            "method": "Object detection bounding box tracking combined with color segmentation for neon yellow.",
-            "pass_condition": "The worker must wear a neon yellow vest in 100% of the frames where they are visible."
-          },
-          {
-            "check_id": "box_rigidity_check",
-            "scope": "object",
-            "target_id": "box_01",
-            "method": "Optical flow and geometry consistency check on the box boundaries.",
-            "pass_condition": "The box must remain a rigid rectangular prism of constant scale while held by the robot."
-          },
-          {
-            "check_id": "background_static_check",
+            "check_id": "chk_aisle_geometry_stability",
             "scope": "scene",
             "target_id": "warehouse_aisle_01",
-            "method": "Frame-to-frame structural similarity index (SSIM) on the background racks and floor.",
-            "pass_condition": "SSIM of the background regions must exceed 0.95 across the entire video duration, confirming a static camera and environment."
+            "method": "edge_detection_and_hough_transform_on_safety_lines",
+            "pass_condition": "Yellow aisle safety boundary lines must not shift or skew by more than 1 pixel relative to camera coordinates."
+          },
+          {
+            "check_id": "chk_box_holding_continuity",
+            "scope": "series",
+            "target_id": "cardboard_box_01",
+            "method": "relative_distance_constraint_evaluation_between_robot_hands_and_box",
+            "pass_condition": "Box must remain fixed relative to robot torso frame until an explicit drop event is triggered."
           }
         ],
         "consistency_policy": {
           "locked_entity_ids": [
-            "robot_01",
-            "worker_01",
-            "box_01"
+            "humanoid_robot_01",
+            "human_worker_01",
+            "cardboard_box_01"
           ],
           "locked_scene_id": "warehouse_aisle_01",
           "forbidden_changes": [
-            "robot_chassis_color",
-            "worker_vest_color",
-            "aisle_rack_structure",
-            "camera_movement_type",
-            "box_material",
-            "adding_extra_actors"
+            "adding_new_human_actors",
+            "altering_the_high_angle_overhead_perspective",
+            "changing_the_clothing_colors_of_the_human_worker",
+            "modifying_the_cardboard_box_into_a_different_object_type"
           ],
           "consistency_requirements": [
-            "The humanoid robot must maintain its matte white and grey chassis and blue LED ring.",
-            "The worker must wear the high-visibility neon yellow vest and white hard hat.",
-            "The warehouse aisle layout, rack positions, and concrete floor markings must remain identical across all variations.",
-            "The camera must remain completely static, simulating a fixed security camera."
+            "The high-angle overhead camera perspective must remain perfectly static without jitter, zoom, or rotation.",
+            "The industrial floor texture, rack positions, and fluorescent light source placements must be identical across all three generated variations.",
+            "The humanoid robot model must preserve its dual-joint knee mechanics and matte-white texture layout throughout the scene."
           ]
         }
       }
     },
     {
-      "scenario_id": "sc_03_backward_step",
-      "title": "Worker Backward Step Near-Miss",
+      "scenario_id": "sc_3_abrupt_stop_avoidance",
+      "title": "Worker Sudden Stop to Avoid Collision",
       "referenced_entities": [
-        "robot_01",
-        "worker_01",
-        "box_01"
+        "humanoid_robot_01",
+        "human_worker_01",
+        "cardboard_box_01"
       ],
       "camera": {
         "angle": "overhead_view",
         "movement": "static",
-        "duration_seconds": 6.5
+        "duration_seconds": 8.0
       },
       "event": {
-        "type": "backward_step",
-        "trigger_time_seconds": 3.5,
-        "risk_severity": "medium",
-        "description": "The worker takes a sudden backward step to inspect a high shelf, stepping blindly into the oncoming path of the robot."
+        "type": "abrupt_stop_avoidance",
+        "trigger_time_seconds": 4.0,
+        "risk_severity": "low",
+        "description": "The human worker cuts across the aisle but freezes suddenly as they notice the carrying robot, causing the robot to dynamically reroute."
       },
       "position_deltas": [
         {
-          "entity_id": "robot_01",
-          "dx": 0.08,
-          "dy": 0.0,
-          "reason": "Slight lateral offset to match the center-right alignment of the aisle."
+          "entity_id": "humanoid_robot_01",
+          "dx": 0.05,
+          "dy": 0.1,
+          "dz": 0.0,
+          "reason": "Slight adjustment to the right of the central lane."
         },
         {
-          "entity_id": "worker_01",
-          "dx": -0.1,
-          "dy": 0.1,
-          "reason": "Placed closer to the rack boundary line to set up the backward motion."
+          "entity_id": "human_worker_01",
+          "dx": 0.3,
+          "dy": -0.2,
+          "dz": 0.0,
+          "reason": "Shifted to allow a clean perpendicular path across the aisle."
         }
       ],
       "action_timeline": [
         {
           "t_start": 0.0,
-          "t_end": 3.5,
-          "actor": "robot_01",
-          "action": "robot_01 moves forward at a moderate pace holding box_01 while worker_01 stands facing the shelves."
+          "t_end": 4.0,
+          "actor": "humanoid_robot_01",
+          "action": "Walks forward at a steady pace, holding cardboard_box_01 securely."
         },
         {
-          "t_start": 3.5,
-          "t_end": 4.8,
-          "actor": "worker_01",
-          "action": "worker_01 takes a large, blind step backward away from the shelf and into the aisle."
+          "t_start": 4.0,
+          "t_end": 5.0,
+          "actor": "human_worker_01",
+          "action": "Starts walking across the aisle but freezes abruptly mid-path upon seeing the robot approaching."
         },
         {
-          "t_start": 4.8,
+          "t_start": 5.0,
           "t_end": 6.5,
-          "actor": "robot_01",
-          "action": "robot_01 stops instantly, tilts box_01 upward closer to its chest, and stands firm to maximize clearance."
+          "actor": "humanoid_robot_01",
+          "action": "Adjusts its torso angle, takes a lateral step to the left side of the aisle, and slows down its gait."
+        },
+        {
+          "t_start": 6.5,
+          "t_end": 8.0,
+          "actor": "humanoid_robot_01",
+          "action": "Smoothly bypasses the frozen worker at a reduced velocity, keeping cardboard_box_01 safe from any contact."
         }
       ],
       "expected_labels": [
-        "backward_step",
-        "near_miss_avoidance",
-        "human_robot_proximity",
-        "industrial_workspace"
+        "pedestrian_freeze",
+        "lateral_maneuver",
+        "path_rerouting",
+        "speed_reduction"
       ],
-      "expected_robot_response": "The robot senses the sudden reduction in clearance, immediately executes an emergency brake maneuver, and tilts the box upward to maximize physical clearance from the worker's back.",
-      "inherits_world_contract": "warehouse_robot_safety_world",
-      "video_prompt": "Realistic, slightly grainy surveillance camera footage, static high-angle perspective, natural color grading, non-cinematic, authentic warehouse security feed aesthetic. Setting: A straight warehouse aisle, 3.2 meters wide, bordered on both sides by tall, industrial steel storage racks painted orange and blue. The racks are filled with wooden pallets holding various shrink-wrapped brown boxes., Polished, light grey industrial concrete floor with visible expansion joints and painted bright yellow safety boundary lines running parallel to the racks on both sides. floor, Even, bright overhead industrial fluorescent tube lighting fixtures, casting realistic, soft-edged shadows directly beneath the objects and actors.. Scene identity anchor: linear_aisle_with_flanking_racks; orange_and_blue_steel_racks_with_palletized_inventory; overhead_fluorescent_grid_cool_white_5000k. Identical across all videos of this series: the same A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. (matte composite plastic, brushed aluminum, and tempered glass); the same A male warehouse worker of medium build, wearing a bright neon yellow high-visibility safety vest over a long-sleeved navy blue shirt, dark grey rugged work pants, brown steel-toed boots, and a white industrial hard hat. No visible logos or branding. (fabric, polyester safety mesh, and hard plastic); the same A plain, medium-sized rectangular corrugated cardboard box, light brown in color, measuring 0.4m x 0.4m x 0.3m. The box is sealed along the top center seam with clear, slightly reflective packing tape. It has no text, labels, or barcodes. (corrugated cardboard and adhesive plastic tape). Object identity anchors: robot_01 = shape bipedal_humanoid_proportions_slender_limbs, material non_reflective_matte_white_and_dark_grey_panels, color white_grey_silver_blue_led; worker_01 = shape average_male_bipedal_silhouette, material matte_fabric_and_hard_reflective_plastic_helmet, color neon_yellow_navy_blue_dark_grey_white; box_01 = shape perfect_rectangular_prism, material matte_fibrous_cardboard_with_specular_tape_strip, color kraft_brown. Camera: overhead view, static, 6.5 seconds. From 0s to 3.5s the A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. robot_01 moves forward at a moderate pace holding box_01 while worker_01 stands facing the shelves.. From 3.5s to 4.8s the A male warehouse worker of medium build, wearing a bright neon yellow high-visibility safety vest over a long-sleeved navy blue shirt, dark grey rugged work pants, brown steel-toed boots, and a white industrial hard hat. No visible logos or branding. worker_01 takes a large, blind step backward away from the shelf and into the aisle.. From 4.8s to 6.5s the A humanoid robot, 1.75 meters tall, with a matte white and dark grey composite chassis, exposed metallic silver joints at the shoulders, elbows, and knees, and a glowing circular blue LED status indicator on the center of its chest. It has a sleek, faceless head with a black glass visor. robot_01 stops instantly, tilts box_01 upward closer to its chest, and stands firm to maximize clearance.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
+      "expected_robot_response": "The robot should decelerate, steer around the stationary human worker using lateral lane deviation, and maintain control of its payload without stopping entirely.",
+      "inherits_world_contract": "warehouse_safety_world_01",
+      "video_prompt": "Industrial security camera style, realistic CCTV footage, high-angle overhead perspective, neutral color grading, non-cinematic. Setting: A narrow warehouse aisle bounded by tall steel racks stacked with pallets on both sides, creating a central 2.5-meter-wide pedestrian floor path., Polished concrete floor, light gray, with painted yellow safety boundary lines along the rack bases. floor, Overhead diffuse industrial fluorescent lighting casting soft shadows directly downwards, high clarity, no dramatic flares.. Scene identity anchor: linear_aisle_corridor_flanked_by_vertical_shelving; industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory; continuous_overhead_cool_white_fluorescent_array. Identical across all videos of this series: the same A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. (aluminum, matte plastic); the same A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. (fabric, plastic); the same A cubical brown corrugated cardboard box measuring 0.4 meters on each side, sealed with thick transparent packing tape.. Object identity anchors: humanoid_robot_01 = shape bipedal_humanoid_torso_with_slender_limbs, material brushed_aluminum_and_matte_polymer, color binary_white_and_dark_charcoal_gray; human_worker_01 = shape standard_adult_male_silhouette_with_hard_hat, material woven_cotton_polyester_and_high_vis_vinyl, color fluorescent_yellow_navy_blue_stone_gray; cardboard_box_01 = shape perfect_cube_geometry, material rough_pressed_cellulose_fiber, color natural_kraft_brown. Camera: overhead view, static, 8 seconds. Camera requirement: static top-down overhead view from above the scene, wide enough to show the full robot body, nearby humans, objects, floor layout, and the robot's movement path throughout the situation. Single continuous unedited take, no montage, no cuts, no shot changes, no zooms, no close-ups, no first-person or robot POV. Robot reaction requirement: the video must show the event situation 'The human worker cuts across the aisle but freezes suddenly as they notice the carrying robot, causing the robot to dynamically reroute.' and then show the robot's observable response: The robot should decelerate, steer around the stationary human worker using lateral lane deviation, and maintain control of its payload without stopping entirely.. From 0s to 4s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Walks forward at a steady pace, holding cardboard_box_01 securely.. From 4s to 5s the A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. Starts walking across the aisle but freezes abruptly mid-path upon seeing the robot approaching.. From 5s to 6.5s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Adjusts its torso angle, takes a lateral step to the left side of the aisle, and slows down its gait.. From 6.5s to 8s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Smoothly bypasses the frozen worker at a reduced velocity, keeping cardboard_box_01 safe from any contact.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
       "keyframes": [
         {
           "time": 0.0,
-          "state": "robot_01: robot_01 moves forward at a moderate pace holding box_01 while worker_01 stands facing the shelves."
+          "state": "humanoid_robot_01: Walks forward at a steady pace, holding cardboard_box_01 securely."
         },
         {
-          "time": 3.5,
-          "state": "The worker takes a sudden backward step to inspect a high shelf, stepping blindly into the oncoming path of the robot."
+          "time": 4.0,
+          "state": "The human worker cuts across the aisle but freezes suddenly as they notice the carrying robot, causing the robot to dynamically reroute."
         },
         {
-          "time": 6.5,
-          "state": "robot_01: robot_01 stops instantly, tilts box_01 upward closer to its chest, and stands firm to maximize clearance."
+          "time": 8.0,
+          "state": "humanoid_robot_01: Smoothly bypasses the frozen worker at a reduced velocity, keeping cardboard_box_01 safe from any contact."
         }
       ],
       "verifier_packet": {
-        "scenario_prompt": "Worker Backward Step Near-Miss",
+        "scenario_prompt": "Worker Sudden Stop to Avoid Collision",
+        "video_prompt": "Industrial security camera style, realistic CCTV footage, high-angle overhead perspective, neutral color grading, non-cinematic. Setting: A narrow warehouse aisle bounded by tall steel racks stacked with pallets on both sides, creating a central 2.5-meter-wide pedestrian floor path., Polished concrete floor, light gray, with painted yellow safety boundary lines along the rack bases. floor, Overhead diffuse industrial fluorescent lighting casting soft shadows directly downwards, high clarity, no dramatic flares.. Scene identity anchor: linear_aisle_corridor_flanked_by_vertical_shelving; industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory; continuous_overhead_cool_white_fluorescent_array. Identical across all videos of this series: the same A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. (aluminum, matte plastic); the same A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. (fabric, plastic); the same A cubical brown corrugated cardboard box measuring 0.4 meters on each side, sealed with thick transparent packing tape.. Object identity anchors: humanoid_robot_01 = shape bipedal_humanoid_torso_with_slender_limbs, material brushed_aluminum_and_matte_polymer, color binary_white_and_dark_charcoal_gray; human_worker_01 = shape standard_adult_male_silhouette_with_hard_hat, material woven_cotton_polyester_and_high_vis_vinyl, color fluorescent_yellow_navy_blue_stone_gray; cardboard_box_01 = shape perfect_cube_geometry, material rough_pressed_cellulose_fiber, color natural_kraft_brown. Camera: overhead view, static, 8 seconds. Camera requirement: static top-down overhead view from above the scene, wide enough to show the full robot body, nearby humans, objects, floor layout, and the robot's movement path throughout the situation. Single continuous unedited take, no montage, no cuts, no shot changes, no zooms, no close-ups, no first-person or robot POV. Robot reaction requirement: the video must show the event situation 'The human worker cuts across the aisle but freezes suddenly as they notice the carrying robot, causing the robot to dynamically reroute.' and then show the robot's observable response: The robot should decelerate, steer around the stationary human worker using lateral lane deviation, and maintain control of its payload without stopping entirely.. From 0s to 4s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Walks forward at a steady pace, holding cardboard_box_01 securely.. From 4s to 5s the A male warehouse worker wearing a high-visibility neon yellow safety vest over a dark blue long-sleeve shirt, gray cargo pants, and a white hard hat. Starts walking across the aisle but freezes abruptly mid-path upon seeing the robot approaching.. From 5s to 6.5s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Adjusts its torso angle, takes a lateral step to the left side of the aisle, and slows down its gait.. From 6.5s to 8s the A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a glossy black visor head, elongated three-fingered metallic hands, and dual joints on legs. Smoothly bypasses the frozen worker at a reduced velocity, keeping cardboard_box_01 safe from any contact.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
         "expected_objects": [
-          "humanoid robot",
-          "human worker",
-          "cardboard box"
+          "robot",
+          "human",
+          "container"
         ],
-        "expected_action": "backward_step",
-        "expected_outcome": "The robot senses the sudden reduction in clearance, immediately executes an emergency brake maneuver, and tilts the box upward to maximize physical clearance from the worker's back.",
-        "scenario_id": "sc_03_backward_step",
-        "world_id": "warehouse_robot_safety_world",
+        "expected_action": "abrupt_stop_avoidance",
+        "expected_outcome": "The robot should decelerate, steer around the stationary human worker using lateral lane deviation, and maintain control of its payload without stopping entirely.",
+        "scenario_id": "sc_3_abrupt_stop_avoidance",
+        "world_id": "warehouse_safety_world_01",
         "object_registry": [
           {
-            "entity_id": "robot_01",
-            "shape_signature": "bipedal_humanoid_proportions_slender_limbs",
-            "material_signature": "non_reflective_matte_white_and_dark_grey_panels",
-            "color_signature": "white_grey_silver_blue_led",
-            "surface_details": "Fine panel gaps on the torso, subtle metallic sheen on the exposed joint actuators, circular blue light emission from the chest.",
-            "scale_signature": "height_1.75m_shoulder_width_0.45m",
+            "entity_id": "humanoid_robot_01",
+            "shape_signature": "bipedal_humanoid_torso_with_slender_limbs",
+            "material_signature": "brushed_aluminum_and_matte_polymer",
+            "color_signature": "binary_white_and_dark_charcoal_gray",
+            "surface_details": "Dual joint hinges visible on knees, seamless composite chest plate, reflective visor head.",
+            "scale_signature": "height_1.7m_width_0.5m",
             "reference_views": [
-              "front_standing_pose",
-              "side_profile_carrying_pose",
-              "rear_view_walking"
+              "top_down_static",
+              "profile_view_static"
             ],
             "negative_drift": [
-              "chassis turning glossy or metallic silver",
-              "LED ring changing color to red or green",
-              "robot growing wheels or tracks instead of legs"
+              "changes_to_glowing_led_strips",
+              "transformation_to_wheeled_base",
+              "color_change_to_yellow"
             ]
           },
           {
-            "entity_id": "worker_01",
-            "shape_signature": "average_male_bipedal_silhouette",
-            "material_signature": "matte_fabric_and_hard_reflective_plastic_helmet",
-            "color_signature": "neon_yellow_navy_blue_dark_grey_white",
-            "surface_details": "Fabric folds on the navy blue sleeves, mesh texture on the safety vest, reflective silver stripes on the vest.",
-            "scale_signature": "height_1.80m_medium_build",
+            "entity_id": "human_worker_01",
+            "shape_signature": "standard_adult_male_silhouette_with_hard_hat",
+            "material_signature": "woven_cotton_polyester_and_high_vis_vinyl",
+            "color_signature": "fluorescent_yellow_navy_blue_stone_gray",
+            "surface_details": "Silver retroreflective bands horizontal across the torso vest, textured gray cargo pockets.",
+            "scale_signature": "height_1.8m_shoulder_width_0.45m",
             "reference_views": [
-              "front_standing_worker",
-              "back_view_walking",
-              "side_view_tripping"
+              "top_down_worker_static",
+              "isometric_worker_static"
             ],
             "negative_drift": [
-              "vest changing to orange or red",
-              "hard hat disappearing or changing color",
-              "worker wearing shorts or t-shirt"
+              "removal_of_hard_hat",
+              "color_shift_of_pants_to_jeans",
+              "disappearance_of_yellow_vest"
             ]
           },
           {
-            "entity_id": "box_01",
-            "shape_signature": "perfect_rectangular_prism",
-            "material_signature": "matte_fibrous_cardboard_with_specular_tape_strip",
-            "color_signature": "kraft_brown",
-            "surface_details": "Subtle corrugated ridges visible under close inspection, single strip of clear tape reflecting overhead lights.",
-            "scale_signature": "width_0.4m_depth_0.4m_height_0.3m",
+            "entity_id": "cardboard_box_01",
+            "shape_signature": "perfect_cube_geometry",
+            "material_signature": "rough_pressed_cellulose_fiber",
+            "color_signature": "natural_kraft_brown",
+            "surface_details": "Subtle linear corrugation lines, single strip of semi-gloss translucent tape sealing top flaps.",
+            "scale_signature": "width_0.4m_depth_0.4m_height_0.4m",
             "reference_views": [
-              "isometric_held_view",
-              "top_down_sealed_view"
+              "top_down_box_held",
+              "orthogonal_box_view"
             ],
             "negative_drift": [
-              "box morphing into a plastic crate",
-              "shipping labels or black text appearing on the box",
-              "box changing size or aspect ratio during the video"
+              "sagging_corners",
+              "transformation_to_plastic_bin",
+              "appearance_of_brand_logos"
             ]
           }
         ],
         "scene_registry": {
           "scene_id": "warehouse_aisle_01",
-          "layout_signature": "linear_aisle_with_flanking_racks",
-          "background_signature": "orange_and_blue_steel_racks_with_palletized_inventory",
-          "lighting_signature": "overhead_fluorescent_grid_cool_white_5000k",
-          "spatial_map": "Aisle center line runs along the Y-axis. Racks are positioned at X = -1.6m and X = 1.6m. Robot starts at Y = 4.0m moving towards Y = 0.0m. Worker starts at X = 1.2m, Y = 2.0m.",
+          "layout_signature": "linear_aisle_corridor_flanked_by_vertical_shelving",
+          "background_signature": "industrial_storage_racks_with_wooden_pallets_and_wrapped_inventory",
+          "lighting_signature": "continuous_overhead_cool_white_fluorescent_array",
+          "spatial_map": "2.5m_wide_center_aisle_bounded_by_x_minus_1.25m_and_x_plus_1.25m_racks_y_axis_running_north_south",
           "reference_views": [
-            "high_angle_aisle_looking_down",
-            "ground_level_aisle_view"
+            "master_overhead_canvas",
+            "left_rack_detail",
+            "right_rack_detail"
           ],
           "negative_drift": [
-            "racks changing color to green or grey",
-            "floor changing to wood or dark asphalt",
-            "addition of windows or natural daylight"
+            "aisle_widening",
+            "shelving_color_change_from_orange_to_blue",
+            "floor_texture_gaining_water_puddles"
           ]
         },
         "reference_assets": [
           {
-            "asset_id": "canonical_canvas_01",
+            "asset_id": "master_canvas_01",
             "kind": "canvas",
-            "target": "entire_scene",
-            "description": "The master layout image showing the empty warehouse aisle with correct lighting, rack placement, and floor markings."
+            "target": "warehouse_aisle_01",
+            "description": "The master background plate showing the empty warehouse aisle from a high-angle overhead position, capturing floor textures and rack layouts."
           },
           {
-            "asset_id": "robot_ref_front",
+            "asset_id": "ref_view_robot",
             "kind": "object_view",
-            "target": "robot_01",
-            "description": "Front view of the humanoid robot standing upright, showing the matte white panels and the blue chest LED."
+            "target": "humanoid_robot_01",
+            "description": "High-angle orthographic view of the humanoid robot standing upright with neutral arm posture.",
+            "source_entity_id": "humanoid_robot_01"
           },
           {
-            "asset_id": "worker_ref_front",
+            "asset_id": "ref_view_worker",
             "kind": "object_view",
-            "target": "worker_01",
-            "description": "Front view of the worker wearing the neon yellow vest and white hard hat."
+            "target": "human_worker_01",
+            "description": "Top-down reference profile of the human worker in standard protective gear.",
+            "source_entity_id": "human_worker_01"
           },
           {
-            "asset_id": "box_ref_iso",
-            "kind": "object_view",
-            "target": "box_01",
-            "description": "Isometric view of the plain brown cardboard box showing the clear tape seam."
-          },
-          {
-            "asset_id": "scenario_01_start",
+            "asset_id": "start_frame_scen_1",
             "kind": "start_frame",
-            "target": "entire_scene",
-            "description": "Initial frame for Scenario 1: Robot carrying the box down the center, worker standing near the right rack."
+            "target": "warehouse_aisle_01",
+            "description": "Initial composition setup where the humanoid robot is at y=-2.0 carrying the box, and the worker is at y=1.5 on the right lane."
           }
         ],
         "identity_checks": [
           {
-            "check_id": "robot_color_consistency",
+            "check_id": "chk_robot_color_constancy",
             "scope": "object",
-            "target_id": "robot_01",
-            "method": "VLM color histogram and keypoint tracking on the robot chassis panels.",
-            "pass_condition": "The chassis must maintain a matte white and dark grey color profile with a blue LED indicator across all frames, with no red or green drift."
+            "target_id": "humanoid_robot_01",
+            "method": "color_histogram_comparison_of_segmented_robot_crop",
+            "pass_condition": "At least 92% structural and color similarity to master_canvas_01 robot overlay across all sequence frames."
           },
           {
-            "check_id": "worker_vest_detection",
-            "scope": "object",
-            "target_id": "worker_01",
-            "method": "Object detection bounding box tracking combined with color segmentation for neon yellow.",
-            "pass_condition": "The worker must wear a neon yellow vest in 100% of the frames where they are visible."
-          },
-          {
-            "check_id": "box_rigidity_check",
-            "scope": "object",
-            "target_id": "box_01",
-            "method": "Optical flow and geometry consistency check on the box boundaries.",
-            "pass_condition": "The box must remain a rigid rectangular prism of constant scale while held by the robot."
-          },
-          {
-            "check_id": "background_static_check",
+            "check_id": "chk_aisle_geometry_stability",
             "scope": "scene",
             "target_id": "warehouse_aisle_01",
-            "method": "Frame-to-frame structural similarity index (SSIM) on the background racks and floor.",
-            "pass_condition": "SSIM of the background regions must exceed 0.95 across the entire video duration, confirming a static camera and environment."
+            "method": "edge_detection_and_hough_transform_on_safety_lines",
+            "pass_condition": "Yellow aisle safety boundary lines must not shift or skew by more than 1 pixel relative to camera coordinates."
+          },
+          {
+            "check_id": "chk_box_holding_continuity",
+            "scope": "series",
+            "target_id": "cardboard_box_01",
+            "method": "relative_distance_constraint_evaluation_between_robot_hands_and_box",
+            "pass_condition": "Box must remain fixed relative to robot torso frame until an explicit drop event is triggered."
           }
         ],
         "consistency_policy": {
           "locked_entity_ids": [
-            "robot_01",
-            "worker_01",
-            "box_01"
+            "humanoid_robot_01",
+            "human_worker_01",
+            "cardboard_box_01"
           ],
           "locked_scene_id": "warehouse_aisle_01",
           "forbidden_changes": [
-            "robot_chassis_color",
-            "worker_vest_color",
-            "aisle_rack_structure",
-            "camera_movement_type",
-            "box_material",
-            "adding_extra_actors"
+            "adding_new_human_actors",
+            "altering_the_high_angle_overhead_perspective",
+            "changing_the_clothing_colors_of_the_human_worker",
+            "modifying_the_cardboard_box_into_a_different_object_type"
           ],
           "consistency_requirements": [
-            "The humanoid robot must maintain its matte white and grey chassis and blue LED ring.",
-            "The worker must wear the high-visibility neon yellow vest and white hard hat.",
-            "The warehouse aisle layout, rack positions, and concrete floor markings must remain identical across all variations.",
-            "The camera must remain completely static, simulating a fixed security camera."
+            "The high-angle overhead camera perspective must remain perfectly static without jitter, zoom, or rotation.",
+            "The industrial floor texture, rack positions, and fluorescent light source placements must be identical across all three generated variations.",
+            "The humanoid robot model must preserve its dual-joint knee mechanics and matte-white texture layout throughout the scene."
           ]
         }
       }

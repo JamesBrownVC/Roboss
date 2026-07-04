@@ -7,6 +7,14 @@ __pycache__/
 build/
 dist/
 
+# Node / frontend
+node_modules/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 # Secrets
 .env
 .env.*
@@ -15,6 +23,23 @@ credentials*.json
 # Stray generated media in repo root
 /*.mp4
 /*.png
+
+# Common generated media and large local artifacts
+*.avi
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.parquet
+*.npz
+*.npy
+*.onnx
+*.safetensors
+*.ckpt
+*.pth
+.ultralytics/
+generated/
 
 # roboss-film: keep the text/code/manifest scaffolding, exclude heavy media
 # (669 PNG frames + 88 MP4 clips ≈ 667 MB — regenerable render artifacts)
@@ -80,10 +105,8 @@ demo/.cache/
 annotated*.mp4
 scenario_bundle/
 
-# Generated pipeline outputs (videos, reports, labels). Keep only the
-# curated runs/warehouse_v1 demo that is already tracked.
+# Generated pipeline outputs (videos, reports, labels).
 /runs/*
-!/runs/warehouse_v1/
 
 # OS
 .DS_Store

@@ -1,0 +1,36 @@
+{
+  "intention": "Generate rare safety scenarios where a humanoid robot carries a box in a warehouse and a human worker behaves unpredictably",
+  "world_id": "warehouse_robot_safety_world",
+  "scene_id": "warehouse_aisle_01",
+  "locked_entities": [
+    "robot_01",
+    "worker_01",
+    "box_01"
+  ],
+  "reference_assets_planned": 5,
+  "identity_checks": [
+    "robot_color_consistency",
+    "worker_vest_detection",
+    "box_rigidity_check",
+    "background_static_check"
+  ],
+  "scenarios_valid": [
+    "sc_01_sudden_trip",
+    "sc_02_abrupt_crossing",
+    "sc_03_backward_step"
+  ],
+  "scenarios_dropped": {},
+  "canvas": "runs\\warehouse_v1\\canvas.png",
+  "canvas_error": null,
+  "start_frames": {
+    "sc_01_sudden_trip": "runs\\warehouse_v1\\frames\\sc_01_sudden_trip_start.png",
+    "sc_02_abrupt_crossing": "runs\\warehouse_v1\\frames\\sc_02_abrupt_crossing_start.png",
+    "sc_03_backward_step": "runs\\warehouse_v1\\frames\\sc_03_backward_step_start.png"
+  },
+  "files": {
+    "intent": "intent.json",
+    "contract": "contract.json",
+    "scenarios": "scenarios.json",
+    "verifier_packets": "verifier_packets/"
+  }
+}

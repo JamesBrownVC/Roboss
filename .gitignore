@@ -7,13 +7,13 @@ __pycache__/
 build/
 dist/
 
-# Large / generated data
-v2r/data/
-v2r/workspaces/
-v2r/.gpu_locks/
-demo/.cache/
+# Secrets
+.env
+.env.*
+credentials*.json
 
 # Model weights
+*.pt
 v2r/assets/models/*.task
 v2r/assets/models/*.pt
 !v2r/assets/models/.gitkeep
@@ -22,12 +22,20 @@ v2r/assets/body_models/*
 v2r/assets/robots/*/meshes/
 # Menagerie binary mesh assets (~100 MB, re-downloadable; see v2r/assets/robots/README.md)
 v2r/assets/robots/*/assets/
-*.pt
 
-# Secrets
-.env
-.env.*
-credentials*.json
+# Large / generated data
+v2r/data/
+v2r/workspaces/
+v2r/.gpu_locks/
+demo/.cache/
+*_report.json
+annotated*.mp4
+scenario_bundle/
+
+# Generated pipeline outputs (videos, reports, labels). Keep only the
+# curated runs/warehouse_v1 demo that is already tracked.
+/runs/*
+!/runs/warehouse_v1/
 
 # OS
 .DS_Store

@@ -1,0 +1,31 @@
+# V2R pipeline configuration: stage toggles, thresholds, paths.
+workspaces_root: workspaces
+canonical_hz: 30.0
+# Interpolation across occlusions is capped: gaps longer than this are left
+# invalid (conventions.md / master prompt section 11).
+max_interp_gap_s: 0.34
+
+# 'real'      -> shell out to the pinned third-party tool in its isolated env
+#                (micromamba/pixi/docker; CUDA Linux host required).
+# 'synthetic' -> produce schema-valid synthetic artifacts tagged
+#                source=synthesized so the full contract, QA, retarget and
+#                export paths run end-to-end on any host (dev harness / CI).
+default_mode: synthetic
+
+stages:
+  ingest:           {enabled: true, mode: synthetic, env: null}
+  feasibility_judge: {enabled: true, mode: synthetic, env: feasibility_judge}
+  geometry:         {enabled: true, mode: synthetic, env: vipe}
+  human_body:       {enabled: true, mode: synthetic, env: gvhmr}
+  hands:            {enabled: true, mode: synthetic, env: wilor}
+  objects:          {enabled: true, mode: synthetic, env: foundationpose}
+  contact:          {enabled: true, mode: synthetic, env: null}
+  semantics:        {enabled: true, mode: synthetic, env: semantics}
+  retarget:         {enabled: true, mode: synthetic, env: gmr}
+  physics_validate: {enabled: true, mode: synthetic, env: null}
+  qa:               {enabled: true, mode: synthetic, env: null}
+  package:          {enabled: true, mode: synthetic, env: null}
+
+retries: 2
+retry_backoff_s: 5.0
+gpu_slots: 1

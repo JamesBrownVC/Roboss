@@ -1,0 +1,51 @@
+# V2R stage env: geometry backbone (ViPE).
+# Linux CUDA host only. See NOTES.md for gotchas and license notes.
+# The pinned repo README wins on installation details; this file wins on
+# nothing except the pins themselves.
+
+[project]
+name = "v2r-env-vipe"
+version = "0.1.0"
+description = "ViPE: intrinsics, camera motion, dense near-metric depth from unconstrained video"
+channels = ["conda-forge", "nvidia"]
+platforms = ["linux-64"]
+
+[activation.env]
+# TODO(operator): replace with the exact commit hash used in production.
+# Recorded into manifests/geometry.manifest.json as `commit`.
+PINNED_COMMIT = "PINNED_COMMIT_VIPE"
+VIPE_REPO = "https://github.com/nv-tlabs/vipe.git"
+
+[system-requirements]
+cuda = "12"
+
+[dependencies]
+python = "3.10.*"
+pip = "*"
+git = "*"
+ffmpeg = ">=6"
+# CUDA runtime pieces come from the host driver + pypi torch cu121 wheels.
+
+[pypi-options]
+extra-index-urls = ["https://download.pytorch.org/whl/cu121"]
+
+[pypi-dependencies]
+torch = "==2.4.0"
+torchvision = "==0.19.0"
+numpy = "<2"
+opencv-python-headless = ">=4.8"
+
+[tasks]
+# 1) clone at the pinned commit
+clone = "git clone $VIPE_REPO tool && git -C tool checkout $PINNED_COMMIT"
+# 2) install per the repo README at that commit (editable so the wrapper can
+#    call its CLI / python API)
+install = "python -m pip install -e ./tool"
+selftest = "python -c \"import vipe; print('vipe import ok')\""
+
+# 3) Weights: ViPE pulls several model checkpoints (dynamic-object masking via
+#    GroundingDINO + SAM, depth priors). Their licenses differ from the
+#    Apache-2.0 code license -> config/licensing.yaml marks ViPE weights
+#    `commercial: verify`. The operator must review each checkpoint license
+#    before enabling downloads. Left commented out on purpose:
+# fetch-weights = "python tool/scripts/download_models.py --out ./weights"

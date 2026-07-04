@@ -1,0 +1,38 @@
+# V2R stage env: retarget H2 ee_manipulator + H3 quadruped key-body IK (mink).
+# CPU-only differential IK on MuJoCo; the lightest env in the pipeline.
+# See NOTES.md.
+
+[project]
+name = "v2r-env-mink"
+version = "0.1.0"
+description = "mink: differential inverse kinematics on MuJoCo (task-space retargeting)"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[activation.env]
+# mink is consumed from PyPI at a pinned version rather than a git checkout;
+# keep the placeholder anyway so manifests can record an exact source ref.
+PINNED_COMMIT = "PINNED_COMMIT_MINK"
+MINK_REPO = "https://github.com/kevinzakka/mink.git"
+V2R_ROBOT_ASSETS = "../../assets/robots"
+
+[dependencies]
+python = "3.11.*"
+pip = "*"
+git = "*"
+
+[pypi-dependencies]
+mink = "==0.0.7"
+mujoco = ">=3.2"
+numpy = "<2"
+qpsolvers = { version = ">=4.3", extras = ["daqp"] }
+
+[tasks]
+# Optional: build from source at the pinned commit instead of the PyPI pin
+# (uncomment to switch; keep exactly one install path active):
+# clone = "git clone $MINK_REPO tool && git -C tool checkout $PINNED_COMMIT"
+# install-src = "python -m pip install -e ./tool"
+selftest = "python -c \"import mink, mujoco; print('mink env ok, mujoco', mujoco.__version__)\""
+
+# No weights at all: mink is a solver. Robot MJCF models come from
+# assets/robots/ (operator-placed, Unitree / MuJoCo Menagerie sources).

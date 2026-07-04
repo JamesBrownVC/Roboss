@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>V2R Factory — prompt to robot training data</title>
+<link rel="stylesheet" href="style.css?v=4" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><span class="brand-dot"></span>V2R <b>FACTORY</b></div>
+  <div class="nav-right">
+    <label class="hist-label" for="jobHistory">history</label>
+    <select id="jobHistory"><option value="">— previous jobs —</option></select>
+  </div>
+</nav>
+
+<header class="hero">
+  <h1 class="hero-title">Type a prompt.<br/><span class="grad">Watch the factory build robot data.</span></h1>
+  <p class="hero-sub">Gemini director → video generation → agentic verification → V2R pipeline → triangulated multi-view QA → LeRobot delivery.</p>
+</header>
+
+<main class="flow">
+
+  <!-- the ONE input -->
+  <section class="panel prompt-panel" id="promptPanel">
+    <form id="sgForm">
+      <textarea id="sgPrompt" rows="2" required
+        placeholder='describe the training data you need… e.g. "a person picks up a red cup from a table"'></textarea>
+      <div class="prompt-controls">
+        <label>events
+          <select id="sgVariants"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        </label>
+        <label>cameras
+          <select id="sgCameras"><option>1</option><option selected>2</option><option>3</option></select>
+        </label>
+        <label>backend
+          <select id="sgBackend">
+            <option value="auto">auto</option>
+            <option value="omni">omni (Gemini)</option>
+            <option value="veo">veo</option>
+            <option value="mock">mock (fast)</option>
+          </select>
+        </label>
+        <button class="btn primary" type="submit" id="sgRunBtn">▶&nbsp;Generate</button>
+      </div>
+    </form>
+    <div class="sg-status" id="sgStatus" hidden></div>
+  </section>
+
+  <div class="empty-hint" id="emptyHint">
+    <div class="empty-icon">⚙</div>
+    The pipeline lights up here, stage by stage, once a job is running.<br/>
+    Or pick a previous job from <b>history</b> (top-right) to replay its flow.
+  </div>
+
+  <!-- vertical pipeline flow (populated by app.js) -->
+  <div class="flow-root" id="flowRoot" hidden>
+    <div class="job-head panel" id="jobHead"></div>
+    <div id="stages"></div>
+  </div>
+
+</main>
+
+<footer>V2R Factory — RAISE Summit hackathon demo · every layer below reads live artifacts from <code>v2r/data/syngen</code> and <code>v2r/workspaces</code>.</footer>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="app.js?v=4"></script>
+</body>
+</html>

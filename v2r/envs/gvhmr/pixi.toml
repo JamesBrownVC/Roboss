@@ -1,0 +1,50 @@
+# V2R stage env: human_body (GVHMR, world-grounded SMPL-X body motion).
+# Linux CUDA host only. See NOTES.md.
+
+[project]
+name = "v2r-env-gvhmr"
+version = "0.1.0"
+description = "GVHMR: world-grounded human motion recovery (SMPL-X body)"
+channels = ["conda-forge", "nvidia"]
+platforms = ["linux-64"]
+
+[activation.env]
+# TODO(operator): pin to the exact commit; recorded in the human_body manifest.
+PINNED_COMMIT = "PINNED_COMMIT_GVHMR"
+GVHMR_REPO = "https://github.com/zju3dv/GVHMR.git"
+# Operator-provided body models (NEVER scraped); see assets/body_models/README.md
+V2R_BODY_MODELS = "../../assets/body_models"
+
+[system-requirements]
+cuda = "12"
+
+[dependencies]
+python = "3.10.*"
+pip = "*"
+git = "*"
+
+[pypi-options]
+extra-index-urls = ["https://download.pytorch.org/whl/cu121"]
+
+[pypi-dependencies]
+# GVHMR README pins torch 2.3.0 / cu121.
+torch = "==2.3.0"
+torchvision = "==0.18.0"
+pytorch-lightning = ">=2.2"
+hydra-core = ">=1.3"
+smplx = ">=0.1.28"
+numpy = "<2"
+opencv-python-headless = ">=4.8"
+
+[tasks]
+clone = "git clone $GVHMR_REPO tool && git -C tool checkout $PINNED_COMMIT"
+install = "python -m pip install -e ./tool"
+# Body models are OPERATOR-PROVIDED (MPI registration required, never
+# scraped). This task only links them into the layout GVHMR expects:
+link-body-models = "mkdir -p tool/inputs/checkpoints/body_models && ln -sfn $(realpath $V2R_BODY_MODELS)/smplx tool/inputs/checkpoints/body_models/smplx"
+selftest = "python -c \"import torch; print('gvhmr env ok, cuda:', torch.cuda.is_available())\""
+
+# GVHMR pretrained checkpoints are released under a research license
+# (Google Drive / HuggingFace links in the repo README). The operator must
+# accept the license and download manually. COMMENTED OUT on purpose:
+# fetch-weights = "python tool/tools/download_checkpoints.py --out tool/inputs/checkpoints"

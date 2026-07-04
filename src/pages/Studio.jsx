@@ -31,6 +31,8 @@ const DEFAULT_PROMPT =
 
 const LABEL_CLASS = "text-xs font-medium uppercase tracking-label text-sage-400";
 
+let studioReferenceCache = null;
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -100,7 +102,7 @@ export default function Studio() {
   const [datasetCount, setDatasetCount] = useState(() =>
     clampDataset(savedStudioState.datasetCount || savedStudioState.batch?.count || 10),
   );
-  const [reference, setReference] = useState(null);
+  const [reference, setReference] = useState(() => studioReferenceCache);
   const [referenceNotice, setReferenceNotice] = useState("");
   const [batch, setBatch] = useState(() => savedStudioState.batch || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -249,16 +251,19 @@ export default function Studio() {
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
     if (!isImage && !isVideo) {
+      studioReferenceCache = null;
       setReference(null);
       setReferenceNotice("Unsupported file type. Please select an image or a video.");
       return;
     }
     if (isImage && file.size > MAX_IMAGE_BYTES) {
+      studioReferenceCache = null;
       setReference(null);
       setReferenceNotice("Image is too large (max 8 MB).");
       return;
     }
     if (isVideo && file.size > MAX_VIDEO_BYTES) {
+      studioReferenceCache = null;
       setReference(null);
       setReferenceNotice("Video is too large (max 50 MB).");
       return;
@@ -266,14 +271,17 @@ export default function Studio() {
 
     try {
       const base64 = await fileToBase64(file);
-      setReference({
+      const nextReference = {
         kind: isVideo ? "video" : "image",
         name: file.name,
         mimeType: file.type,
         data: base64,
         previewUrl: URL.createObjectURL(file),
-      });
+      };
+      studioReferenceCache = nextReference;
+      setReference(nextReference);
     } catch (readError) {
+      studioReferenceCache = null;
       setReference(null);
       setReferenceNotice(readError.message);
     }
@@ -281,6 +289,7 @@ export default function Studio() {
 
   function clearReference() {
     releaseReference();
+    studioReferenceCache = null;
     setReference(null);
     setReferenceNotice("");
     if (fileInputRef.current) {

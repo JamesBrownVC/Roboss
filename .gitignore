@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+*.pt
+*_report.json
+annotated*.mp4
+.pytest_cache/

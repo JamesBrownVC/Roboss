@@ -1,0 +1,166 @@
+{
+  "scenario_prompt": "Worker Drops Clipboard and Bends Down",
+  "expected_objects": [
+    "robot",
+    "human",
+    "object"
+  ],
+  "expected_action": "dropping_clipboard_and_bending",
+  "expected_outcome": "The robot should utilize its downward-facing depth sensors to detect the worker's lowered profile, decelerate smoothly to prevent slipping on the concrete, and stop at a safe distance of at least 0.8 meters.",
+  "scenario_id": "sc_2_dropping_clipboard",
+  "world_id": "warehouse_safety_world_01",
+  "object_registry": [
+    {
+      "entity_id": "humanoid_robot_01",
+      "shape_signature": "bipedal_humanoid_torso_limbs",
+      "material_signature": "matte_plastic_and_brushed_metal",
+      "color_signature": "matte_white_and_dark_grey",
+      "surface_details": "Seamless panel gaps, circular blue LED ring on chest, black rubberized joints.",
+      "scale_signature": "1.8m_height_0.6m_shoulder_width",
+      "reference_views": [
+        "front_view_standing",
+        "side_view_profile",
+        "rear_view_standing"
+      ],
+      "negative_drift": [
+        "robot changing to a wheeled base",
+        "LED light changing from blue to red",
+        "chassis panels turning glossy or metallic yellow"
+      ]
+    },
+    {
+      "entity_id": "human_worker_01",
+      "shape_signature": "human_male_standing_walking",
+      "material_signature": "reflective_fabric_and_matte_hard_hat",
+      "color_signature": "neon_yellow_dark_blue_grey_white",
+      "surface_details": "Reflective silver horizontal and vertical stripes on the front and back of the safety vest.",
+      "scale_signature": "1.75m_height_medium_build",
+      "reference_views": [
+        "front_view_standing",
+        "back_view_walking"
+      ],
+      "negative_drift": [
+        "worker removing the hard hat",
+        "safety vest changing color to orange",
+        "worker morphing into a female worker or changing height significantly"
+      ]
+    },
+    {
+      "entity_id": "cardboard_box_01",
+      "shape_signature": "perfect_cuboid",
+      "material_signature": "matte_corrugated_cardboard",
+      "color_signature": "kraft_brown",
+      "surface_details": "Slightly reflective clear packing tape running along the top center seam.",
+      "scale_signature": "0.4m_x_0.4m_x_0.3m",
+      "reference_views": [
+        "three_quarter_isometric_view",
+        "top_down_view"
+      ],
+      "negative_drift": [
+        "box gaining printed shipping labels or logos",
+        "box warping into a non-cuboid shape",
+        "box changing to a plastic crate"
+      ]
+    }
+  ],
+  "scene_registry": {
+    "scene_id": "warehouse_aisle_01",
+    "layout_signature": "linear_aisle_3m_width_shelving_flanked",
+    "background_signature": "industrial_racks_pallets_shrinkwrap",
+    "lighting_signature": "overhead_cool_white_led_diffuse",
+    "spatial_map": "Aisle aligned along the Y-axis. Left rack boundary at X=-1.5, right rack boundary at X=1.5. Robot moves along Y-axis from Y=1.0 towards Y=5.0. Worker operates between Y=3.5 and Y=5.5.",
+    "reference_views": [
+      "corner_security_camera_high_angle",
+      "overhead_view_down_aisle",
+      "side_view_aisle_cross_section"
+    ],
+    "negative_drift": [
+      "shelving units changing color from blue/orange to green",
+      "concrete floor changing to green epoxy or wood",
+      "addition of overhead conveyor belts or other background machinery not in the reference"
+    ]
+  },
+  "reference_assets": [
+    {
+      "asset_id": "canvas_01",
+      "kind": "canvas",
+      "target": "warehouse_aisle_01",
+      "description": "Master static background plate of the warehouse aisle with empty space, correct shelving, and floor markings."
+    },
+    {
+      "asset_id": "robot_ref_01",
+      "kind": "object_view",
+      "target": "humanoid_robot_01",
+      "description": "Orthographic front view of the humanoid robot standing in a neutral pose."
+    },
+    {
+      "asset_id": "worker_ref_01",
+      "kind": "object_view",
+      "target": "human_worker_01",
+      "description": "Front view of the human worker wearing the specified safety gear."
+    },
+    {
+      "asset_id": "box_ref_01",
+      "kind": "object_view",
+      "target": "cardboard_box_01",
+      "description": "Close-up of the plain cardboard box showing the texture and tape."
+    },
+    {
+      "asset_id": "start_frame_01",
+      "kind": "start_frame",
+      "target": "scenario_01",
+      "description": "Initial frame of the first scenario: robot at Y=2.0 holding the box, worker at Y=4.5 facing away from the robot."
+    }
+  ],
+  "identity_checks": [
+    {
+      "check_id": "check_robot_chassis_color",
+      "scope": "object",
+      "target_id": "humanoid_robot_01",
+      "method": "RGB histogram comparison on segmented robot chassis across all frames",
+      "pass_condition": "The ratio of white to dark grey pixels must remain within a 5% tolerance of the reference asset."
+    },
+    {
+      "check_id": "check_worker_vest_presence",
+      "scope": "object",
+      "target_id": "human_worker_01",
+      "method": "Semantic segmentation and color classification of the upper torso",
+      "pass_condition": "The vest area must continuously register as neon yellow with high-reflectivity silver stripes."
+    },
+    {
+      "check_id": "check_box_geometry",
+      "scope": "object",
+      "target_id": "cardboard_box_01",
+      "method": "3D bounding box estimation and aspect ratio tracking",
+      "pass_condition": "The box must maintain its 4:4:3 aspect ratio with less than 3% variance, ensuring no warping during movement."
+    },
+    {
+      "check_id": "check_background_consistency",
+      "scope": "scene",
+      "target_id": "warehouse_aisle_01",
+      "method": "Structural Similarity Index (SSIM) on static background regions (shelving, upper racks)",
+      "pass_condition": "SSIM must remain above 0.92 across all frames of the video sequence."
+    }
+  ],
+  "consistency_policy": {
+    "locked_entity_ids": [
+      "humanoid_robot_01",
+      "human_worker_01",
+      "cardboard_box_01"
+    ],
+    "locked_scene_id": "warehouse_aisle_01",
+    "forbidden_changes": [
+      "changing the robot model or its bipedal nature",
+      "removing the worker's safety vest or hard hat",
+      "adding other human workers or robots to the scene",
+      "changing the color of the warehouse racks or floor markings",
+      "introducing camera movement or panning (camera must remain static)"
+    ],
+    "consistency_requirements": [
+      "The humanoid robot must always hold the cardboard box with both hands at chest level.",
+      "The worker must always wear the white hard hat and neon yellow safety vest.",
+      "The warehouse floor must maintain the same concrete texture and yellow safety lines.",
+      "The camera angle and position must remain completely static throughout the entire 6.0-second duration."
+    ]
+  }
+}

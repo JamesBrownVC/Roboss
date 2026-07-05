@@ -67,12 +67,12 @@ function jitter(value, amount, min, max) {
 
 function TelemetryCard({ icon: Icon, label, value, tone = "text-white" }) {
   return (
-    <div className="rounded-lg border border-surface-700 bg-surface-900 p-4">
+    <div className="rounded-lg border border-surface-700 bg-surface-900 p-3 sm:p-4">
       <div className="flex items-center gap-2 text-sage-400">
         <Icon size={15} aria-hidden="true" />
         <span className="text-xs font-medium uppercase tracking-label">{label}</span>
       </div>
-      <div className={`mt-1.5 text-2xl font-semibold tracking-tight ${tone}`}>{value}</div>
+      <div className={`mt-1.5 text-xl font-semibold tracking-tight sm:text-2xl ${tone}`}>{value}</div>
     </div>
   );
 }
@@ -166,7 +166,7 @@ export default function Monitor() {
         title="Live Monitor"
         subtitle="Connect the robot to watch its live camera feed, real-time detections and action log."
       >
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
               connected
@@ -186,7 +186,7 @@ export default function Monitor() {
         </div>
       </PageHeader>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-surface-700 bg-surface-900 p-4">
+      <div className="mb-6 flex flex-col items-stretch gap-3 rounded-lg border border-surface-700 bg-surface-900 p-4 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex items-center gap-2 text-sage-400">
           <Radio size={16} aria-hidden="true" />
           <span className="text-xs font-medium uppercase tracking-label">Robot endpoint</span>
@@ -195,14 +195,14 @@ export default function Monitor() {
           value={endpoint}
           onChange={(event) => setEndpoint(event.target.value)}
           disabled={status !== "disconnected"}
-          className="h-10 min-w-64 flex-1 rounded-md border border-surface-600 bg-surface-950 px-3 text-sm text-sage-50 outline-none transition focus:border-sage-400 focus:ring-2 focus:ring-white/10 disabled:opacity-60"
+          className="h-10 min-w-0 flex-1 rounded-md border border-surface-600 bg-surface-950 px-3 text-sm text-sage-50 outline-none transition focus:border-sage-400 focus:ring-2 focus:ring-white/10 disabled:opacity-60"
           placeholder="ws://robot-host:port"
         />
         {connected || status === "connecting" ? (
           <button
             type="button"
             onClick={disconnect}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#ff3b6b]/40 bg-[#ff3b6b]/10 px-4 text-sm font-medium text-[#ff3b6b] transition hover:bg-[#ff3b6b]/20"
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-[#ff3b6b]/40 bg-[#ff3b6b]/10 px-4 text-sm font-medium text-[#ff3b6b] transition hover:bg-[#ff3b6b]/20 sm:w-auto"
           >
             <Square size={15} aria-hidden="true" />
             Disconnect
@@ -211,7 +211,7 @@ export default function Monitor() {
           <button
             type="button"
             onClick={connect}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-4 text-sm font-medium text-[#0b0714] shadow-[0_0_20px_rgba(241,61,245,0.4)] transition hover:brightness-110"
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-4 text-sm font-medium text-[#0b0714] shadow-[0_0_20px_rgba(241,61,245,0.4)] transition hover:brightness-110 sm:w-auto"
           >
             <Play size={15} aria-hidden="true" />
             Connect
@@ -250,7 +250,7 @@ export default function Monitor() {
                       }}
                     >
                       <span
-                        className="absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
+                        className="absolute -top-5 left-0 max-w-[150px] truncate whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-medium text-white sm:-top-6 sm:max-w-none sm:text-[11px]"
                         style={{ backgroundColor: color }}
                       >
                         {box.label} {(box.conf * 100).toFixed(0)}%
@@ -259,24 +259,24 @@ export default function Monitor() {
                   );
                 })}
 
-                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded bg-black/60 px-2 py-1 text-[11px] font-medium text-[#ff3b6b]">
+                <div className="absolute left-2 top-2 flex items-center gap-1.5 rounded bg-black/60 px-2 py-1 text-[10px] font-medium text-[#ff3b6b] sm:left-3 sm:top-3 sm:text-[11px]">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ff3b6b]" />
                   LIVE
                 </div>
-                <div className="absolute right-3 top-3 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-sage-300">
+                <div className="absolute right-2 top-2 rounded bg-black/60 px-2 py-1 font-mono text-[10px] text-sage-300 sm:right-3 sm:top-3 sm:text-[11px]">
                   {clock()} - {telemetry.fps} FPS
                 </div>
-                <div className="absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-sage-300">
+                <div className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded bg-black/60 px-2 py-1 font-mono text-[10px] text-sage-300 sm:bottom-3 sm:left-3 sm:text-[11px]">
                   CAM-01 - aisle 4 / rack B
                 </div>
               </>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
-                <Cctv className="text-sage-500" size={34} aria-hidden="true" />
-                <p className="text-lg font-medium text-white">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center sm:gap-3">
+                <Cctv className="text-sage-500" size={28} aria-hidden="true" />
+                <p className="text-base font-medium text-white sm:text-lg">
                   {status === "connecting" ? "Establishing link..." : "No signal"}
                 </p>
-                <p className="max-w-sm text-sm text-sage-400">
+                <p className="max-w-sm text-xs text-sage-400 sm:text-sm">
                   {status === "connecting"
                     ? "Handshaking with the robot stream."
                     : "Connect the robot to start the live feed and detection overlay."}
@@ -285,7 +285,7 @@ export default function Monitor() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-4 sm:gap-4">
             <TelemetryCard
               icon={connected ? Wifi : WifiOff}
               label="Status"
@@ -298,7 +298,7 @@ export default function Monitor() {
           </div>
         </div>
 
-        <div className="flex min-h-[420px] flex-col rounded-lg border border-surface-700 bg-surface-900">
+        <div className="flex min-h-[320px] flex-col rounded-lg border border-surface-700 bg-surface-900 sm:min-h-[420px]">
           <div className="flex items-center justify-between border-b border-surface-700 px-4 py-3">
             <span className="text-sm font-medium text-white">Action log</span>
             {connected ? <span className="font-mono text-xs text-sage-500">uptime {uptimeLabel}</span> : null}

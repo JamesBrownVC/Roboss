@@ -49,6 +49,12 @@ export function createDogDemoBatch() {
   });
 }
 
+export function createCacheDemoBatch() {
+  return fetchJson("/api/demo/cache", {
+    method: "POST",
+  });
+}
+
 export function getBatch(batchId) {
   return fetchJson(`/api/batches/${batchId}`);
 }

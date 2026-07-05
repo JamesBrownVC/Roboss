@@ -276,7 +276,7 @@ export default function Home() {
 
   return (
     <>
-    <section className="relative -mt-3 flex min-h-[calc(100svh-190px)] flex-col items-center justify-start overflow-hidden pb-8 pt-2 sm:-mt-6 sm:min-h-[calc(100vh-140px)] sm:pb-10 sm:pt-1">
+    <section className="relative flex min-h-[calc(100svh-190px)] flex-col items-center justify-start overflow-hidden pb-8 pt-4 sm:min-h-[calc(100vh-140px)] sm:pb-10 sm:pt-4">
       {/* radial glow behind the robot */}
       <div
         aria-hidden="true"

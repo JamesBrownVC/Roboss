@@ -621,6 +621,12 @@ def _run_batch(batch_id: str) -> None:
                     job.label = label
                     job.labelStatus = "completed"
 
+            label_path = job_dir / f"{scenario_id}_labels.json"
+            label_path.write_text(
+                json.dumps(label, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
             if job.labeledVideoUrl is None:
                 with _lock:
                     job.status = "rendering"

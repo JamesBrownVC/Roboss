@@ -9,6 +9,13 @@ class DummySettings:
         self.runs_dir = runs_dir
         self.start_frame_workers = 2
         self.video_workers = 3
+        self.gen_workers = 2
+        self.verify_workers = 2
+        self.label_workers = 2
+        self.gate2_enabled = True
+        self.label_on_accept = True
+        self.annotate_enabled = False
+        self.deterministic_agents = True
 
 
 def test_e2e_parallel_results_keep_scenario_order(tmp_path, monkeypatch):
@@ -50,7 +57,7 @@ def test_e2e_parallel_results_keep_scenario_order(tmp_path, monkeypatch):
             "parallelism": {"start_frame_workers": 2},
         }
 
-    def fake_run_video_pipeline(*, outdir, scenario, **kwargs):
+    async def fake_run_video_pipeline_async(*, outdir, scenario, **kwargs):
         out = Path(outdir)
         out.mkdir(parents=True, exist_ok=True)
         sid = scenario["scenario_id"]
@@ -72,8 +79,8 @@ def test_e2e_parallel_results_keep_scenario_order(tmp_path, monkeypatch):
                         lambda: DummySettings(tmp_path))
     monkeypatch.setattr("roboss.pipeline.compile_scenarios",
                         fake_compile_scenarios)
-    monkeypatch.setattr("roboss.pipeline.run_video_pipeline",
-                        fake_run_video_pipeline)
+    monkeypatch.setattr("roboss.pipeline.run_video_pipeline_async",
+                        fake_run_video_pipeline_async)
 
     summary = run_e2e_pipeline(
         "make scenarios",

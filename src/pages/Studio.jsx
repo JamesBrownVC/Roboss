@@ -7,6 +7,7 @@ import VideoCard, { STATUS_LABELS, annotationCount } from "../components/VideoCa
 import {
   clearActiveBatchId,
   createBatch,
+  createCacheDemoBatch,
   createDogDemoBatch,
   getBatch,
   getBatchDownloadUrl,
@@ -32,6 +33,50 @@ const DEFAULT_PROMPT =
   "the warehouse floor in realistic slow motion, leaving damaged boxes and scattered products.";
 const DOG_DEMO_PROMPT =
   "A dog moves and runs forward with a clear quadruped gait; convert that dog motion into synthetic training data for a robot dog.";
+const CACHE_DEMO_PROMPT = `Realistic 4K footage, eye-level static shot, a Unitree Go2 quadruped robot dog
+(appearance strictly as shown in the reference photos), on a smooth concrete
+floor in a bright modern lab, soft daylight, shallow depth of field, no humans
+in frame, the robot stays fully visible in frame, no cuts.
+
+Anatomy anchor, identical throughout: the HEAD is the unit at the FRONT bearing
+a black vertical face stripe with a camera lens and a round spotlight, a sensor
+cluster under the chin, and the number 02 on its sides; the REAR is plain and
+featureless with no camera, no lights, no markings. The robot always moves
+head-first when walking forward. Never swap or mirror the head and the rear,
+never show a camera on both ends, the body never reverses orientation between
+consecutive moments.
+
+Mechanical constraint: the robot's head is rigidly fixed to the body - it never
+tilts, pans, nods or moves independently of the torso; only the four legs
+articulate, and the whole body moves as one rigid unit.
+
+One single continuous 30-second sequence, in this exact order:
+
+1 (0-6 s, awakening): the robot starts lying flat on its belly with legs folded,
+head pointing toward the camera, then smoothly extends all four legs and rises
+into a tall standing posture, settling into active balance with tiny
+micro-adjustments of its legs.
+
+2 (6-11 s, greeting): standing, head facing the camera, it sits back slightly
+onto its hind legs and raises one front leg next to its head, waving it in a
+friendly greeting gesture, then returns to standing.
+
+3 (11-19 s, exploration): it walks forward head-first with a natural dog-like
+gait, then pivots 90 degrees clockwise in place SLOWLY and smoothly over about
+3 full seconds - one single continuous rotation, no jumps, every intermediate
+angle visible - until the head points to the right of the frame, then slows
+into a careful one-leg-at-a-time walk, still head-first.
+
+4 (19-24 s, stretch): now in side profile with the head on the right of the
+frame, it bows deeply into a play-bow stretch: BOTH front legs fully extended
+forward and flat on the ground, chest lowered between them, while the
+featureless back half stays raised on the hind legs, then it rises back to
+standing.
+
+5 (24-30 s, calm ending): still in side profile, it lowers its back half into a
+dog-like sitting pose (head up), pauses for a moment, then pushes back up with
+its hind legs and returns to a tall, stable standing posture, ending motionless
+and upright.`;
 
 const LABEL_CLASS = "text-xs font-medium uppercase tracking-label text-sage-400";
 
@@ -126,11 +171,14 @@ export default function Studio() {
   const currentStatus = batch?.status ?? "idle";
   const isBatchActive = ["queued", "running"].includes(currentStatus);
   const isDogDemoMode = pipelineMode === "dog";
+  const isCacheDemoMode = pipelineMode === "cache";
+  const isDemoMode = isDogDemoMode || isCacheDemoMode;
+  const displayedPrompt = isDogDemoMode ? DOG_DEMO_PROMPT : isCacheDemoMode ? CACHE_DEMO_PROMPT : prompt;
   const canSubmit =
-    (isDogDemoMode || prompt.trim().length > 0) &&
+    (isDemoMode || prompt.trim().length > 0) &&
     !isSubmitting &&
     !isBatchActive &&
-    (!apiKeyMissing || isDogDemoMode);
+    (!apiKeyMissing || isDemoMode);
   const busy = isSubmitting || isBatchActive;
 
   const safeDatasetCount = clampDataset(datasetCount || MIN_DATASET);
@@ -145,12 +193,18 @@ export default function Studio() {
   }, [batch, safeDatasetCount]);
 
   const acceptedJobs = useMemo(
-    () => (batch?.jobs ?? []).filter((job) => job.status !== "failed" && job.reviewStatus !== "rejected"),
+    () =>
+      (batch?.jobs ?? []).filter(
+        (job) => job.status !== "failed" && !["failed", "rejected"].includes(job.reviewStatus),
+      ),
     [batch]
   );
-  
+
   const quarantinedJobs = useMemo(
-    () => (batch?.jobs ?? []).filter((job) => job.status === "failed" || job.reviewStatus === "rejected"),
+    () =>
+      (batch?.jobs ?? []).filter(
+        (job) => job.status === "failed" || ["failed", "rejected"].includes(job.reviewStatus),
+      ),
     [batch]
   );
 
@@ -160,8 +214,8 @@ export default function Studio() {
   }, [activeTab, acceptedJobs, quarantinedJobs]);
 
   const downloadableVideoCount = useMemo(
-    () => acceptedJobs.filter((job) => job.videoUrl || job.labeledVideoUrl).length,
-    [acceptedJobs],
+    () => (batch?.jobs ?? []).filter((job) => job.videoUrl || job.labeledVideoUrl).length,
+    [batch],
   );
   
   const placeholderCount = Math.min(
@@ -355,17 +409,19 @@ export default function Studio() {
     try {
       const nextBatch = isDogDemoMode
         ? await createDogDemoBatch()
-        : await createBatch({
-            prompt: prompt.trim(),
-            aspectRatio,
-            count: safeDatasetCount,
-            reference,
-          });
+        : isCacheDemoMode
+          ? await createCacheDemoBatch()
+          : await createBatch({
+              prompt: prompt.trim(),
+              aspectRatio,
+              count: safeDatasetCount,
+              reference,
+            });
       saveActiveBatchId(nextBatch.id);
       saveStudioState({
-        prompt: isDogDemoMode ? DOG_DEMO_PROMPT : prompt.trim(),
+        prompt: isDemoMode ? displayedPrompt : prompt.trim(),
         aspectRatio,
-        datasetCount: safeDatasetCount,
+        datasetCount: isCacheDemoMode ? nextBatch.count : safeDatasetCount,
         pipelineMode,
         batchId: nextBatch.id,
         batch: compactBatchForStorage(nextBatch),
@@ -373,6 +429,40 @@ export default function Studio() {
       setBatch(nextBatch);
     } catch (submitError) {
       setError(submitError.message || "Could not start pipeline.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handlePipelineModeChange(nextMode) {
+    setPipelineMode(nextMode);
+    setError("");
+    setBatch(null);
+    clearActiveBatchId();
+    saveStudioState({ pipelineMode: nextMode, batchId: null, batch: null });
+
+    if (nextMode !== "cache") {
+      return;
+    }
+
+    setIsSubmitting(true);
+    recordedRef.current = false;
+    submitTimeRef.current = Date.now();
+    try {
+      const nextBatch = await createCacheDemoBatch();
+      saveActiveBatchId(nextBatch.id);
+      saveStudioState({
+        prompt: CACHE_DEMO_PROMPT,
+        aspectRatio,
+        datasetCount: nextBatch.count,
+        pipelineMode: nextMode,
+        batchId: nextBatch.id,
+        batch: compactBatchForStorage(nextBatch),
+      });
+      setBatch(nextBatch);
+      setActiveTab("accepted");
+    } catch (cacheError) {
+      setError(cacheError.message || "Could not load cached dataset.");
     } finally {
       setIsSubmitting(false);
     }
@@ -392,7 +482,7 @@ export default function Studio() {
         subtitle="One prompt in, an annotated training dataset out. Describe an industrial incident and generate as many labeled videos as you need."
       />
 
-      {apiKeyMissing && !isDogDemoMode ? (
+      {apiKeyMissing && !isDemoMode ? (
         <div className="mb-6 flex items-start gap-3 rounded-md border border-accent-500/30 bg-accent-500/5 px-4 py-3 text-sm text-accent-200">
           <AlertTriangle className="mt-0.5 shrink-0 text-accent-300" size={18} aria-hidden="true" />
           <p className="min-w-0 break-words">
@@ -410,9 +500,9 @@ export default function Studio() {
           <label className="flex flex-col gap-2">
             <span className={LABEL_CLASS}>Prompt</span>
             <textarea
-              value={isDogDemoMode ? DOG_DEMO_PROMPT : prompt}
+              value={displayedPrompt}
               onChange={(event) => setPrompt(event.target.value)}
-              disabled={isDogDemoMode || busy}
+              disabled={isDemoMode || busy}
               maxLength={4000}
               className="min-h-44 resize-y rounded-md border border-surface-600 bg-surface-950 px-3 py-3 text-sm leading-6 text-sage-50 outline-none transition placeholder:text-sage-500 focus:border-sage-400 focus:ring-2 focus:ring-white/10"
               placeholder="Describe the industrial incident to generate..."
@@ -447,7 +537,8 @@ export default function Studio() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-surface-600 bg-surface-950 px-3 py-4 text-xs font-medium text-sage-400 transition hover:border-sage-400 hover:text-white"
+                disabled={busy || isDemoMode}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-surface-600 bg-surface-950 px-3 py-4 text-xs font-medium text-sage-400 transition hover:border-sage-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <ImagePlus size={16} aria-hidden="true" />
                 Add an image or video reference
@@ -470,7 +561,7 @@ export default function Studio() {
                 <button
                   key={ratio}
                   type="button"
-                  disabled={busy || isDogDemoMode}
+                  disabled={busy || isDemoMode}
                   onClick={() => setAspectRatio(ratio)}
                   className={`inline-flex justify-center rounded-md border px-4 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-45 ${
                     aspectRatio === ratio
@@ -494,7 +585,7 @@ export default function Studio() {
               min={MIN_DATASET}
               max={MAX_DATASET}
               value={datasetCount}
-              disabled={busy || isDogDemoMode}
+              disabled={busy || isDemoMode}
               onChange={(event) => setDatasetCount(event.target.value === "" ? "" : clampDataset(event.target.value))}
               onBlur={() => setDatasetCount((value) => clampDataset(value || MIN_DATASET))}
               className="h-11 rounded-md border border-surface-600 bg-surface-950 px-3 text-sm text-sage-50 outline-none transition disabled:cursor-not-allowed disabled:text-sage-500 focus:border-sage-400 focus:ring-2 focus:ring-white/10"
@@ -507,7 +598,7 @@ export default function Studio() {
             disabled={busy || !canSubmit}
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-4 text-sm font-medium text-[#0b0714] shadow-[0_0_20px_rgba(241,61,245,0.4)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:bg-none disabled:text-sage-500 disabled:shadow-none"
           >
-            {apiKeyMissing && !isDogDemoMode ? (
+            {apiKeyMissing && !isDemoMode ? (
               <>
                 <AlertTriangle size={16} aria-hidden="true" />
                 Missing API key
@@ -515,12 +606,16 @@ export default function Studio() {
             ) : busy ? (
               <>
                 <LoaderCircle className="animate-spin" size={16} aria-hidden="true" />
-                {isDogDemoMode ? "Running dog demo" : `Generating ${progress.done}/${progress.total}`}
+                {isDogDemoMode
+                  ? "Running dog demo"
+                  : isCacheDemoMode
+                    ? "Loading cache"
+                    : `Generating ${progress.done}/${progress.total}`}
               </>
             ) : (
               <>
                 <Play size={16} aria-hidden="true" />
-                {isDogDemoMode ? "Run robot dog demo" : "Generate dataset"}
+                {isDogDemoMode ? "Run robot dog demo" : isCacheDemoMode ? "Load from cache" : "Generate dataset"}
               </>
             )}
           </button>
@@ -530,7 +625,9 @@ export default function Studio() {
             <p>
               {isDogDemoMode
                 ? "Dog demo mode runs a parallel front pipeline using the local ai_dog.mp4 asset. It skips generation and returns synthetic robot-dog labels/data for GO2."
-                : "Videos share the same incident and environment with varied camera angles and details. Each one is automatically verified and annotated. The preview shows the first four; the full dataset is available for download."}
+                : isCacheDemoMode
+                  ? "From cache mode loads generated/d79e3fa0e9ce with all cached raw videos, labeled videos, verifier reports, accepted outputs, and rejected outputs."
+                  : "Videos share the same incident and environment with varied camera angles and details. Each one is automatically verified and annotated. The preview shows the first four; the full dataset is available for download."}
             </p>
           </div>
         </form>
@@ -585,7 +682,7 @@ export default function Studio() {
                 className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-200 transition hover:border-sage-500 hover:text-white disabled:cursor-not-allowed disabled:text-sage-500 disabled:hover:border-surface-600 sm:w-auto"
               >
                 <Download size={14} aria-hidden="true" />
-                Download all videos
+                Download dataset
               </button>
               <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-700 sm:w-40 sm:flex-none">
 
@@ -636,7 +733,9 @@ export default function Studio() {
               ? `Previewing the first ${previewJobs.length} of ${progress.total} videos in this dataset.`
               : isDogDemoMode
                 ? "Run the robot dog demo pipeline to preview the bundled dog-motion clip and synthetic labels."
-                : `Submit a prompt to generate a dataset of ${safeDatasetCount} videos (previewing the first ${placeholderCount}).`}
+                : isCacheDemoMode
+                  ? "Load the cached generated/d79e3fa0e9ce dataset to preview accepted and rejected cached videos."
+                  : `Submit a prompt to generate a dataset of ${safeDatasetCount} videos (previewing the first ${placeholderCount}).`}
           </p>
         </div>
       </div>
@@ -653,16 +752,16 @@ export default function Studio() {
           <div>
             <p className="text-xs font-medium uppercase tracking-label text-sage-400">Pipeline mode</p>
             <h2 className="mt-1 text-sm font-medium text-white">
-              Choose the real pipeline or the robot dog demo pipeline
+              Choose the real pipeline, the robot dog demo, or a cached generated run
             </h2>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             <button
               type="button"
               disabled={busy}
-              onClick={() => setPipelineMode("classic")}
+              onClick={() => handlePipelineModeChange("classic")}
               className={`rounded-md border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                !isDogDemoMode
+                pipelineMode === "classic"
                   ? "border-neon-cyan/60 bg-neon-cyan/10 text-white shadow-[0_0_18px_rgba(47,232,234,0.18)]"
                   : "border-surface-600 bg-surface-950 text-sage-300 hover:border-sage-500 hover:text-white"
               }`}
@@ -673,7 +772,7 @@ export default function Studio() {
             <button
               type="button"
               disabled={busy}
-              onClick={() => setPipelineMode("dog")}
+              onClick={() => handlePipelineModeChange("dog")}
               className={`rounded-md border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
                 isDogDemoMode
                   ? "border-neon-violet/70 bg-neon-violet/10 text-white shadow-[0_0_18px_rgba(139,92,246,0.22)]"
@@ -682,6 +781,19 @@ export default function Studio() {
             >
               <span className="block text-xs font-semibold uppercase tracking-label">Robot dog demo</span>
               <span className="mt-1 block text-xs text-sage-400">ai_dog.mp4 → synthetic GO2 data</span>
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => handlePipelineModeChange("cache")}
+              className={`rounded-md border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                isCacheDemoMode
+                  ? "border-neon-green/70 bg-neon-green/10 text-white shadow-[0_0_18px_rgba(126,247,144,0.2)]"
+                  : "border-surface-600 bg-surface-950 text-sage-300 hover:border-sage-500 hover:text-white"
+              }`}
+            >
+              <span className="block text-xs font-semibold uppercase tracking-label">From cache</span>
+              <span className="mt-1 block text-xs text-sage-400">generated/d79e3fa0e9ce → full dataset</span>
             </button>
           </div>
         </div>

@@ -147,7 +147,29 @@ GEMINI_API_KEY=your_key_here
 
 See [.env.example](.env.example) for optional knobs such as
 `ROBOSS_VIDEO_MODEL`, `ROBOSS_LABEL_MODEL`, `ROBOSS_GATE2_ENABLED`,
-`ROBOSS_LABEL_ON_ACCEPT`, and `ROBOSS_RUNS_DIR`.
+`ROBOSS_LABEL_ON_ACCEPT`, `ROBOSS_ANNOTATE_ENABLED`, and `ROBOSS_RUNS_DIR`.
+
+### Async pipeline & concurrency
+
+The orchestration core is **async**: in a batch every scenario runs its own
+`generate → verify → label` chain concurrently, throttled by per-stage
+semaphores so different resource types overlap instead of queueing —
+while one scenario occupies the CPU verifying, others are generating or
+labeling on the network. Inside one verification, Gate 2 and the semantic
+annotator run in parallel threads; inside one labeling job, the audio pass
+runs in parallel with the visual inventory and object tracking fans out
+across `TRACKING_CONCURRENCY` calls.
+
+| knob | default | caps |
+|---|---|---|
+| `ROBOSS_VIDEO_WORKERS` | 8 | scenario chains in flight |
+| `ROBOSS_GEN_WORKERS` | 4 | concurrent video generations (network) |
+| `ROBOSS_VERIFY_WORKERS` | 2 | concurrent verifications (CPU: YOLO) |
+| `ROBOSS_LABEL_WORKERS` | 4 | concurrent labeling jobs (network) |
+
+`run_video_pipeline` / `run_e2e_pipeline` remain sync wrappers for the CLI;
+FastAPI endpoints await the async core directly
+(`run_video_pipeline_async`, `run_e2e_pipeline_async`).
 
 YOLO11 weights (`yolo11n-pose.pt`, `yolo11n.pt`, ~12 MB total) download
 automatically on first run. `run.sh` / `e2e.sh` create the venv for you if

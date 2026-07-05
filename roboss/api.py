@@ -1,7 +1,13 @@
-"""FastAPI application for the Roboss pipeline."""
+"""FastAPI application for the Roboss pipeline.
+
+Heavy endpoints are async and await the async pipeline core directly, so
+concurrent requests (and the scenario chains inside one batch request)
+share the event loop instead of exhausting the server's thread pool.
+"""
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -9,7 +15,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from .pipeline import compile_scenarios, run_e2e_pipeline, run_video_pipeline
+from .pipeline import (
+    compile_scenarios,
+    run_e2e_pipeline_async,
+    run_video_pipeline_async,
+)
 from .schemas import (
     CompileRequest,
     E2ERequest,
@@ -99,15 +109,16 @@ def get_run(run_id: str) -> dict:
 
 @app.post("/scenario-bundles", response_model=PipelineResponse,
           tags=["scenario planning"])
-def create_scenario_bundle(req: CompileRequest) -> PipelineResponse:
+async def create_scenario_bundle(req: CompileRequest) -> PipelineResponse:
     try:
-        data = compile_scenarios(
-            intention=req.intention,
-            outdir=req.outdir,
-            count=req.count,
-            start_frames=req.start_frames,
-            deterministic=req.deterministic,
-            start_frame_workers=req.start_frame_workers,
+        data = await asyncio.to_thread(
+            compile_scenarios,
+            req.intention,
+            req.outdir,
+            req.count,
+            req.start_frames,
+            req.deterministic,
+            req.start_frame_workers,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -116,9 +127,9 @@ def create_scenario_bundle(req: CompileRequest) -> PipelineResponse:
 
 @app.post("/verified-videos", response_model=PipelineResponse,
           tags=["video generation"])
-def create_verified_video(req: VideoPipelineRequest) -> PipelineResponse:
+async def create_verified_video(req: VideoPipelineRequest) -> PipelineResponse:
     try:
-        result = run_video_pipeline(
+        result = await run_video_pipeline_async(
             prompt=req.prompt,
             outdir=req.outdir,
             scenario=req.scenario,
@@ -145,9 +156,9 @@ def create_verified_video(req: VideoPipelineRequest) -> PipelineResponse:
 
 @app.post("/verified-video-batches", response_model=PipelineResponse,
           tags=["video generation"])
-def create_verified_video_batch(req: E2ERequest) -> PipelineResponse:
+async def create_verified_video_batch(req: E2ERequest) -> PipelineResponse:
     try:
-        data = run_e2e_pipeline(
+        data = await run_e2e_pipeline_async(
             intention=req.intention,
             count=req.count,
             run_name=req.run_name,
@@ -171,15 +182,17 @@ def create_verified_video_batch(req: E2ERequest) -> PipelineResponse:
 
 @app.post("/robot-dataset-exports", response_model=PipelineResponse,
           tags=["robot data"])
-def create_robot_dataset_export(req: RobotDataExportRequest) -> PipelineResponse:
+async def create_robot_dataset_export(
+        req: RobotDataExportRequest) -> PipelineResponse:
     """Test endpoint: existing video file -> V2R robot-ready dataset."""
     try:
-        data = export_video_to_robot_data(
-            video_path=req.video_path,
-            outdir=req.outdir,
-            robots=req.robots,
-            mode=req.mode,
-            stages=req.stages,
+        data = await asyncio.to_thread(
+            export_video_to_robot_data,
+            req.video_path,
+            req.outdir,
+            req.robots,
+            req.mode,
+            req.stages,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -188,15 +201,15 @@ def create_robot_dataset_export(req: RobotDataExportRequest) -> PipelineResponse
 
 # Backward-compatible aliases. Hidden from docs so the public API stays clean.
 @app.post("/compile", response_model=PipelineResponse, include_in_schema=False)
-def compile_endpoint(req: CompileRequest) -> PipelineResponse:
-    return create_scenario_bundle(req)
+async def compile_endpoint(req: CompileRequest) -> PipelineResponse:
+    return await create_scenario_bundle(req)
 
 
 @app.post("/pipeline", response_model=PipelineResponse, include_in_schema=False)
-def pipeline_endpoint(req: VideoPipelineRequest) -> PipelineResponse:
-    return create_verified_video(req)
+async def pipeline_endpoint(req: VideoPipelineRequest) -> PipelineResponse:
+    return await create_verified_video(req)
 
 
 @app.post("/e2e", response_model=PipelineResponse, include_in_schema=False)
-def e2e_endpoint(req: E2ERequest) -> PipelineResponse:
-    return create_verified_video_batch(req)
+async def e2e_endpoint(req: E2ERequest) -> PipelineResponse:
+    return await create_verified_video_batch(req)

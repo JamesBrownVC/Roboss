@@ -1,0 +1,19 @@
+{
+  "domain": "Warehouse Logistics",
+  "environment": "Warehouse aisle with storage racks",
+  "main_task": "Pallet storage and stability monitoring",
+  "risk_focus": "Unstable load collapse and falling object hazard",
+  "actors": [],
+  "objects": [
+    "wooden pallet",
+    "cardboard boxes",
+    "warehouse rack",
+    "shrink wrap",
+    "scattered products"
+  ],
+  "variation_count": 1,
+  "duration_seconds": 8.0,
+  "camera_style": "static surveillance-like",
+  "notes": "The video should simulate realistic physics of an unstable pallet shifting, tipping forward, and the load falling in slow motion onto the concrete floor.",
+  "raw_intention": "A loaded wooden pallet sits slightly unstable on a lower warehouse rack, boxes leaning, shrink wrap stretched unevenly. The pallet shifts, tips forward and the load falls onto the warehouse floor in realistic slow motion, leaving damaged boxes and scattered products."
+}

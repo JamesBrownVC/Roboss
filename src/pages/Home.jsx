@@ -403,13 +403,6 @@ export default function Home() {
               aria-hidden="true"
             />
           </Link>
-          <Link
-            to="/monitor"
-            className="inline-flex h-12 items-center justify-center gap-2.5 rounded-md border border-surface-600 bg-surface-950/60 px-5 text-sm font-medium uppercase tracking-wider text-sage-200 backdrop-blur transition hover:-translate-y-1 hover:border-neon-cyan hover:text-white hover:shadow-[0_0_18px_rgba(47,232,234,0.25)] sm:px-6"
-          >
-            <Activity size={16} aria-hidden="true" />
-            Live monitor
-          </Link>
         </div>
       </div>
 

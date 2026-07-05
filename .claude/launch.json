@@ -8,6 +8,12 @@
       "port": 4500
     },
     {
+      "name": "backend-api",
+      "runtimeExecutable": "C:\\Users\\james\\miniconda3\\envs\\ml\\python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "server.app:app", "--host", "127.0.0.1", "--port", "8010"],
+      "port": 8010
+    },
+    {
       "name": "frontend-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],

@@ -123,3 +123,7 @@ scenario_bundle/
 # OS
 .DS_Store
 Thumbs.db
+
+# runtime logs
+backend.log
+backend.err

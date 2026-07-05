@@ -5,7 +5,6 @@ import AppLayout from "./components/AppLayout.jsx";
 import Home from "./pages/Home.jsx";
 import Studio from "./pages/Studio.jsx";
 import Analytics from "./pages/Stats.jsx";
-import Monitor from "./pages/Monitor.jsx";
 import "./index.css";
 
 createRoot(document.getElementById("root")).render(
@@ -16,7 +15,6 @@ createRoot(document.getElementById("root")).render(
           <Route index element={<Home />} />
           <Route path="/studio" element={<Studio />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/monitor" element={<Monitor />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

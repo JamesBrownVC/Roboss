@@ -195,9 +195,9 @@ def post_videos(body: CreateBatchRequest) -> dict[str, Any]:
 
 @app.post("/api/demo/dog")
 def post_demo_dog() -> dict[str, Any]:
-    if not DOG_DEMO_VIDEO.is_file():
-        raise HTTPException(status_code=404, detail="Dog demo video not found.")
-    batch = create_demo_dog_batch(video_url="/api/demo/dog/video")
+    batch = create_demo_dog_batch()
+    if not batch.jobs:
+        raise HTTPException(status_code=404, detail=batch.error or "Dog demo not found.")
     return batch.to_dict()
 
 

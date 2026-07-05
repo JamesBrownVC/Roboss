@@ -292,7 +292,7 @@ function MobileCircuit({ activeIndex, running, statuses, jumpKey }) {
   );
 }
 
-function DesktopCircuit({ activeIndex, running, statuses, jumpKey }) {
+function DesktopCircuit({ activeIndex, running, statuses, jumpKey, rejectedCount }) {
   const progressRatio = activeIndex / (STAGES.length - 1);
   const progressPercent = progressRatio * 100;
   const dogLeft = `calc(${progressPercent}% + ${3 - progressRatio * 6}rem)`;
@@ -315,6 +315,45 @@ function DesktopCircuit({ activeIndex, running, statuses, jumpKey }) {
       </div>
 
       <div className="absolute inset-x-8 bottom-[64px] h-px bg-surface-700" aria-hidden="true" />
+      
+      {/* Rejected Branch (Proper Fork Split) */}
+      {rejectedCount > 0 && (
+        <div 
+          className="absolute z-0 pointer-events-none" 
+          style={{ 
+            left: 'calc(1.5rem + (100% - 3rem) * 0.8125)', 
+            width: '80px', 
+            bottom: '34px', 
+            height: '30px' 
+          }}
+        >
+          <svg className="w-full h-full overflow-visible">
+            <defs>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <path 
+              d="M 0,0 C 20,0 20,30 40,30 L 80,30" 
+              fill="none" 
+              stroke="#ff3b6b" 
+              strokeWidth="2"
+              filter="url(#glow)"
+            />
+          </svg>
+          
+          <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 flex items-center justify-center">
+            <span className="flex items-center justify-center rounded-md border border-[#ff3b6b]/60 bg-[#1a050a] px-2.5 py-0.5 text-[10px] font-bold text-[#ff3b6b] shadow-[0_0_12px_rgba(255,59,107,0.5)] whitespace-nowrap">
+              {rejectedCount} REJECTED
+            </span>
+          </div>
+        </div>
+      )}
+
       <div
         className="absolute bottom-[63px] left-8 h-[3px] rounded-full bg-gradient-to-r from-neon-magenta via-neon-violet to-neon-cyan transition-all duration-500"
         style={{ width: progressWidth }}
@@ -402,6 +441,11 @@ export default function PipelineCircuitPanel({ batch }) {
   const batchLabel = batch?.id ? `Batch ${batch.id}` : "No active batch";
   const statusLabel = batch?.status || "idle";
 
+  const rejectedCount = useMemo(() => {
+    if (!batch?.jobs) return 0;
+    return batch.jobs.filter(j => j.reviewStatus === "rejected" || j.status === "failed").length;
+  }, [batch]);
+
   useEffect(() => {
     if (previousActiveIndexRef.current == null) {
       previousActiveIndexRef.current = circuit.activeIndex;
@@ -450,6 +494,7 @@ export default function PipelineCircuitPanel({ batch }) {
           running={circuit.running}
           statuses={circuit.statuses}
           jumpKey={jumpKey}
+          rejectedCount={rejectedCount}
         />
 
         <MobileCircuit
@@ -458,6 +503,16 @@ export default function PipelineCircuitPanel({ batch }) {
           statuses={circuit.statuses}
           jumpKey={jumpKey}
         />
+
+        {batch?.jobs?.some(job => job.reviewStatus === "rejected" || job.status === "failed") && (
+          <div className="mt-4 flex items-start gap-3 rounded-md border border-[#ff3b6b]/40 bg-[#ff3b6b]/10 px-4 py-3 text-sm text-[#ff3b6b] animate-pulse">
+            <span className="mt-0.5 font-bold tracking-widest uppercase">⚠️ Anomaly detected:</span>
+            <p>
+              discarding video {batch.jobs.find(job => job.reviewStatus === "rejected" || job.status === "failed")?.cameraVariant?.title || "Unknown"} (
+              {batch.jobs.find(job => job.reviewStatus === "rejected" || job.status === "failed")?.labelError || "low plausibility score"})
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

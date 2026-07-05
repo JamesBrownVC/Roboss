@@ -235,6 +235,108 @@ def create_batch(
     return batch
 
 
+def create_demo_dog_batch(*, video_url: str) -> BatchState:
+    prompt = (
+        "A dog moves and runs forward with a clear quadruped gait; convert that "
+        "dog motion into synthetic training data for a robot dog."
+    )
+    batch_id = f"dog-demo-{uuid.uuid4().hex[:8]}"
+    job = JobState(
+        id=f"{batch_id}-job-1",
+        index=1,
+        status="completed",
+        videoUrl=video_url,
+        labeledVideoUrl=None,
+        reviewStatus="passed",
+        review={
+            "decision": "accept",
+            "main_reason": "Local dog-motion demo clip accepted for the parallel robot-dog pipeline.",
+            "checks": {
+                "generation": "skipped",
+                "subject": "quadruped_dog",
+                "target_robot": "go2",
+                "motion": "forward_running_gait",
+            },
+        },
+        labelStatus="completed",
+        label={
+            "video_summary": "Dog running forward for robot-dog locomotion data.",
+            "summary": "Predefined demo pipeline: no generation, local ai_dog.mp4, synthetic labels and GO2-ready metadata.",
+            "labels": [
+                "dog_visible",
+                "quadruped_running",
+                "forward_locomotion",
+                "cyclic_gait",
+                "robot_dog_target_go2",
+            ],
+            "synthetic_scenario": {
+                "scenario_id": "dog_run_robot_dog_demo",
+                "source_video": "demo/label_demo/ai_dog.mp4",
+                "generation": "disabled",
+                "target_robot": "go2",
+                "motion": "forward dog-motion gait",
+            },
+            "frames": [
+                {
+                    "frame": frame,
+                    "annotations": [
+                        {
+                            "label": "quadruped_dog",
+                            "track_id": 1,
+                            "x": 180 + frame * 1.5,
+                            "y": 122,
+                            "w": 310,
+                            "h": 210,
+                        }
+                    ],
+                }
+                for frame in (0, 24, 48, 72, 96)
+            ],
+        },
+        cameraVariant={
+            "name": "robot_dog_demo",
+            "title": "Robot dog demo pipeline",
+        },
+        scenario_id="dog_run_robot_dog_demo",
+    )
+    batch = BatchState(
+        id=batch_id,
+        status="completed",
+        count=1,
+        aspect_ratio="16:9",
+        prompt=prompt,
+        jobs=[job],
+        completed=1,
+        failed=0,
+    )
+    with _lock:
+        _batches[batch_id] = batch
+    for message, agent in [
+        ("Dog demo pipeline queued (generation skipped)", "api"),
+        ("Using predefined dog-motion prompt for GO2 robot dog", "intent"),
+        ("Loaded local demo/label_demo/ai_dog.mp4", "omni"),
+        ("Accepted quadruped running gait for synthetic demo labels", "verifier"),
+        ("Packaged robot-dog synthetic data bundle", "export"),
+    ]:
+        LOG_STORE.append(message, agent=agent, batch_id=batch_id)
+    runs = _load_runs()
+    runs.append(
+        {
+            "id": job.id,
+            "createdAt": _utc_now(),
+            "status": job.status,
+            "labelStatus": job.labelStatus,
+            "reviewStatus": job.reviewStatus,
+            "cameraVariant": job.cameraVariant["name"],
+            "aspectRatio": batch.aspect_ratio,
+            "zoneCount": _annotation_count(job.label),
+            "totalSeconds": 0,
+        }
+    )
+    _save_runs(runs)
+    return batch
+
+
 def _fail_batch(batch_id: str, message: str, *, agent: str = "api") -> None:
     LOG_STORE.append(message, level="error", agent=agent, batch_id=batch_id)
     with _lock:

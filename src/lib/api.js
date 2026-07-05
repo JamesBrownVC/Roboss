@@ -43,6 +43,12 @@ export function createBatch({ prompt, aspectRatio, count, reference }) {
   });
 }
 
+export function createDogDemoBatch() {
+  return fetchJson("/api/demo/dog", {
+    method: "POST",
+  });
+}
+
 export function getBatch(batchId) {
   return fetchJson(`/api/batches/${batchId}`);
 }

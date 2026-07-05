@@ -6,7 +6,6 @@ const NAV_ITEMS = [
   { to: "/", label: "Home" },
   { to: "/studio", label: "Studio" },
   { to: "/analytics", label: "Analytics" },
-  { to: "/monitor", label: "Monitor" },
 ];
 
 export default function AppLayout() {
@@ -92,8 +91,8 @@ export default function AppLayout() {
         : "Missing API key";
 
   return (
-    <div className="min-h-screen bg-transparent text-sage-100">
-      <header className="sticky top-0 z-20 overflow-x-clip border-b border-surface-700 bg-black/60 backdrop-blur">
+    <div className="flex h-screen flex-col overflow-hidden bg-transparent text-sage-100">
+      <header className="sticky top-0 z-20 shrink-0 overflow-x-clip border-b border-surface-700 bg-black/60 backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-start justify-between gap-3 px-4 pt-3 sm:items-center sm:px-6 sm:pt-4 lg:px-10">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md border border-neon-cyan/30 bg-surface-950 shadow-[0_0_18px_rgba(241,61,245,0.42)]">
@@ -131,7 +130,7 @@ export default function AppLayout() {
 
         <nav
           ref={navRef}
-          className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-2 px-4 pb-2 pt-3 sm:grid-cols-4 sm:px-6 lg:flex lg:items-end lg:justify-center lg:gap-8 lg:px-10 lg:pb-0 lg:pt-4"
+          className="mx-auto grid w-full max-w-7xl grid-cols-3 gap-2 px-4 pb-2 pt-3 sm:px-6 lg:flex lg:items-end lg:justify-center lg:gap-8 lg:px-10 lg:pb-0 lg:pt-4"
         >
           {NAV_ITEMS.map(({ to, label }) => (
             <NavLink
@@ -190,7 +189,7 @@ export default function AppLayout() {
         </svg>
       </header>
 
-      <main>
+      <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-10">
           <Outlet context={{ health }} />
         </div>

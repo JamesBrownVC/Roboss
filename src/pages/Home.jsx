@@ -276,7 +276,7 @@ export default function Home() {
 
   return (
     <>
-    <section className="relative -mt-3 flex min-h-[calc(100svh-190px)] flex-col items-center justify-start overflow-hidden pb-8 pt-2 sm:-mt-6 sm:min-h-[calc(100vh-140px)] sm:pb-10 sm:pt-1">
+    <section className="relative flex min-h-[calc(100svh-190px)] flex-col items-center justify-start overflow-hidden pb-8 pt-4 sm:min-h-[calc(100vh-140px)] sm:pb-10 sm:pt-4">
       {/* radial glow behind the robot */}
       <div
         aria-hidden="true"
@@ -402,13 +402,6 @@ export default function Home() {
               className="transition-transform group-hover:translate-x-1"
               aria-hidden="true"
             />
-          </Link>
-          <Link
-            to="/monitor"
-            className="inline-flex h-12 items-center justify-center gap-2.5 rounded-md border border-surface-600 bg-surface-950/60 px-5 text-sm font-medium uppercase tracking-wider text-sage-200 backdrop-blur transition hover:-translate-y-1 hover:border-neon-cyan hover:text-white hover:shadow-[0_0_18px_rgba(47,232,234,0.25)] sm:px-6"
-          >
-            <Activity size={16} aria-hidden="true" />
-            Live monitor
           </Link>
         </div>
       </div>

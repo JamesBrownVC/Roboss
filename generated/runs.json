@@ -284,5 +284,16 @@
     "aspectRatio": "16:9",
     "zoneCount": 4,
     "totalSeconds": 72
+  },
+  {
+    "id": "dog-demo-f7b8253f-job-1",
+    "createdAt": "2026-07-05T09:03:18Z",
+    "status": "completed",
+    "labelStatus": "completed",
+    "reviewStatus": "passed",
+    "cameraVariant": "robot_dog_demo",
+    "aspectRatio": "16:9",
+    "zoneCount": 5,
+    "totalSeconds": 0
   }
 ]

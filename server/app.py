@@ -37,6 +37,14 @@ app.mount("/generated", StaticFiles(directory=str(GENERATED_DIR)), name="generat
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DOG_DEMO_VIDEO = ROOT_DIR / "demo" / "label_demo" / "ai_dog.mp4"
+CACHE_DEMO_BATCH_ID = "d79e3fa0e9ce"
+
+
+def read_json_file(path: Path) -> dict[str, Any] | None:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def gemini_api_key_configured() -> bool:
@@ -78,6 +86,13 @@ def generated_batch_payload(batch_id: str) -> dict[str, Any] | None:
     if batch_dir is None:
         return None
 
+    intent = read_json_file(batch_dir / "bundle" / "intent.json") or {}
+    scenarios_payload = read_json_file(batch_dir / "bundle" / "scenarios.json") or {}
+    scenarios = {
+        scenario.get("scenario_id"): scenario
+        for scenario in scenarios_payload.get("scenarios", [])
+        if isinstance(scenario, dict) and scenario.get("scenario_id")
+    }
     jobs: list[dict[str, Any]] = []
     for job_dir in sorted(path for path in batch_dir.iterdir() if path.is_dir()):
         videos = sorted(job_dir.glob("*.mp4"))
@@ -85,39 +100,72 @@ def generated_batch_payload(batch_id: str) -> dict[str, Any] | None:
         labeled_path = next((path for path in videos if path.stem.endswith("_labeled")), None)
         if raw_path is None and labeled_path is None:
             continue
+        report_path = next(job_dir.glob("*_report.json"), None)
+        report = read_json_file(report_path) if report_path else None
+        scenario_id = (report or {}).get("video_id") or (raw_path or labeled_path).stem.replace("_labeled", "")
+        scenario = scenarios.get(scenario_id, {})
+        decision = str((report or {}).get("decision") or "accept").lower()
+        plausible = bool((report or {}).get("plausible", decision != "reject"))
+        accepted = plausible and decision not in {"reject", "rejected"}
+        review_status = "passed" if accepted else "rejected"
+        label = {
+            "video_summary": scenario.get("title") or (report or {}).get("scenario") or scenario_id,
+            "summary": "Recovered cache demo data from generated/d79e3fa0e9ce.",
+            "labels": scenario.get("expected_labels") or [],
+            "synthetic_scenario": scenario,
+            "verifier_report": report,
+        }
+        violation_messages = [
+            f"[{violation.get('severity')}] {violation.get('type')}: {violation.get('reason')}"
+            for violation in (report or {}).get("violations", [])[:8]
+            if isinstance(violation, dict)
+        ]
         index = len(jobs) + 1
         jobs.append(
             {
                 "id": job_dir.name,
                 "index": index,
-                "status": "completed",
-                "error": None,
+                "status": "completed" if accepted else "failed",
+                "error": None if accepted else (report or {}).get("main_reason", "Rejected by verifier."),
                 "videoUrl": f"/generated/{batch_id}/{job_dir.name}/{raw_path.name}" if raw_path else None,
                 "labeledVideoUrl": (
                     f"/generated/{batch_id}/{job_dir.name}/{labeled_path.name}"
                     if labeled_path
                     else None
                 ),
-                "reviewStatus": "passed",
-                "review": None,
-                "labelStatus": "completed" if labeled_path else "pending",
-                "label": None,
+                "reviewStatus": review_status,
+                "review": {
+                    "feedback": (report or {}).get("main_reason"),
+                    "summary": (report or {}).get("main_reason"),
+                    "issues": violation_messages,
+                    "violations": violation_messages,
+                    "score": (report or {}).get("plausibility_score"),
+                    "plausibility_score": (report or {}).get("plausibility_score"),
+                    "decision": (report or {}).get("decision"),
+                } if report else None,
+                "labelStatus": "completed",
+                "label": label,
                 "labelError": None,
                 "renderError": None,
-                "cameraVariant": {"name": job_dir.name, "title": f"Recovered video {index}"},
+                "cameraVariant": {
+                    "name": scenario_id,
+                    "title": scenario.get("title") or f"Recovered cache video {index}",
+                },
             }
         )
 
     if not jobs:
         return None
+    failed = sum(1 for job in jobs if job["status"] == "failed" or job["reviewStatus"] == "rejected")
     return {
         "id": batch_id,
         "status": "completed",
         "count": len(jobs),
-        "completed": len(jobs),
-        "failed": 0,
+        "completed": len(jobs) - failed,
+        "failed": failed,
         "aspect_ratio": "16:9",
         "error": None,
+        "prompt": intent.get("raw_intention") or "",
         "jobs": jobs,
     }
 
@@ -201,6 +249,19 @@ def post_demo_dog() -> dict[str, Any]:
     return batch.to_dict()
 
 
+@app.post("/api/demo/cache")
+def post_demo_cache() -> dict[str, Any]:
+    payload = generated_batch_payload(CACHE_DEMO_BATCH_ID)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Cache demo batch not found.")
+    LOG_STORE.append(
+        f"Loaded cached demo batch {CACHE_DEMO_BATCH_ID} from generated/{CACHE_DEMO_BATCH_ID}",
+        agent="api",
+        batch_id=CACHE_DEMO_BATCH_ID,
+    )
+    return payload
+
+
 @app.get("/api/demo/dog/video")
 def get_demo_dog_video() -> FileResponse:
     if not DOG_DEMO_VIDEO.is_file():
@@ -256,11 +317,9 @@ def download_batch_videos(batch_id: str) -> Response:
                     )
                 )
     elif batch_dir is not None:
-        for path in sorted(batch_dir.glob("*/*.mp4")):
-            kind = "labeled" if path.stem.endswith("_labeled") else "raw"
-            files.append((f"{kind}/{path.parent.name}_{path.name}", path))
-        for path in sorted(batch_dir.glob("*/*.json")):
-            files.append((f"metadata/{path.parent.name}_{path.name}", path))
+        for path in sorted(item for item in batch_dir.rglob("*") if item.is_file()):
+            relative_path = path.relative_to(batch_dir).as_posix()
+            files.append((f"generated/{batch_id}/{relative_path}", path))
 
     if not files and not data_files:
         raise HTTPException(status_code=404, detail="No dataset files are available for this batch yet.")

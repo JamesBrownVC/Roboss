@@ -1,0 +1,144 @@
+{
+  "scenario_prompt": "Traction Loss Mitigation during Exploration Turn",
+  "video_prompt": "Realistic high-fidelity technical test footage with zero cinematic color grading, high clarity, and natural contrast. Setting: A spacious 4x4 meter clear testing area in the center of a bright modern robotics laboratory. The test area is completely free of debris or miscellaneous obstacles, bounded by the static calibration marker in the upper left section., Flat, smooth, light-grey polished concrete floor with subtle expansion joints and zero dust or scuff marks. floor, Evenly diffused bright overhead cool white fluorescent lab lighting, supplemented by soft daylight from an off-camera side window wall, producing soft and short contact shadows under the robot.. Scene identity anchor: A 4x4 meter flat central workspace with a polished concrete floor, clean boundary lines, and the calibration block anchored at coordinates (-1.2, 1.2, 0.0).; Polished concrete floor filling 95% of the frame with distant metal laboratory workbenches visible only at the extreme top edge of the frame.; Bright and neutral daylight-balanced overhead lighting, avoiding high-contrast highlights or dynamic shadow shifts during robot movement.. Identical across all videos of this series: the same An industrial quadruped robotic dog with a dark matte grey and silver metallic chassis. Its head is at the front, featuring a dark glossy vertical stripe with a single camera lens in the center and a small round LED spotlight directly underneath. The sides of the torso display a subtle grey double-digit number '02'. The rear of the chassis is entirely plain and featureless. Four segmented articulated metallic legs connect to the torso with silver mechanical joints. (Anodized aluminum, matte grey polycarbonate, and carbon fiber composites.); the same A heavy low-profile rectangular calibration block, colored safety yellow with diagonal matte black hazard stripes on the top face. (Powder-coated steel block.). Object identity anchors: robot_01 = shape Quadrupedal robot with a rigid cuboid torso, four identical three-segment legs with motorized knee and hip joints, and a wedge-shaped front head unit rigidly fixed to the body., material Chassis composed of non-reflective dark grey polymer plates, silver polished metal cylinder joint covers, and matte black rubberized footpads., color Primary charcoal grey body, metallic silver joints, dark glossy black front camera band, white LED spotlight, and a dark grey '02' label on the side panels.; calibration_block_01 = shape Low-profile flat rectangular cuboid., material Solid steel block with a non-glare powder-coated paint finish., color High-visibility safety yellow with four parallel diagonal pitch-black stripes.. Camera: overhead view, static, 30 seconds. Camera requirement: static top-down overhead view from above the scene, wide enough to show the full robot body, nearby humans, objects, floor layout, and the robot's movement path throughout the situation. Single continuous unedited take, no montage, no cuts, no shot changes, no zooms, no close-ups, no first-person or robot POV. Robot reaction requirement: the video must show the event situation 'During the 90-degree clockwise exploration turn, the robot detects slightly reduced traction on a local floor patch, triggering a micro-slip hazard.' and then show the robot's observable response: The robot must detect traction loss, slow down its turn rate, increase leg ground-contact time, and execute a stable 90-degree clockwise turn.. From 0s to 6s the An industrial quadruped robotic dog with a dark matte grey and silver metallic chassis. Its head is at the front, featuring a dark glossy vertical stripe with a single camera lens in the center and a small round LED spotlight directly underneath. The sides of the torso display a subtle grey double-digit number '02'. The rear of the chassis is entirely plain and featureless. Four segmented articulated metallic legs connect to the torso with silver mechanical joints. Awakens from its initial stationary position to an upright stance.. From 6s to 11s the An industrial quadruped robotic dog with a dark matte grey and silver metallic chassis. Its head is at the front, featuring a dark glossy vertical stripe with a single camera lens in the center and a small round LED spotlight directly underneath. The sides of the torso display a subtle grey double-digit number '02'. The rear of the chassis is entirely plain and featureless. Four segmented articulated metallic legs connect to the torso with silver mechanical joints. Executes a greeting gesture by pitching the torso forward and returning to level.. From 11s to 19s the An industrial quadruped robotic dog with a dark matte grey and silver metallic chassis. Its head is at the front, featuring a dark glossy vertical stripe with a single camera lens in the center and a small round LED spotlight directly underneath. The sides of the torso display a subtle grey double-digit number '02'. The rear of the chassis is entirely plain and featureless. Four segmented articulated metallic legs connect to the torso with silver mechanical joints. Begins forward exploration walking head-first; upon detecting a traction slip at 11.0s, it slows down its turn rate and increases leg contact times to safely complete the 90-degree clockwise turn.. From 19s to 24s the An industrial quadruped robotic dog with a dark matte grey and silver metallic chassis. Its head is at the front, featuring a dark glossy vertical stripe with a single camera lens in the center and a small round LED spotlight directly underneath. The sides of the torso display a subtle grey double-digit number '02'. The rear of the chassis is entirely plain and featureless. Four segmented articulated metallic legs connect to the torso with silver mechanical joints. Performs a deep play-bow stretching sequence with stabilized leg joints.. From 24s to 30s the An industrial quadruped robotic dog with a dark matte grey and silver metallic chassis. Its head is at the front, featuring a dark glossy vertical stripe with a single camera lens in the center and a small round LED spotlight directly underneath. The sides of the torso display a subtle grey double-digit number '02'. The rear of the chassis is entirely plain and featureless. Four segmented articulated metallic legs connect to the torso with silver mechanical joints. Lowers into a sitting down position, then returns to a motionless upright stand.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
+  "expected_objects": [
+    "quadruped robot",
+    "static reference marker"
+  ],
+  "expected_action": "robot_exploration",
+  "expected_outcome": "The robot must detect traction loss, slow down its turn rate, increase leg ground-contact time, and execute a stable 90-degree clockwise turn.",
+  "scenario_id": "sc_01_traction_slip_exploration",
+  "world_id": "robotics_safety_lab_01",
+  "object_registry": [
+    {
+      "entity_id": "robot_01",
+      "shape_signature": "Quadrupedal robot with a rigid cuboid torso, four identical three-segment legs with motorized knee and hip joints, and a wedge-shaped front head unit rigidly fixed to the body.",
+      "material_signature": "Chassis composed of non-reflective dark grey polymer plates, silver polished metal cylinder joint covers, and matte black rubberized footpads.",
+      "color_signature": "Primary charcoal grey body, metallic silver joints, dark glossy black front camera band, white LED spotlight, and a dark grey '02' label on the side panels.",
+      "surface_details": "Recessed hex screws at joint pivots, clean panel gaps on the torso shell, and a single optical glass camera lens on the nose.",
+      "scale_signature": "Length of approximately 0.70 meters, width of 0.30 meters, standing height of 0.45 meters when fully upright.",
+      "reference_views": [
+        "overhead_flat_belly_lay",
+        "overhead_standing_upright",
+        "overhead_side_profile_walk"
+      ],
+      "negative_drift": [
+        "the head tilting or panning independently of the torso",
+        "camera lens or spotlight showing on the rear end of the robot",
+        "torso texture morphing or losing panel lines during rotation",
+        "legs detaching or sliding over the floor without leg articulation"
+      ]
+    },
+    {
+      "entity_id": "calibration_block_01",
+      "shape_signature": "Low-profile flat rectangular cuboid.",
+      "material_signature": "Solid steel block with a non-glare powder-coated paint finish.",
+      "color_signature": "High-visibility safety yellow with four parallel diagonal pitch-black stripes.",
+      "surface_details": "Beveled edges, matte texture, no visible screws or brand names.",
+      "scale_signature": "Length of 0.30 meters, width of 0.30 meters, height of 0.05 meters.",
+      "reference_views": [
+        "overhead_top_down_view"
+      ],
+      "negative_drift": [
+        "the block shifting or sliding relative to the floor coordinate grid",
+        "yellow hue shifting to orange or bright green",
+        "number of black stripes changing or stripes warping in perspective"
+      ]
+    }
+  ],
+  "scene_registry": {
+    "scene_id": "bright_modern_lab_01",
+    "layout_signature": "A 4x4 meter flat central workspace with a polished concrete floor, clean boundary lines, and the calibration block anchored at coordinates (-1.2, 1.2, 0.0).",
+    "background_signature": "Polished concrete floor filling 95% of the frame with distant metal laboratory workbenches visible only at the extreme top edge of the frame.",
+    "lighting_signature": "Bright and neutral daylight-balanced overhead lighting, avoiding high-contrast highlights or dynamic shadow shifts during robot movement.",
+    "spatial_map": "Flat 2D coordinate plane with the origin (0,0,0) directly under the robot's initial sleeping position. The robot operates exclusively within the bounds of x=[-1.5, 1.5] and y=[-1.5, 1.5].",
+    "reference_views": [
+      "overhead_empty_workspace_canvas",
+      "overhead_workspace_with_calibration_block"
+    ],
+    "negative_drift": [
+      "concrete floor changing texture, showing wood grain or ceramic tile lines",
+      "shadows moving dynamically as if the sun is setting rapidly",
+      "human shadows or legs entering the frame borders",
+      "ambient lighting turning dark, warm, or cinematic"
+    ]
+  },
+  "reference_assets": [
+    {
+      "asset_id": "canvas_01",
+      "kind": "canvas",
+      "target": "bright_modern_lab_01",
+      "description": "An empty overhead canvas of the laboratory test area showing only the concrete floor and the calibration block at its default position."
+    },
+    {
+      "asset_id": "robot_overhead_stand",
+      "kind": "object_view",
+      "target": "robot_01",
+      "description": "A top-down reference photo of robot_01 in its standing posture showing correct body layout and camera position."
+    },
+    {
+      "asset_id": "scene_layout_01",
+      "kind": "scene_view",
+      "target": "bright_modern_lab_01",
+      "description": "The full overhead workspace layout with the concrete texture, expansion joints, and coordinate boundaries clearly visible."
+    },
+    {
+      "asset_id": "start_frame_01",
+      "kind": "start_frame",
+      "target": "bright_modern_lab_01",
+      "description": "The initial frame of the sequence with robot_01 lying completely flat on its belly, head facing forward towards the positive y-axis, and calibration_block_01 static in the top-left."
+    }
+  ],
+  "identity_checks": [
+    {
+      "check_id": "robot_head_rear_symmetry_check",
+      "scope": "object",
+      "target_id": "robot_01",
+      "method": "Image crop comparison of the front head and rear end of the robot chassis at seconds 5, 15, and 25.",
+      "pass_condition": "The front end must consistently feature the black camera stripe and spotlight, while the rear end must remain featureless and grey across all timestamps."
+    },
+    {
+      "check_id": "rigid_head_constraint_check",
+      "scope": "object",
+      "target_id": "robot_01",
+      "method": "VLM verification of head articulation relative to the main chassis during body rotation and stretching.",
+      "pass_condition": "The head angle relative to the spine line of the torso must remain perfectly static at 0 degrees deviation in yaw, pitch, and roll."
+    },
+    {
+      "check_id": "calibration_block_constancy",
+      "scope": "scene",
+      "target_id": "calibration_block_01",
+      "method": "Pixel-wise similarity check on the cropped area of the calibration block at frame 0 and frame 900.",
+      "pass_condition": "The position, scale, and angle of the yellow and black pattern must match with more than 98% SSIM."
+    },
+    {
+      "check_id": "floor_texture_consistency_check",
+      "scope": "scene",
+      "target_id": "bright_modern_lab_01",
+      "method": "Temporal texture consistency evaluation on the polished concrete floor region outside the robot's movement path.",
+      "pass_condition": "No shifting, fading, or morphing of expansion joints or concrete grain throughout the 30-second duration."
+    }
+  ],
+  "consistency_policy": {
+    "locked_entity_ids": [
+      "robot_01",
+      "calibration_block_01"
+    ],
+    "locked_scene_id": "bright_modern_lab_01",
+    "forbidden_changes": [
+      "never swap or mirror the front head and the rear chassis of the robot",
+      "never show any independent panning or tilting of the robot head relative to the body",
+      "never introduce any humans, animals, or other robots to the scene",
+      "never change the camera angle from a static top-down overhead perspective",
+      "never modify the grey and silver color scheme of the quadruped robot",
+      "never change the polished concrete floor texture into any other floor type",
+      "never allow the robot to slide on the floor without leg articulation during movement"
+    ],
+    "consistency_requirements": [
+      "every video in the variations must be a single, continuous 30-second take with no cuts",
+      "the sequence of events must strictly proceed as: awakening, greeting, exploration with 90-degree clockwise turn, play-bow stretching, sitting down, and returning to a motionless upright stand",
+      "the robot must always walk head-first when moving forward in any phase of the video",
+      "the calibration block must remain permanently anchored in the same coordinate location throughout the entire series"
+    ]
+  }
+}

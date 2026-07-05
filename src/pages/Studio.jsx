@@ -585,7 +585,7 @@ export default function Studio() {
                 className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-200 transition hover:border-sage-500 hover:text-white disabled:cursor-not-allowed disabled:text-sage-500 disabled:hover:border-surface-600 sm:w-auto"
               >
                 <Download size={14} aria-hidden="true" />
-                Download all videos
+                Download dataset
               </button>
               <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-700 sm:w-40 sm:flex-none">
 

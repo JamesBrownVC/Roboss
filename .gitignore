@@ -39,7 +39,6 @@ credentials*.json
 *.ckpt
 *.pth
 .ultralytics/
-generated/
 
 # roboss-film: keep the text/code/manifest scaffolding, exclude heavy media
 # (669 PNG frames + 88 MP4 clips ≈ 667 MB — regenerable render artifacts)
@@ -74,34 +73,7 @@ v2r/assets/robots/*/meshes/
 # Menagerie binary mesh assets (~100 MB, re-downloadable; see v2r/assets/robots/README.md)
 v2r/assets/robots/*/assets/
 
-# Large / generated data
-v2r/data/**
-# ...but DO commit the specific clips the bench fixture + tests reference.
-# Each parent dir must be un-ignored before the leaf file can be re-included.
-!v2r/data/raw/
-!v2r/data/raw/animal_dog/
-!v2r/data/raw/animal_dog/dog_run.mp4
-!v2r/data/raw/human_pexels_walk/
-!v2r/data/raw/human_pexels_walk/human_pexels_walk_000.mp4
-!v2r/data/raw/human_pexels_dance/
-!v2r/data/raw/human_pexels_dance/human_pexels_dance_000.mp4
-!v2r/data/raw/animal_pexels/
-!v2r/data/raw/animal_pexels/animal_pexels_000.mp4
-!v2r/data/raw/animal_pexels_wildlife/
-!v2r/data/raw/animal_pexels_wildlife/animal_pexels_wildlife_000.mp4
-!v2r/data/syngen/
-!v2r/data/syngen/web_175617/
-!v2r/data/syngen/web_175617/videos/
-!v2r/data/syngen/web_175617/videos/e01_cam0.mp4
-!v2r/data/syngen/web_175617/videos/e02_cam0.mp4
-!v2r/data/syngen/web_175617/videos/e03_cam0.mp4
-!v2r/data/syngen/veo1/
-!v2r/data/syngen/veo1/videos/
-!v2r/data/syngen/veo1/videos/e00_cam0.mp4
-# Omni-generated demo dogs (agentic labeling + twin-fit demo inputs)
-!v2r/data/raw/ai_dogs/
-!v2r/data/raw/ai_dogs/omni_dog_walk.mp4
-!v2r/data/raw/ai_dogs/omni_mech_dog.mp4
+# v2r/data is intentionally trackable so generated demo videos can be pushed.
 # Workspaces: ignore heavy generated media (videos, depth PNGs, hdf5) but DO
 # commit the tabular label/retarget artifacts (*.parquet, e.g. cmd_twist,
 # qpos, keypoints). The **/ un-ignore lets git descend into the tree; the
@@ -112,12 +84,11 @@ v2r/workspaces/**
 !v2r/workspaces/**/utterances.json
 v2r/.gpu_locks/
 demo/.cache/
-generated/
 *_report.json
 annotated*.mp4
 scenario_bundle/
 
-# Generated pipeline outputs (videos, reports, labels).
+# Generated pipeline outputs (videos, reports, labels).S
 /runs/*
 
 # OS

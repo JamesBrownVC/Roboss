@@ -572,6 +572,11 @@ def _run_batch(batch_id: str) -> None:
                 job.labelStatus = "running"
             job_log("Building annotation zones from extracted tracks", agent="verifier")
             label = _build_label(evidence, scenario, report)
+            label_path = job_dir / f"{scenario_id}_labels.json"
+            label_path.write_text(
+                json.dumps(label, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
             with _lock:
                 job.label = label
                 job.labelStatus = "completed"

@@ -3,6 +3,7 @@ import io
 import time
 import base64
 import httpx
+from concurrent.futures import ThreadPoolExecutor
 from typing import Literal, Optional
 from pydantic import BaseModel
 from google import genai
@@ -188,8 +189,25 @@ def _run_pass(client: genai.Client, uploaded, prompt: str) -> list[dict]:
     label_set: LabelSet = response.parsed
     return [l.model_dump() for l in label_set.labels]
 
+def _track_one_object(client: genai.Client, uploaded, obj: dict) -> list[dict]:
+    tracking_prompt = TRACKING_PROMPT_TEMPLATE.format(
+        objects=f"- {obj['label']} [{obj['t_start']}s–{obj['t_end']}s]: {obj['detail']}"
+    )
+    try:
+        return _run_pass(client, uploaded, tracking_prompt)
+    except Exception as e:
+        print(f"[Labeler] Warning: Tracking {obj['label']} failed: {e}")
+        return []
+
+
 def label_video(video_bytes: bytes) -> dict:
-    """Label a video (inventory, tracking, audio) and return the full label set and summary."""
+    """Label a video (inventory, tracking, audio) and return the full label set and summary.
+
+    The three passes are dependency-ordered, not time-ordered:
+    audio is independent (starts immediately, in parallel with the visual
+    inventory), and per-object tracking fans out across
+    TRACKING_CONCURRENCY threads once the inventory is in.
+    """
     print("[Labeler] Starting labeling process...")
     client = genai.Client()
     all_labels = []
@@ -197,41 +215,45 @@ def label_video(video_bytes: bytes) -> dict:
     print("[Labeler] Uploading video...")
     uploaded = _upload_video(client, video_bytes)
 
-    # Pass 1 — inventory
-    print("[Labeler] Pass 1/3 — visual inventory...")
-    visual = _run_pass(client, uploaded, VISUAL_PROMPT)
-    visual = [l for l in visual if l["track"] in ("object", "action")]
-    all_labels += visual
+    with ThreadPoolExecutor(max_workers=max(2, TRACKING_CONCURRENCY)) as pool:
+        # audio does not depend on the visual pass -> run it concurrently
+        print("[Labeler] Audio pass started (parallel) ...")
+        audio_future = pool.submit(_run_pass, client, uploaded, AUDIO_PROMPT)
 
-    # Pass 2 — dedicated box tracking
-    objects = [l for l in visual if l["track"] == "object"]
-    tracked = []
-    if objects:
-        print(f"[Labeler] Pass 2/3 — tracking {len(objects)} object(s)...")
-        for i, obj in enumerate(objects):
-            print(f"[Labeler] Tracking object {i+1}/{len(objects)}: {obj['label']}...")
-            tracking_prompt = TRACKING_PROMPT_TEMPLATE.format(
-                objects=f"- {obj['label']} [{obj['t_start']}s–{obj['t_end']}s]: {obj['detail']}"
-            )
-            try:
-                res = _run_pass(client, uploaded, tracking_prompt)
-                tracked.extend(res)
-            except Exception as e:
-                print(f"[Labeler] Warning: Tracking {obj['label']} failed: {e}")
+        # Pass 1 — inventory
+        print("[Labeler] Visual inventory ...")
+        visual = _run_pass(client, uploaded, VISUAL_PROMPT)
+        visual = [l for l in visual if l["track"] in ("object", "action")]
+        all_labels += visual
 
-        tracked = [{**l, "track": "object"} for l in tracked if l.get("boxes")]
-        if tracked:
-            all_labels = [l for l in all_labels if l["track"] != "object"] + tracked
+        # Pass 2 — per-object box tracking, fanned out across the pool
+        objects = [l for l in visual if l["track"] == "object"]
+        tracked = []
+        if objects:
+            print(f"[Labeler] Tracking {len(objects)} object(s) with up to "
+                  f"{TRACKING_CONCURRENCY} concurrent calls ...")
+            for result in pool.map(
+                    lambda obj: _track_one_object(client, uploaded, obj),
+                    objects):
+                tracked.extend(result)
+            tracked = [{**l, "track": "object"} for l in tracked
+                       if l.get("boxes")]
+            if tracked:
+                all_labels = [l for l in all_labels
+                              if l["track"] != "object"] + tracked
 
-    # Pass 3 — audio analysis
-    print("[Labeler] Pass 3/3 — audio analysis...")
-    audio = _run_pass(client, uploaded, AUDIO_PROMPT)
-    audio = [{**l, "track": "audio", "boxes": None} for l in audio]
-    all_labels += audio
+        # Pass 3 — collect the audio results
+        try:
+            audio = audio_future.result()
+        except Exception as e:
+            print(f"[Labeler] Warning: audio pass failed: {e}")
+            audio = []
+        audio = [{**l, "track": "audio", "boxes": None} for l in audio]
+        all_labels += audio
 
     summary = _summary(all_labels)
     print("[Labeler] Labeling complete.")
-    
+
     return {
         "labels": all_labels,
         "summary": summary

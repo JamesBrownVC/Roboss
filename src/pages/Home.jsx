@@ -14,20 +14,33 @@ import {
 } from "lucide-react";
 import { getStats } from "../lib/api.js";
 
+/*
+ * Ring sectors (0° = top, clockwise):
+ *   A = top-left (270°→360°), B = bottom-left (180°→270°),
+ *   C = bottom-right (90°→180°), D = top-right (0°→90°).
+ * Each card lights the half nearest to it:
+ *   Prompt-to-dataset (left)  → A+B (180°→360°)
+ *   Physics verified  (right) → C+D (0°→180°)
+ *   Auto-labeled     (bottom) → B+C (90°→270°)
+ */
 const FEATURE_CHIPS = [
   {
     icon: Sparkles,
     label: "Prompt-to-dataset",
     detail: "One prompt, N camera variants",
     color: "#f13df5",
-    orbit: "lg:absolute lg:left-[-150px] lg:top-[34%]",
+    orbit: "lg:absolute lg:left-[-150px] lg:top-[40%]",
+    arcFrom: 220,
+    arcSize: 140,
   },
   {
     icon: ShieldCheck,
     label: "Physics verified",
     detail: "10 checks, 2 gates",
     color: "#2fe8ea",
-    orbit: "lg:absolute lg:right-[-150px] lg:top-[34%]",
+    orbit: "lg:absolute lg:right-[-150px] lg:top-[40%]",
+    arcFrom: 0,
+    arcSize: 140,
   },
   {
     icon: ScanEye,
@@ -35,13 +48,26 @@ const FEATURE_CHIPS = [
     detail: "Boxes, poses, hazards",
     color: "#3cf28a",
     orbit: "lg:absolute lg:bottom-[-10px] lg:left-1/2 lg:-translate-x-1/2",
+    arcFrom: 90,
+    arcSize: 180,
   },
+];
+
+const TITLE_LETTERS = [
+  { ch: "R", color: null },
+  { ch: "O", color: null },
+  { ch: "B", color: null },
+  { ch: "O", color: "#f13df5" },
+  { ch: "S", color: "#8b5cf6" },
+  { ch: "S", color: "#2fe8ea" },
 ];
 
 const RING_GRADIENT =
   "conic-gradient(from 120deg, #f13df5, #8b5cf6, #2fe8ea, #3cf28a, #f13df5)";
 const RING_MASK =
   "radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px))";
+const ARC_MASK =
+  "radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 7px))";
 const RING_TOP_FADE =
   "linear-gradient(to bottom, transparent 0%, transparent 18%, rgba(0,0,0,0.35) 30%, black 44%, black 100%)";
 
@@ -149,7 +175,8 @@ function PipelineKpi({ icon: Icon, label, value, tone = "text-white", suffix }) 
 }
 
 export default function Home() {
-  const [nodeHovered, setNodeHovered] = useState(false);
+  const [activeNode, setActiveNode] = useState(null);
+  const [letterHover, setLetterHover] = useState(null);
   const [pipelineRuns, setPipelineRuns] = useState([]);
   const [pipelineSource, setPipelineSource] = useState("api");
   const [pipelineLoading, setPipelineLoading] = useState(false);
@@ -177,6 +204,30 @@ export default function Home() {
     () => buildPipelineFromRuns(pipelineRuns, pipelineSource),
     [pipelineRuns, pipelineSource],
   );
+  useEffect(() => {
+    document.body.classList.toggle("title-lift-active", letterHover != null);
+    return () => document.body.classList.remove("title-lift-active");
+  }, [letterHover]);
+
+  function emitTitleWave(x, amp) {
+    window.dispatchEvent(
+      new CustomEvent("roboss:titlewave", { detail: { x, amp } }),
+    );
+  }
+
+  function letterCenterX(event) {
+    const rect = event?.currentTarget?.getBoundingClientRect?.();
+    return rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+  }
+
+  // Wave: hovered letter rises the most, neighbours follow — the whole
+  // baseline deforms as the mouse sweeps across the title.
+  function letterLift(index) {
+    if (letterHover == null) {
+      return 0;
+    }
+    return Math.max(0, 30 - Math.abs(letterHover - index) * 11);
+  }
 
   return (
     <>
@@ -191,33 +242,75 @@ export default function Home() {
         }}
       />
 
-      {/* giant title, sitting behind the robot */}
+      {/* giant title, sitting behind the robot — letters lift on hover */}
       <div className="relative z-0 -mb-16 select-none text-center sm:-mb-24 lg:-mb-36">
         <h1 className="font-display text-[17vw] font-black uppercase leading-none tracking-[0.06em] text-white sm:text-[13vw] lg:text-[10rem]">
-          Rob
-          <span className="bg-gradient-to-r from-neon-magenta to-neon-cyan bg-clip-text text-transparent">
-            oss
-          </span>
+          {TITLE_LETTERS.map(({ ch, color }, index) => (
+            <span
+              key={index}
+              onMouseEnter={(event) => {
+                setLetterHover(index);
+                emitTitleWave(letterCenterX(event), 1);
+              }}
+              onMouseLeave={(event) => {
+                setLetterHover(null);
+                emitTitleWave(letterCenterX(event), 0);
+              }}
+              className="inline-block cursor-default transition-transform duration-200 ease-out"
+              style={{
+                color: color || undefined,
+                textShadow:
+                  letterHover === index && color
+                    ? `0 0 34px ${color}`
+                    : letterHover === index
+                      ? "0 0 34px rgba(255,255,255,0.55)"
+                      : undefined,
+                transform: `translateY(-${letterLift(index)}px)`,
+              }}
+            >
+              {ch}
+            </span>
+          ))}
         </h1>
       </div>
 
       {/* robot + orbit ring + feature nodes */}
-      <div className="relative z-10">
+      <div className="pointer-events-none relative z-10">
+        {/* base ring — whole circle, lights up when any node is hovered */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-[42%] z-0 hidden h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-300 lg:block"
+          className="absolute left-1/2 top-[42%] z-0 hidden h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-300 lg:block"
           style={{
             background: RING_GRADIENT,
             WebkitMaskImage: `${RING_MASK}, ${RING_TOP_FADE}`,
             maskImage: `${RING_MASK}, ${RING_TOP_FADE}`,
             WebkitMaskComposite: "source-in",
             maskComposite: "intersect",
-            opacity: nodeHovered ? 0.95 : 0.28,
-            filter: nodeHovered
-              ? "drop-shadow(0 0 16px rgba(241,61,245,0.8)) drop-shadow(0 0 30px rgba(47,232,234,0.5))"
-              : "drop-shadow(0 0 6px rgba(241,61,245,0.35))",
+            opacity: activeNode != null ? 0.85 : 0.28,
+            filter:
+              activeNode != null
+                ? "drop-shadow(0 0 12px rgba(241,61,245,0.6))"
+                : "drop-shadow(0 0 6px rgba(241,61,245,0.35))",
           }}
         />
+
+        {/* sector arcs — wider, brighter half-ring next to the hovered card */}
+        {FEATURE_CHIPS.map((chip, index) => (
+          <div
+            key={chip.label}
+            aria-hidden="true"
+            className="absolute left-1/2 top-[42%] z-0 hidden h-[584px] w-[584px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-300 lg:block"
+            style={{
+              background: `conic-gradient(from ${chip.arcFrom}deg, ${chip.color}, #8b5cf6 ${chip.arcSize / 2}deg, ${chip.color} ${chip.arcSize}deg, transparent ${chip.arcSize}deg, transparent 360deg)`,
+              WebkitMaskImage: `${ARC_MASK}, ${RING_TOP_FADE}`,
+              maskImage: `${ARC_MASK}, ${RING_TOP_FADE}`,
+              WebkitMaskComposite: "source-in",
+              maskComposite: "intersect",
+              opacity: activeNode === index ? 1 : 0,
+              filter: `drop-shadow(0 0 14px ${chip.color}) drop-shadow(0 0 30px ${chip.color}66)`,
+            }}
+          />
+        ))}
 
         <img
           src="/robot-hero.png"
@@ -233,13 +326,13 @@ export default function Home() {
         />
 
         {/* orbit nodes (desktop) */}
-        {FEATURE_CHIPS.map((chip) => (
+        {FEATURE_CHIPS.map((chip, index) => (
           <FeatureCard
             key={chip.label}
             chip={chip}
-            className={`z-20 hidden w-[230px] lg:flex ${chip.orbit}`}
-            onEnter={() => setNodeHovered(true)}
-            onLeave={() => setNodeHovered(false)}
+            className={`pointer-events-auto z-20 hidden w-[230px] lg:flex ${chip.orbit}`}
+            onEnter={() => setActiveNode(index)}
+            onLeave={() => setActiveNode(null)}
           />
         ))}
       </div>
@@ -255,7 +348,7 @@ export default function Home() {
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             to="/studio"
-            className="group inline-flex h-12 items-center gap-2.5 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-7 text-sm font-semibold uppercase tracking-wider text-[#0b0714] shadow-[0_0_28px_rgba(241,61,245,0.5)] transition hover:shadow-[0_0_40px_rgba(241,61,245,0.7)] hover:brightness-110"
+            className="group inline-flex h-12 items-center gap-2.5 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-7 text-sm font-semibold uppercase tracking-wider text-[#0b0714] shadow-[0_0_28px_rgba(241,61,245,0.5)] transition hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(241,61,245,0.7)] hover:brightness-110"
           >
             <Play size={16} aria-hidden="true" />
             Generate dataset
@@ -267,7 +360,7 @@ export default function Home() {
           </Link>
           <Link
             to="/monitor"
-            className="inline-flex h-12 items-center gap-2.5 rounded-md border border-surface-600 bg-surface-950/60 px-6 text-sm font-medium uppercase tracking-wider text-sage-200 backdrop-blur transition hover:border-neon-cyan hover:text-white hover:shadow-[0_0_18px_rgba(47,232,234,0.25)]"
+            className="inline-flex h-12 items-center gap-2.5 rounded-md border border-surface-600 bg-surface-950/60 px-6 text-sm font-medium uppercase tracking-wider text-sage-200 backdrop-blur transition hover:-translate-y-1 hover:border-neon-cyan hover:text-white hover:shadow-[0_0_18px_rgba(47,232,234,0.25)]"
           >
             <Activity size={16} aria-hidden="true" />
             Live monitor

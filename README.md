@@ -22,7 +22,7 @@ impossible AI-generated footage never enters the dataset.
       └─ ACCEPT ─▶ 4. AUTO-LABELING (Gemini) → labels.json  ──▶ dataset
 ```
 
-Two ways to drive it:
+Four ways to drive it:
 
 - **Single video** — one prompt straight through generate → verify → label
   (`run.sh pipeline` / `run_pipeline.py`).
@@ -31,6 +31,10 @@ Two ways to drive it:
   compiler into the pipeline).
 - **API** — FastAPI endpoints over the same service layer
   (`uvicorn roboss.api:app`).
+- **Studio (web UI)** — a React frontend + dedicated batch backend
+  (`server/` + `src/`) to launch batches, watch live agent logs, preview
+  each video with its labels, and download the dataset as a zip.
+  See [Roboss Studio](#roboss-studio-web-ui).
 
 ## Quick start
 
@@ -248,8 +252,10 @@ http://127.0.0.1:8000/assets/my_run/sc_01/generated.mp4
 
 ### Robot Data Export
 
-James' `v2r/` pipeline is integrated after video verification. Enable it on
-the full endpoints with:
+James' `v2r/` pipeline (video → labeled, physics-checked, LeRobot v3
+export; see [v2r/README.md](v2r/README.md) and
+[V2R_MASTER_PROMPT.md](V2R_MASTER_PROMPT.md)) is integrated after video
+verification. Enable it on the full endpoints with:
 
 ```json
 {
@@ -277,6 +283,41 @@ curl -X POST http://127.0.0.1:8000/robot-dataset-exports \
   -H "Content-Type: application/json" \
   -d '{"video_path":"runs/full_test_01/sc_01/generated.mp4","outdir":"runs/v2r_test/robot_data","robots":["g1"],"mode":"synthetic","stages":"all"}'
 ```
+
+## Roboss Studio (web UI)
+
+A React frontend (Vite + Tailwind, `src/`) over a dedicated batch backend
+(`server/`, FastAPI). One prompt — plus an optional reference image or
+video — becomes a batch: the scenario compiler fans it out, each job is
+generated with Gemini, verified and labeled in parallel, and results
+stream into the UI live.
+
+```bash
+# backend (port 8010)
+.venv/bin/uvicorn server.app:app --host 127.0.0.1 --port 8010
+
+# frontend (port 5174, proxies /api and /generated to the backend)
+npm install
+npm run dev
+```
+
+Pages: **Home** (project tour), **Studio** (launch batches, live pipeline
+circuit view, per-video cards with verification status and labeled preview,
+dataset zip download), **Stats** (accept/reject history).
+
+| endpoint | purpose |
+|---|---|
+| `POST /api/videos` | prompt (+ optional reference image/video) → batch of jobs |
+| `GET /api/batches/{id}` | poll batch status, per-job reports and labels |
+| `GET /api/batches/{id}/download` | zip of the batch's dataset files |
+| `GET /api/stats` | run history for the Stats page |
+| `GET /api/logs`, `GET /api/logs/stream` | agent logs (REST catch-up + live SSE) |
+| `POST /api/demo/dog`, `POST /api/demo/cache` | canned demo batches |
+
+Batch artifacts land in `generated/<batch_id>/` (scenario bundle under
+`bundle/`, one folder per job with the raw and labeled mp4) and are served
+statically under `/generated/...`. `ROBOSS_MAX_PARALLEL_JOBS` (default 3)
+caps concurrent jobs per batch.
 
 ### Verifier CLI (existing video only)
 
@@ -367,7 +408,13 @@ roboss/
   storage.py        LocalStorageService + /assets-ready file metadata
   pipeline.py       reusable compile/generate/verify/label orchestration
   api.py            FastAPI app
+server/             Studio backend: batch orchestrator + /api endpoints + SSE logs
+src/                Studio frontend: React (Vite + Tailwind) — Home / Studio / Stats
+generated/          Studio batch outputs (bundle + per-job videos/labels)
 agents/             scenario compiler (idea → world contract → scenarios)
+v2r/                V2R factory: video → robot training data (own README)
+demo/               standalone V2R demo frontend (python demo/serve.py)
+roboss-film/        brand-film generation scripts + shot selects
 verifier/
   config.py    thresholds + score weights (all tunable)
   tracks.py    Track / Evidence / Violation data structures

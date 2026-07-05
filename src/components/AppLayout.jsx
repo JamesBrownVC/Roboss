@@ -6,7 +6,6 @@ const NAV_ITEMS = [
   { to: "/", label: "Home" },
   { to: "/studio", label: "Studio" },
   { to: "/analytics", label: "Analytics" },
-  { to: "/monitor", label: "Monitor" },
 ];
 
 export default function AppLayout() {

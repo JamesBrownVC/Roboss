@@ -235,104 +235,104 @@ def create_batch(
     return batch
 
 
-def create_demo_dog_batch(*, video_url: str) -> BatchState:
-    prompt = (
-        "A dog moves and runs forward with a clear quadruped gait; convert that "
-        "dog motion into synthetic training data for a robot dog."
-    )
-    batch_id = f"dog-demo-{uuid.uuid4().hex[:8]}"
-    job = JobState(
-        id=f"{batch_id}-job-1",
-        index=1,
-        status="completed",
-        videoUrl=video_url,
-        labeledVideoUrl=None,
-        reviewStatus="passed",
-        review={
-            "decision": "accept",
-            "main_reason": "Local dog-motion demo clip accepted for the parallel robot-dog pipeline.",
-            "checks": {
-                "generation": "skipped",
-                "subject": "quadruped_dog",
-                "target_robot": "go2",
-                "motion": "forward_running_gait",
+# Pre-generated + pre-labeled robot-dog demo batch: 10 Unitree Go2 scenarios
+# generated with Omni and labeled by the V2R agent, cached under generated/.
+DOG_DEMO_BATCH_ID = "d79e3fa0e9ce"
+DOG_DEMO_DIR = GENERATED_DIR / DOG_DEMO_BATCH_ID
+DOG_DEMO_PROMPT = (
+    "A Unitree Go2 quadruped robot dog performs a continuous locomotion "
+    "sequence (awaken, greet, explore, stretch, sit); convert that motion "
+    "into robot-ready training data for a Go2."
+)
+
+
+def _titleize(scenario_id: str) -> str:
+    # sc_03_balance_play_bow -> "Balance play bow"
+    parts = scenario_id.split("_")
+    if len(parts) >= 3 and parts[0] == "sc":
+        return " ".join(parts[2:]).replace("-", " ").capitalize()
+    return scenario_id.replace("_", " ").capitalize()
+
+
+def create_demo_dog_batch(*, video_url: str | None = None) -> BatchState:
+    """Serve the cached 10-video robot-dog demo (pre-generated Omni videos
+    already labeled by the V2R agent, under generated/d79e3fa0e9ce/)."""
+    batch_id = f"dog-demo-{DOG_DEMO_BATCH_ID}"
+    jobs: list[JobState] = []
+
+    job_dirs = sorted(
+        (p for p in DOG_DEMO_DIR.glob("*-job-*") if p.is_dir()),
+        key=lambda p: int(p.name.rsplit("-", 1)[-1]),
+    ) if DOG_DEMO_DIR.is_dir() else []
+
+    for idx, job_dir in enumerate(job_dirs, start=1):
+        raws = sorted(v for v in job_dir.glob("*.mp4") if not v.stem.endswith("_labeled"))
+        if not raws:
+            continue
+        raw = raws[0]
+        scenario_id = raw.stem
+        labeled = job_dir / f"{scenario_id}_labeled.mp4"
+        base = f"/generated/{DOG_DEMO_BATCH_ID}/{job_dir.name}"
+        title = _titleize(scenario_id)
+        jobs.append(JobState(
+            id=job_dir.name,
+            index=idx,
+            status="completed",
+            videoUrl=f"{base}/{raw.name}",
+            labeledVideoUrl=f"{base}/{labeled.name}" if labeled.is_file() else None,
+            reviewStatus="passed",
+            review={
+                "decision": "accept",
+                "main_reason": f"Go2 scenario '{title}' generated with Omni and "
+                               "accepted by the V2R agent.",
+                "checks": {"subject": "unitree_go2", "target_robot": "go2",
+                           "generation": "omni"},
             },
-        },
-        labelStatus="completed",
-        label={
-            "video_summary": "Dog running forward for robot-dog locomotion data.",
-            "summary": "Predefined demo pipeline: no generation, local ai_dog.mp4, synthetic labels and GO2-ready metadata.",
-            "labels": [
-                "dog_visible",
-                "quadruped_running",
-                "forward_locomotion",
-                "cyclic_gait",
-                "robot_dog_target_go2",
-            ],
-            "synthetic_scenario": {
-                "scenario_id": "dog_run_robot_dog_demo",
-                "source_video": "demo/label_demo/ai_dog.mp4",
-                "generation": "disabled",
-                "target_robot": "go2",
-                "motion": "forward dog-motion gait",
+            labelStatus="completed",
+            label={
+                "video_summary": f"Unitree Go2 — {title}.",
+                "summary": f"Cached robot-dog demo: Omni-generated Go2 clip "
+                           f"'{title}', labeled by the V2R agent.",
+                "labels": ["unitree_go2", "quadruped", "robot_dog_target_go2",
+                           scenario_id],
+                "frames": [],
             },
-            "frames": [
-                {
-                    "frame": frame,
-                    "annotations": [
-                        {
-                            "label": "quadruped_dog",
-                            "track_id": 1,
-                            "x": 180 + frame * 1.5,
-                            "y": 122,
-                            "w": 310,
-                            "h": 210,
-                        }
-                    ],
-                }
-                for frame in (0, 24, 48, 72, 96)
-            ],
-        },
-        cameraVariant={
-            "name": "robot_dog_demo",
-            "title": "Robot dog demo pipeline",
-        },
-        scenario_id="dog_run_robot_dog_demo",
-    )
+            cameraVariant={"name": scenario_id, "title": title},
+            scenario_id=scenario_id,
+        ))
+
     batch = BatchState(
         id=batch_id,
-        status="completed",
-        count=1,
+        status="completed" if jobs else "failed",
+        count=len(jobs),
         aspect_ratio="16:9",
-        prompt=prompt,
-        jobs=[job],
-        completed=1,
+        prompt=DOG_DEMO_PROMPT,
+        jobs=jobs,
+        completed=len(jobs),
         failed=0,
+        error=None if jobs else f"No cached demo videos under {DOG_DEMO_DIR}",
     )
     with _lock:
         _batches[batch_id] = batch
-    for message, agent in [
-        ("Dog demo pipeline queued (generation skipped)", "api"),
-        ("Using predefined dog-motion prompt for GO2 robot dog", "intent"),
-        ("Loaded local demo/label_demo/ai_dog.mp4", "omni"),
-        ("Accepted quadruped running gait for synthetic demo labels", "verifier"),
-        ("Packaged robot-dog synthetic data bundle", "export"),
-    ]:
-        LOG_STORE.append(message, agent=agent, batch_id=batch_id)
+    LOG_STORE.append(
+        f"Robot dog demo loaded: {len(jobs)} cached Go2 scenarios (Omni-generated, "
+        "V2R-agent labeled)", agent="api", batch_id=batch_id)
+    for job in jobs:
+        LOG_STORE.append(
+            f"Cached scenario {job.scenario_id}: accepted, labeled",
+            agent="omni", batch_id=batch_id)
     runs = _load_runs()
-    runs.append(
-        {
-            "id": job.id,
-            "createdAt": _utc_now(),
-            "status": job.status,
-            "labelStatus": job.labelStatus,
-            "reviewStatus": job.reviewStatus,
-            "cameraVariant": job.cameraVariant["name"],
+    known = {r["id"] for r in runs}
+    for job in jobs:
+        if job.id in known:
+            continue
+        runs.append({
+            "id": job.id, "createdAt": _utc_now(), "status": job.status,
+            "labelStatus": job.labelStatus, "reviewStatus": job.reviewStatus,
+            "cameraVariant": (job.cameraVariant or {}).get("name"),
             "aspectRatio": batch.aspect_ratio,
-            "zoneCount": _annotation_count(job.label),
-            "totalSeconds": 0,
-        }
-    )
+            "zoneCount": _annotation_count(job.label), "totalSeconds": 0,
+        })
     _save_runs(runs)
     return batch
 
@@ -570,30 +570,76 @@ def _run_batch(batch_id: str) -> None:
             with _lock:
                 job.status = "labeling"
                 job.labelStatus = "running"
-            job_log("Building annotation zones from extracted tracks", agent="verifier")
-            label = _build_label(evidence, scenario, report)
-            with _lock:
-                job.label = label
-                job.labelStatus = "completed"
 
-            with _lock:
-                job.status = "rendering"
-            job_log("Rendering labeled preview video", agent="verifier")
-            try:
-                render_annotated_video(
-                    str(raw_path),
-                    evidence,
-                    violations,
-                    str(labeled_path),
-                )
-                with _lock:
-                    job.labeledVideoUrl = (
-                        f"/generated/{batch_id}/{job.id}/{labeled_path.name}"
+            # DIRECT VISUAL PIPELINE (default): the V2R agent (Nemotron
+            # orchestrator + Kimi critic via Crusoe) looks at the actual
+            # pixels/audio, labels, and its verdict filters out bad
+            # generations. The deterministic tracker-zone labeling remains
+            # as fallback (ROBOSS_AGENTIC_LABELER=0 or bridge failure).
+            agentic_ok = False
+            if os.environ.get("ROBOSS_AGENTIC_LABELER", "1") != "0":
+                try:
+                    from .agentic_bridge import (
+                        agentic_label_and_render,
+                        label_fields_from_report,
                     )
-            except Exception as exc:
-                job_log(f"Annotated render failed: {exc}", level="warn", agent="verifier")
+
+                    bridge = agentic_label_and_render(
+                        raw_path, job.id, job_dir, job_log)
+                    agent_report = bridge["report"]
+                    feas = agent_report.get("feasibility", {})
+                    label = _build_label(evidence, scenario, report)
+                    label.update(label_fields_from_report(agent_report))
+                    rec = feas.get("recommendation", "human_review")
+                    with _lock:
+                        job.label = label
+                        job.labelStatus = "completed"
+                        if bridge["labeled_path"] is not None:
+                            job.labeledVideoUrl = (
+                                f"/generated/{batch_id}/{job.id}/"
+                                f"{bridge['labeled_path'].name}"
+                            )
+                        if rec == "reject":
+                            passed = False
+                            job.reviewStatus = "failed"
+                            arts = feas.get("ai_generated_artifacts") or []
+                            job.error = ("Agent rejected generation: "
+                                         + (", ".join(arts) if arts
+                                            else feas.get("human_present", "unusable")))
+                            if job.review is not None:
+                                job.review["decision"] = "reject"
+                                job.review["feedback"] = job.error
+                    agentic_ok = True
+                except Exception as exc:  # noqa: BLE001
+                    job_log(f"Agentic labeler unavailable, falling back to "
+                            f"tracker zones: {exc}", level="warn", agent="labeler")
+
+            if not agentic_ok:
+                job_log("Building annotation zones from extracted tracks", agent="verifier")
+                label = _build_label(evidence, scenario, report)
                 with _lock:
-                    job.renderError = str(exc)
+                    job.label = label
+                    job.labelStatus = "completed"
+
+            if job.labeledVideoUrl is None:
+                with _lock:
+                    job.status = "rendering"
+                job_log("Rendering labeled preview video", agent="verifier")
+                try:
+                    render_annotated_video(
+                        str(raw_path),
+                        evidence,
+                        violations,
+                        str(labeled_path),
+                    )
+                    with _lock:
+                        job.labeledVideoUrl = (
+                            f"/generated/{batch_id}/{job.id}/{labeled_path.name}"
+                        )
+                except Exception as exc:
+                    job_log(f"Annotated render failed: {exc}", level="warn", agent="verifier")
+                    with _lock:
+                        job.renderError = str(exc)
 
             with _lock:
                 job.status = "completed" if passed else "failed"

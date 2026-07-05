@@ -100,12 +100,14 @@ def run_twin_fit(cfg: V2RConfig, episode_id: str, robot: str = "go2",
     pd.DataFrame(foot_rows).to_parquet(rd / "twin_foot_trajectories.parquet", index=False)
 
     # ---- base twist command channel ---------------------------------------
+    twist_conf = (np.clip(gait.path_conf, 0.05, 1.0)
+                  if gait.path_conf is not None and len(gait.path_conf) == T else conf)
     tw = pd.DataFrame({
         "t": fit.t, "frame": frames,
         "vx": fit.base_twist[:, 0], "vy": fit.base_twist[:, 1],
         "yaw_rate": fit.base_twist[:, 2],
-        "conf": conf, "valid": np.ones(T, dtype=bool),
-        "source": np.full(T, SourceTag.synthesized.value)})
+        "conf": twist_conf, "valid": np.ones(T, dtype=bool),
+        "source": np.full(T, SourceTag.estimated.value)})
     write_table(tw, rd / "cmd_twist.parquet")
 
     # ---- mapping + report --------------------------------------------------

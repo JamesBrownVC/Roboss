@@ -267,10 +267,16 @@ def fit_twin(gait: DogGait, model_path: Path, iters: int = 40,
     qpos, fa = _rollout(m, d, home, qadr, tgt, hips, foot_calf, best["base_pitch"])
     final_loss = _tracking_loss(gait, fa, hips, body_scale)
 
-    # base twist command channel from the dog's forward speed + stride
+    # base twist command channel: PER-FRAME speed + turn profile from the
+    # dog's tracked path (a constant here made the robot run dead straight)
     T = len(gait.t)
-    vx = np.full(T, gait.body_speed_bl_s * body_scale)   # m/s forward (approx)
-    base_twist = np.stack([vx, np.zeros(T), np.zeros(T)], axis=1)
+    if gait.speed_bl_s is not None and len(gait.speed_bl_s) == T:
+        vx = np.clip(gait.speed_bl_s * body_scale, 0.0, 1.2)     # Go2-safe m/s
+        yaw = np.clip(gait.yaw_rate_rad_s, -1.0, 1.0)
+    else:
+        vx = np.full(T, gait.body_speed_bl_s * body_scale)
+        yaw = np.zeros(T)
+    base_twist = np.stack([vx, np.zeros(T), yaw], axis=1)
 
     log(f"[twin] final tracking loss {final_loss:.4f} "
         f"(from {loss_curve[0]:.4f}); {res.nit} iters")
@@ -293,6 +299,17 @@ def fit_twin(gait: DogGait, model_path: Path, iters: int = 40,
             "optimizer_iters": int(res.nit),
             "params": {k: round(float(v), 4) for k, v in best.items()},
             "body_scale_m": body_scale,
+            "twist_profile": {
+                "vx_m_s": {"min": round(float(vx.min()), 3),
+                           "median": round(float(np.median(vx)), 3),
+                           "max": round(float(vx.max()), 3)},
+                "yaw_rate_rad_s": {"min": round(float(yaw.min()), 3),
+                                   "max": round(float(yaw.max()), 3)},
+                "n_turn_frames": int((np.abs(yaw) > 0.15).sum()),
+                "note": "yaw from image travel-direction of the tracked animal; "
+                        "gated to zero below 0.3 body-lengths/s and assumes a "
+                        "roughly static camera",
+            },
             "caveats": ["2D monocular gait: sagittal pattern only, no true 3D / "
                         "hip abduction", "foot targets are pattern-matched, not "
                         "metric ground truth", "open-loop kinematic fit; a "

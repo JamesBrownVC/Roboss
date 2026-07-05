@@ -47,9 +47,13 @@ class DogGait:
     knee_ang: dict[str, np.ndarray]            # leg -> (T,) radians interior
     stride_period_s: float
     swing_phase: dict[str, float]              # leg -> phase in [0,1) of stride
-    body_speed_bl_s: float                     # forward speed, body-lengths/s
+    body_speed_bl_s: float                     # MEDIAN forward speed, body-lengths/s
     duty_factor: dict[str, float]              # leg -> stance fraction
     gait_label: str
+    # time-varying path profile (what the robot should actually follow):
+    speed_bl_s: np.ndarray = None              # (T,) per-frame speed, body-lengths/s
+    yaw_rate_rad_s: np.ndarray = None          # (T,) heading change of travel dir
+    path_conf: np.ndarray = None               # (T,) 0-1: heading is meaningless when slow
     meta: dict = field(default_factory=dict)
 
 
@@ -175,10 +179,27 @@ def extract_gait(keypoints_parquet: Path, min_conf: float = 0.3) -> DogGait:
         else:
             swing_phase[leg] = 0.0
 
-    # forward body speed (body-lengths/sec) from hip translation --------
-    if body_ok and T > 2:
-        disp = np.linalg.norm(np.diff(hips, axis=0), axis=1) / body_len
-        body_speed = float(np.nanmedian(disp) * fps)
+    # forward body speed + travel-direction yaw rate --------------------
+    # (per-frame profiles: this is the path the robot follows; a constant
+    # median made the robot run dead straight)
+    speed_prof = np.zeros(T)
+    yaw_prof = np.zeros(T)
+    path_conf = np.zeros(T)
+    if body_ok and T > 4:
+        traj = np.stack([_smooth(hips[:, 0], 7), _smooth(hips[:, 1], 7)], axis=1)
+        vel = np.gradient(traj, axis=0) * fps                # px/s in image
+        speed_prof = _smooth(np.linalg.norm(vel, axis=1) / body_len, 5)
+        body_speed = float(np.nanmedian(speed_prof))
+        # heading of travel in image plane; unwrap, differentiate.
+        # Valid only while actually moving (heading of a standing dog is noise)
+        # and assumes a roughly static camera + near-planar ground path.
+        heading = np.unwrap(np.arctan2(vel[:, 1], vel[:, 0]))
+        yaw_prof = np.clip(_smooth(np.gradient(heading) * fps, 7), -1.5, 1.5)
+        path_conf = np.clip(speed_prof / 0.3, 0.0, 1.0)      # <0.3 bl/s -> distrust
+        yaw_prof = yaw_prof * path_conf                       # gate yaw by motion
+        speed_prof = np.nan_to_num(speed_prof)
+        yaw_prof = np.nan_to_num(yaw_prof)
+        path_conf = np.nan_to_num(path_conf)
     else:
         body_speed = 0.0
 
@@ -188,6 +209,7 @@ def extract_gait(keypoints_parquet: Path, min_conf: float = 0.3) -> DogGait:
         paw=paw, paw_conf=paw_conf, thigh_ang=thigh_ang, knee_ang=knee_ang,
         stride_period_s=period, swing_phase=swing_phase,
         body_speed_bl_s=body_speed, duty_factor=duty, gait_label=label,
+        speed_bl_s=speed_prof, yaw_rate_rad_s=yaw_prof, path_conf=path_conf,
         meta={"n_frames": T, "fps": round(fps, 2), "body_len_norm": float(body_len),
               "ref_leg": ref_leg, "legs_tracked": sorted(paw)},
     )

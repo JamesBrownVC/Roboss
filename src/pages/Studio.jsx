@@ -98,6 +98,10 @@ function compactBatchForStorage(nextBatch) {
   };
 }
 
+function isMissingBatchError(error) {
+  return String(error?.message || "").toLowerCase().includes("batch not found");
+}
+
 export default function Studio() {
   const { health } = useOutletContext();
   const savedStudioState = useMemo(() => readStudioState(), []);
@@ -183,6 +187,13 @@ export default function Studio() {
         }
       } catch (resumeError) {
         if (!cancelled) {
+          if (isMissingBatchError(resumeError)) {
+            clearActiveBatchId(activeBatchId);
+            saveStudioState({ batchId: null, batch: null });
+            setBatch(null);
+            setError("");
+            return;
+          }
           if (cachedBatch?.id === activeBatchId) {
             setBatch(cachedBatch);
           }
@@ -213,6 +224,13 @@ export default function Studio() {
           setError(batchErrorMessage(nextBatch));
         }
       } catch (pollError) {
+        if (isMissingBatchError(pollError)) {
+          clearActiveBatchId(batch.id);
+          saveStudioState({ batchId: null, batch: null });
+          setBatch(null);
+          setError("");
+          return;
+        }
         setError(pollError.message || "Could not fetch status.");
       }
     }, POLL_INTERVAL_MS);

@@ -228,33 +228,61 @@ def download_batch_videos(batch_id: str) -> Response:
         raise HTTPException(status_code=404, detail="Batch not found.")
 
     files: list[tuple[str, Path]] = []
+    data_files: list[tuple[str, bytes]] = []
     if batch is not None:
+        data_files.append(
+            (
+                "manifest.json",
+                json.dumps(batch.to_dict(), indent=2, ensure_ascii=False).encode("utf-8"),
+            )
+        )
         for job in batch.jobs:
             for kind, url in (("raw", job.videoUrl), ("labeled", job.labeledVideoUrl)):
                 path = generated_url_to_path(url)
                 if path is not None:
                     files.append((f"{kind}/{job.index:03d}_{path.name}", path))
+            if job.label is not None:
+                data_files.append(
+                    (
+                        f"labels/{job.index:03d}_{job.id}_labels.json",
+                        json.dumps(job.label, indent=2, ensure_ascii=False).encode("utf-8"),
+                    )
+                )
+            if job.review is not None:
+                data_files.append(
+                    (
+                        f"reviews/{job.index:03d}_{job.id}_review.json",
+                        json.dumps(job.review, indent=2, ensure_ascii=False).encode("utf-8"),
+                    )
+                )
     elif batch_dir is not None:
         for path in sorted(batch_dir.glob("*/*.mp4")):
             kind = "labeled" if path.stem.endswith("_labeled") else "raw"
             files.append((f"{kind}/{path.parent.name}_{path.name}", path))
+        for path in sorted(batch_dir.glob("*/*.json")):
+            files.append((f"metadata/{path.parent.name}_{path.name}", path))
 
-    if not files:
-        raise HTTPException(status_code=404, detail="No videos are available for this batch yet.")
+    if not files and not data_files:
+        raise HTTPException(status_code=404, detail="No dataset files are available for this batch yet.")
 
     archive_bytes = io.BytesIO()
     with zipfile.ZipFile(archive_bytes, mode="w", compression=zipfile.ZIP_STORED) as archive:
         used_names: set[str] = set()
-        for archive_name, path in files:
+        def unique_archive_name(archive_name: str) -> str:
             suffix = 2
             while archive_name in used_names:
                 base = Path(archive_name)
                 archive_name = f"{base.parent}/{base.stem}_{suffix}{base.suffix}"
                 suffix += 1
             used_names.add(archive_name)
-            archive.write(path, archive_name)
+            return archive_name
 
-    filename = f"roboss-{batch_id}-videos.zip"
+        for archive_name, path in files:
+            archive.write(path, unique_archive_name(archive_name))
+        for archive_name, data in data_files:
+            archive.writestr(unique_archive_name(archive_name), data)
+
+    filename = f"roboss-{batch_id}-dataset.zip"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return Response(
         content=archive_bytes.getvalue(),

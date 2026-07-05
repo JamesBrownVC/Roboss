@@ -71,7 +71,7 @@ case "$cmd" in
 
     api)
         echo "=== FastAPI server ==="
-        exec "$PY" -m uvicorn roboss.api:app --host 127.0.0.1 --port 8000 "$@"
+        exec "$PY" -m uvicorn server.app:app --host 127.0.0.1 --port 8010 "$@"
         ;;
 
     all)

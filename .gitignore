@@ -112,6 +112,7 @@ v2r/workspaces/**
 !v2r/workspaces/**/utterances.json
 v2r/.gpu_locks/
 demo/.cache/
+generated/
 *_report.json
 annotated*.mp4
 scenario_bundle/

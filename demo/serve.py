@@ -556,11 +556,9 @@ def api_exports():
 # ---------------------------------------------------------------------------
 
 SYNGEN = V2R / "data" / "syngen"
-LABEL_DEMO = DEMO_DIR / "label_demo"
 
 # jobs launched from the browser: job_id -> {running, returncode, log, started_at}
 SYNGEN_RUNS: dict[str, dict] = {}
-LABEL_DEMO_RUNS: dict[str, dict] = {}
 
 
 def _syngen_log_tail(job_id: str, n_lines: int = 6) -> list[str]:
@@ -835,9 +833,9 @@ def api_syngen_run(req: SyngenRunRequest):
 # ---------------------------------------------------------------------------
 
 LABEL_DEMO_PROMPT = (
-    "A dog runs forward across the frame with a clear quadruped gait cycle; "
-    "extract animal motion labels, synthetic scenario metadata, and robot-ready "
-    "locomotion data without generating a new video."
+    "A dog moves and runs forward with a clear quadruped gait; convert that "
+    "dog motion into synthetic training data for a robot dog without generating "
+    "a new video."
 )
 
 LABEL_DEMO_SCENARIO = {
@@ -845,7 +843,7 @@ LABEL_DEMO_SCENARIO = {
     "subject": "quadruped_dog",
     "source": "bundled_local_demo",
     "scene": "outdoor synthetic dog-run clip",
-    "motion": "forward running gait",
+    "motion": "forward dog-motion gait for robot-dog retargeting",
     "duration_goal_s": 4,
     "expected_labels": [
         "dog_visible",

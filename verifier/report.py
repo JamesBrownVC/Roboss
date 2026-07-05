@@ -37,7 +37,8 @@ def build_report(evidence: Evidence,
                  violations: list[Violation],
                  th: Thresholds,
                  scenario: dict | None = None,
-                 gate2_meta: dict | None = None) -> dict:
+                 gate2_meta: dict | None = None,
+                 semantics: dict | None = None) -> dict:
     plausible, score, main_reason = decide(violations, th)
     scenario_prompt = (scenario or {}).get("scenario_prompt")
 
@@ -67,6 +68,7 @@ def build_report(evidence: Evidence,
             },
             "semantic": gate2_meta or {"status": "not_run"},
         },
+        "semantics": semantics or {"status": "not_run"},
     }
     return report
 

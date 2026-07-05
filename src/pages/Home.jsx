@@ -552,8 +552,8 @@ export default function Home() {
             ))}
 
             {[
-              { x: 170, label: "validation failed", value: pipeline.rejects[0] },
-              { x: 370, label: "generation failed", value: pipeline.rejects[1] },
+              { x: 170, label: "generation failed", value: pipeline.rejects[1] },
+              { x: 370, label: "validation failed", value: pipeline.rejects[0] },
               { x: 570, label: "labeling failed", value: pipeline.rejects[2] },
             ].map((reject) => (
               <g key={reject.label}>

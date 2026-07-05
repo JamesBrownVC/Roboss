@@ -35,19 +35,54 @@ export default function VideoCard({ job, aspectRatio }) {
   return (
     <article className="flex flex-col overflow-hidden rounded-lg border border-surface-700 bg-surface-900 transition hover:border-surface-600">
       <div
-        className={`flex items-center justify-center bg-black ${
+        className={`group/video relative flex items-center justify-center bg-black ${
           aspectRatio === "9:16" ? "aspect-[9/16] max-h-96" : "aspect-video"
-        }`}
+        } ${job.reviewStatus === "rejected" || job.status === "failed" ? "overflow-hidden" : ""}`}
       >
         {displayVideoUrl ? (
-          <video
-            key={displayVideoUrl}
-            src={displayVideoUrl}
-            controls
-            preload="metadata"
-            playsInline
-            className="h-full w-full bg-black object-contain"
-          />
+          <>
+            <video
+              key={displayVideoUrl}
+              src={displayVideoUrl}
+              controls
+              preload="metadata"
+              playsInline
+              className={`h-full w-full bg-black object-contain ${
+                job.reviewStatus === "rejected" || job.status === "failed"
+                  ? "grayscale contrast-125 sepia-[0.3] hue-rotate-[-50deg] saturate-200"
+                  : ""
+              }`}
+            />
+            {job.reviewStatus === "rejected" || job.status === "failed" ? (
+              <>
+                {/* Glitch Overlay */}
+                <div className="pointer-events-none absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] mix-blend-overlay opacity-50" />
+                
+                {/* Rejected Stamp */}
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div className="rounded-md border-4 border-[#ff3b6b] px-4 py-2 text-3xl font-black tracking-widest text-[#ff3b6b] shadow-[0_0_20px_rgba(255,59,107,0.5)] rotate-[-12deg] bg-black/40 backdrop-blur-sm">
+                    REJECTED
+                  </div>
+                </div>
+
+                {/* Hover Reason Panel */}
+                <div className="absolute inset-x-0 bottom-0 translate-y-full flex-col bg-black/90 border-t border-[#ff3b6b]/50 p-4 transition-transform duration-300 ease-out group-hover/video:translate-y-0 flex backdrop-blur-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-[#ff3b6b] uppercase tracking-wider">Physics Violation</span>
+                    <span className="text-xs font-mono text-white/70 bg-white/10 px-2 py-0.5 rounded">Score: {job.review?.plausibility_score || 0}/100</span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-sage-200 font-mono">
+                    {(job.review?.violations || ["Unspecified error"]).map((violation, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-[#ff3b6b] mt-0.5">►</span>
+                        <span className="leading-relaxed">{violation}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            ) : null}
+          </>
         ) : (
           <div className="flex flex-col items-center gap-3 px-4 text-center">
             {isActive ? (
@@ -62,7 +97,7 @@ export default function VideoCard({ job, aspectRatio }) {
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2.5 p-4">
+      <div className="flex flex-1 flex-col gap-2.5 p-4 z-10 bg-surface-900">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="min-w-0 text-sm font-semibold text-white">
             {job.cameraVariant?.title || `Video ${job.index}`}

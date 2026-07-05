@@ -112,6 +112,7 @@ export default function Studio() {
   const submitTimeRef = useRef(null);
   const recordedRef = useRef(false);
   const resumeAttemptedRef = useRef(false);
+  const [activeTab, setActiveTab] = useState("accepted");
 
   const apiKeyMissing = Boolean(health?.ok) && health.geminiApiKeyConfigured === false;
   const currentStatus = batch?.status ?? "idle";
@@ -130,12 +131,30 @@ export default function Studio() {
     return { total, completed, failed, done, pct };
   }, [batch, safeDatasetCount]);
 
-  const previewJobs = useMemo(() => (batch?.jobs ?? []).slice(0, PREVIEW_LIMIT), [batch]);
-  const downloadableVideoCount = useMemo(
-    () => (batch?.jobs ?? []).filter((job) => job.videoUrl || job.labeledVideoUrl).length,
-    [batch],
+  const acceptedJobs = useMemo(
+    () => (batch?.jobs ?? []).filter((job) => job.status !== "failed" && job.reviewStatus !== "rejected"),
+    [batch]
   );
-  const placeholderCount = Math.min(PREVIEW_LIMIT, safeDatasetCount);
+  
+  const quarantinedJobs = useMemo(
+    () => (batch?.jobs ?? []).filter((job) => job.status === "failed" || job.reviewStatus === "rejected"),
+    [batch]
+  );
+
+  const previewJobs = useMemo(() => {
+    const list = activeTab === "accepted" ? acceptedJobs : quarantinedJobs;
+    return list.slice(0, PREVIEW_LIMIT);
+  }, [activeTab, acceptedJobs, quarantinedJobs]);
+
+  const downloadableVideoCount = useMemo(
+    () => acceptedJobs.filter((job) => job.videoUrl || job.labeledVideoUrl).length,
+    [acceptedJobs],
+  );
+  
+  const placeholderCount = Math.min(
+    PREVIEW_LIMIT,
+    activeTab === "accepted" ? Math.max(0, safeDatasetCount - quarantinedJobs.length - acceptedJobs.length) : 0
+  );
 
   useEffect(() => {
     saveStudioState({ prompt, aspectRatio, datasetCount: safeDatasetCount });
@@ -487,11 +506,47 @@ export default function Studio() {
 
         <div className="flex min-h-[420px] flex-col rounded-lg border border-surface-700 bg-surface-900 p-3 sm:min-h-[540px] sm:p-4">
           <div className="flex flex-col items-stretch justify-between gap-3 border-b border-surface-700 pb-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-white">Output</span>
-              <span className="text-xs text-sage-500">{STATUS_LABELS[currentStatus]}</span>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-white">Output</span>
+                <span className="text-xs text-sage-500">{STATUS_LABELS[currentStatus]}</span>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-md bg-surface-950 p-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("accepted")}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                    activeTab === "accepted"
+                      ? "bg-surface-800 text-neon-green"
+                      : "text-sage-500 hover:text-white"
+                  }`}
+                >
+                  Accepted ({acceptedJobs.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("quarantined")}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                    activeTab === "quarantined"
+                      ? "bg-surface-800 text-[#ff3b6b]"
+                      : "text-sage-500 hover:text-white"
+                  }`}
+                >
+                  Quarantined ({quarantinedJobs.length})
+                </button>
+              </div>
             </div>
+
             <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
+              <div className="flex items-center gap-2 rounded-md border border-surface-700 bg-surface-850 px-3 py-1.5 hidden lg:flex">
+                 <span className="text-xs font-mono text-sage-400">Gen: {progress.done}</span>
+                 <span className="text-sage-600">→</span>
+                 <span className="text-xs font-mono text-[#ff3b6b]">Rej: {quarantinedJobs.length}</span>
+                 <span className="text-sage-600">→</span>
+                 <span className="text-xs font-mono text-neon-green">Yield: {progress.done > 0 ? Math.round((acceptedJobs.length / progress.done) * 100) : 0}%</span>
+              </div>
+
               <button
                 type="button"
                 onClick={handleDownloadAll}
@@ -502,6 +557,7 @@ export default function Studio() {
                 Download all videos
               </button>
               <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-700 sm:w-40 sm:flex-none">
+
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-neon-magenta to-neon-cyan transition-all duration-500"
                   style={{ width: `${progress.pct}%` }}

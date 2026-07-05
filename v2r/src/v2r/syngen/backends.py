@@ -240,7 +240,11 @@ class VeoBackend(VideoGenBackend):
 
 
 def get_backend(name: str) -> VideoGenBackend:
-    """`auto` prefers Omni when a key is present, otherwise mock."""
+    """`auto` prefers Omni when a key is present, otherwise mock.
+
+    PROJECT STANDARD: video generation uses OMNI. Veo stays available only
+    for explicit --backend veo requests - do not make it a default anywhere.
+    """
     if name == "auto":
         omni = OmniBackend()
         return omni if omni.available() else MockBackend()

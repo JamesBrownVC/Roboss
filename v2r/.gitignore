@@ -99,3 +99,4 @@ assets/robots/*/meshes/
 # Workspace tabular artifacts (cmd_twist, qpos, keypoints...): must be
 # re-included AFTER the global *.parquet exclude above to take effect.
 !workspaces/**/*.parquet
+!workspaces/**/utterances.json

@@ -1,0 +1,18 @@
+{
+  "utterances": [
+    {
+      "t_start_s": 0.0,
+      "t_end_s": 3.5,
+      "speaker": "person_0",
+      "text": "Hello there! It's so lovely to see you today.",
+      "language": "en",
+      "intent": "greeting",
+      "aligned_segment": "idle",
+      "conf": 0.7
+    }
+  ],
+  "has_speech": true,
+  "audio_notes": "A woman greets the viewer in a friendly tone.",
+  "method": "gemini native audio+video transcription",
+  "source": "estimated"
+}

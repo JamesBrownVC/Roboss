@@ -286,6 +286,11 @@ def write_lerobot_fragment(
         "provenance_mode": "synthetic" if synthetic else "real",
         "provenance_tier": tier,
         "scene_tags": json.dumps(scene),
+        # speech channel: aligned (situation, utterance) pairs so downstream
+        # policies can learn what to SAY in context, not only what to do
+        "utterances": json.dumps(
+            read_json(ws.utterances_json).get("utterances", [])
+            if ws.utterances_json.is_file() else []),
         "consent_id": consent.get("consent_id", ""),
         "license": consent.get("license", ""),
     }

@@ -1,0 +1,40 @@
+{
+  "intention": "Generate rare warehouse safety scenarios where a humanoid robot carries a box and a human worker behaves unpredictably",
+  "world_id": "active_warehouse_aisle_world",
+  "scene_id": "warehouse_aisle_01",
+  "locked_entities": [
+    "robot_01",
+    "human_01",
+    "box_01",
+    "rack_01",
+    "cone_01"
+  ],
+  "reference_assets_planned": 5,
+  "identity_checks": [
+    "check_robot_color_consistency",
+    "check_human_vest_retention",
+    "check_box_structural_integrity",
+    "check_floor_scuff_constancy"
+  ],
+  "scenarios_valid": [
+    "sc_1_stumble_near_robot"
+  ],
+  "scenarios_dropped": {},
+  "canvas": "generated\\835b1272361c\\bundle\\canvas.png",
+  "canvas_error": null,
+  "start_frames": {
+    "sc_1_stumble_near_robot": "generated\\835b1272361c\\bundle\\frames\\sc_1_stumble_near_robot_start.png"
+  },
+  "generation": {
+    "text_model": "gemini-3.5-flash",
+    "image_model": "gemini-3-pro-image",
+    "video_model": "veo-3.1-generate-preview",
+    "strategy": "image-to-video from per-scenario start frames derived from one canonical canvas"
+  },
+  "files": {
+    "intent": "intent.json",
+    "contract": "contract.json",
+    "scenarios": "scenarios.json",
+    "verifier_packets": "verifier_packets/"
+  }
+}

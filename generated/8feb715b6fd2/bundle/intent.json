@@ -1,0 +1,18 @@
+{
+  "domain": "Warehouse Logistics & Safety",
+  "environment": "Warehouse storage aisle with lower racks",
+  "main_task": "Storage load stability monitoring",
+  "risk_focus": "Falling load and unstable pallet collapse",
+  "actors": [],
+  "objects": [
+    "wooden pallet",
+    "cardboard boxes",
+    "shrink wrap",
+    "warehouse rack"
+  ],
+  "variation_count": 10,
+  "duration_seconds": 8.0,
+  "camera_style": "static surveillance-like",
+  "notes": "The video should depict the pallet tipping forward in realistic slow motion, resulting in damaged boxes and scattered debris on the floor.",
+  "raw_intention": "A loaded wooden pallet sits slightly unstable on a lower warehouse rack, boxes leaning, shrink wrap stretched unevenly. The pallet shifts, tips forward and the load falls onto the warehouse floor in realistic slow motion, leaving damaged boxes and scattered products."
+}

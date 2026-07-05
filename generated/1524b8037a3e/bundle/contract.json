@@ -1,0 +1,332 @@
+{
+  "world_contract": {
+    "world_id": "warehouse_safety_world_01",
+    "description": "An industrial warehouse storage aisle with heavy shelving where a humanoid robot carries a cardboard box and interacts with an unpredictable human worker under CCTV-style surveillance.",
+    "locked_entities": [
+      {
+        "id": "humanoid_robot_01",
+        "type": "robot",
+        "appearance": "Sleek matte-white humanoid robot, 1.7 meters tall, with charcoal-grey joint articulation caps, a glossy black glass visor head with no facial features, and a metallic-silver chest panel.",
+        "identity_signature": "matte_white_humanoid_with_black_visor_and_grey_joints",
+        "locked_attributes": [
+          "chassis_color",
+          "visor_reflectivity",
+          "height",
+          "joint_color",
+          "torso_shape"
+        ],
+        "material": "matte-white polycarbonate, charcoal-grey polymer, glossy black tempered glass, brushed aluminum chest panel",
+        "default_position": {
+          "x": 0.0,
+          "y": -2.0,
+          "z": 0.0
+        }
+      },
+      {
+        "id": "human_worker_01",
+        "type": "human",
+        "appearance": "Adult human male worker wearing a high-visibility neon-yellow safety vest over a dark navy blue long-sleeve shirt, grey work trousers, black work boots, and a yellow hard hat.",
+        "identity_signature": "male_worker_neon_vest_navy_shirt_yellow_hardhat",
+        "locked_attributes": [
+          "vest_color",
+          "shirt_color",
+          "pants_color",
+          "hardhat_color",
+          "body_build"
+        ],
+        "material": "high-visibility polyester fabric, cotton shirt, heavy denim pants, leather boots, hard plastic hard hat",
+        "default_position": {
+          "x": 1.1,
+          "y": 1.0,
+          "z": 0.0
+        }
+      },
+      {
+        "id": "cardboard_box_01",
+        "type": "object",
+        "appearance": "Plain light-brown corrugated cardboard box, cube-shaped, 0.4 meters per side, sealed with a single strip of clear packing tape across the top center, with no markings or logos.",
+        "identity_signature": "plain_cube_cardboard_box_0_4m_sealed",
+        "locked_attributes": [
+          "dimensions",
+          "surface_color",
+          "tape_placement",
+          "branding_absence"
+        ],
+        "material": "corrugated cardboard, clear adhesive tape",
+        "default_relation": "held_by humanoid_robot_01 at chest height"
+      },
+      {
+        "id": "storage_shelf_01",
+        "type": "structure",
+        "appearance": "Industrial storage rack, 3.0 meters tall, featuring safety-orange heavy-duty horizontal steel beams and dark-blue vertical upright steel frames, loaded with wooden pallets holding brown boxes.",
+        "identity_signature": "orange_blue_industrial_rack_loaded_with_pallets",
+        "locked_attributes": [
+          "beam_color",
+          "frame_color",
+          "height",
+          "load_distribution"
+        ],
+        "material": "powder-coated structural steel, pine wood pallets, cardboard container boxes",
+        "default_position": {
+          "x": -1.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      },
+      {
+        "id": "storage_shelf_02",
+        "type": "structure",
+        "appearance": "Industrial storage rack, 3.0 meters tall, featuring safety-orange heavy-duty horizontal steel beams and dark-blue vertical upright steel frames, loaded with wooden pallets holding brown boxes.",
+        "identity_signature": "orange_blue_industrial_rack_loaded_with_pallets_mirror",
+        "locked_attributes": [
+          "beam_color",
+          "frame_color",
+          "height",
+          "load_distribution"
+        ],
+        "material": "powder-coated structural steel, pine wood pallets, cardboard container boxes",
+        "default_position": {
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      }
+    ],
+    "locked_environment": {
+      "layout": "A narrow straight warehouse aisle of width 1.8 meters, bordered symmetrically by 3.0-meter tall industrial storage racks (storage_shelf_01 on left, storage_shelf_02 on right). Floor has safety-yellow painted boundary lines.",
+      "floor": "Polished light-grey industrial concrete warehouse floor showing faint scuffs, wheel track marks, and high-gloss reflection under lights.",
+      "lighting": "Overhead high-bay LED warehouse lighting, cool white 5000K, creating crisp but soft shadows on the floor and even illumination throughout the aisle.",
+      "style": "Realistic CCTV surveillance footage, overhead static angle, high-resolution industrial monitor feed, natural color grading, minimal cinematic bloom."
+    },
+    "entity_ids": [
+      "humanoid_robot_01",
+      "human_worker_01",
+      "cardboard_box_01",
+      "storage_shelf_01",
+      "storage_shelf_02"
+    ]
+  },
+  "object_registry": [
+    {
+      "entity_id": "humanoid_robot_01",
+      "shape_signature": "bipedal humanoid structure, 1.7m height, broad flat shoulders, cylindrical limbs, spherical head visor",
+      "material_signature": "semi-glossy white plastic casing, metallic silver chest, dark grey rubber-like flexible joint gaskets",
+      "color_signature": "matte pure white (RAL 9003) main panels, anthracite grey (RAL 7016) joint caps, jet black visor",
+      "surface_details": "seamless panel gaps, metallic charging pin contacts on lower back, small white power status LED on upper chest",
+      "scale_signature": "height exactly equal to 0.56 times the height of storage_shelf_01 (1.7 meters out of 3.0 meters)",
+      "reference_views": [
+        "orthographic_top_down_view_of_robot_head_and_shoulders",
+        "top_down_view_during_stride_extended_limbs"
+      ],
+      "negative_drift": [
+        "robot color shifting to grey or metallic silver instead of matte white",
+        "robot head developing visible cameras or eyes beneath the black visor",
+        "limbs turning into wheels or losing bipedal design mid-walk"
+      ]
+    },
+    {
+      "entity_id": "human_worker_01",
+      "shape_signature": "standing adult human male, medium athletic build, height approximately 1.8 meters",
+      "material_signature": "non-reflective polyester vest fabric, cotton shirt cloth, durable denim, thick matte plastic hardhat",
+      "color_signature": "safety neon-yellow (vest), navy blue (shirt), charcoal grey (trousers), safety yellow (hardhat)",
+      "surface_details": "retroreflective grey silver horizontal stripes on the safety vest, scuff marks on the knees of trousers",
+      "scale_signature": "height slightly taller than humanoid_robot_01, shoulder width approximately 0.45 meters",
+      "reference_views": [
+        "top_down_view_of_hardhat_and_shoulders_in_motion",
+        "overhead_view_of_worker_kneeling_or_stepping_out"
+      ],
+      "negative_drift": [
+        "worker vest changing color to orange or red",
+        "worker losing hard hat during rapid movements",
+        "shirt color morphing to black or light blue"
+      ]
+    },
+    {
+      "entity_id": "cardboard_box_01",
+      "shape_signature": "perfect regular cube with sharp vertices, dimensions 0.4m x 0.4m x 0.4m",
+      "material_signature": "uncoated kraft cardboard paper texture, light-absorbing surface, shiny clear plastic tape center strip",
+      "color_signature": "natural kraft light brown, semi-translucent shiny adhesive tape",
+      "surface_details": "subtle corrugation ribs visible under high-angle lighting, minor flap crease lines on top surface",
+      "scale_signature": "fits comfortably between the two manipulator hands of humanoid_robot_01, width matching robot shoulder width",
+      "reference_views": [
+        "overhead_flat_view_of_top_sealed_flaps",
+        "oblique_view_carried_by_robot"
+      ],
+      "negative_drift": [
+        "box morphing into a rectangular block or losing sharp edges",
+        "fictional shipping labels or black text printing appearing on the cardboard sides",
+        "box changing color to dark brown or white"
+      ]
+    },
+    {
+      "entity_id": "storage_shelf_01",
+      "shape_signature": "orange_blue_industrial_rack_loaded_with_pallets",
+      "material_signature": "powder-coated structural steel, pine wood pallets, cardboard container boxes",
+      "color_signature": "Industrial storage rack, 3.0 meters tall, featuring safety-orange heavy-duty horizontal steel beams and dark-blue vertical upright steel frames, loaded with wooden pallets holding brown boxes.",
+      "surface_details": "Industrial storage rack, 3.0 meters tall, featuring safety-orange heavy-duty horizontal steel beams and dark-blue vertical upright steel frames, loaded with wooden pallets holding brown boxes.",
+      "scale_signature": "Industrial storage rack, 3.0 meters tall, featuring safety-orange heavy-duty horizontal steel beams and dark-blue vertical upright steel frames, loaded with wooden pallets holding brown boxes.",
+      "reference_views": [
+        "front_view",
+        "side_view",
+        "three_quarter_view"
+      ],
+      "negative_drift": [
+        "do not change silhouette",
+        "do not change color or material",
+        "do not add readable text or logos"
+      ]
+    },
+    {
+      "entity_id": "storage_shelf_02",
+      "shape_signature": "orange_blue_industrial_rack_loaded_with_pallets_mirror",
+      "material_signature": "powder-coated structural steel, pine wood pallets, cardboard container boxes",
+      "color_signature": "Industrial storage rack, 3.0 meters tall, featuring safety-orange heavy-duty horizontal steel beams and dark-blue vertical upright steel frames, loaded with wooden pallets holding brown boxes.",
+      "surface_details": "Industrial storage rack, 3.0 meters tall, featuring safety-orange heavy-duty horizontal steel beams and dark-blue vertical upright steel frames, loaded with wooden pallets holding brown boxes.",
+      "scale_signature": "Industrial storage rack, 3.0 meters tall, featuring safety-orange heavy-duty horizontal steel beams and dark-blue vertical upright steel frames, loaded with wooden pallets holding brown boxes.",
+      "reference_views": [
+        "front_view",
+        "side_view",
+        "three_quarter_view"
+      ],
+      "negative_drift": [
+        "do not change silhouette",
+        "do not change color or material",
+        "do not add readable text or logos"
+      ]
+    }
+  ],
+  "scene_registry": {
+    "scene_id": "warehouse_aisle_scene_01",
+    "layout_signature": "parallel vertical racking systems forming a symmetrical central corridor aisle of 1.8m width",
+    "background_signature": "light-grey concrete floor, orange and blue racks fading into deep perspective background, floor markings parallel to shelves",
+    "lighting_signature": "harsh overhead fluorescent grid, cool-white tone, high contrast floor shadow immediately beneath actors",
+    "spatial_map": "aisle bounds from x=-0.9 to x=0.9; storage racks situated at x<-0.9 and x>0.9; robot moves along y-axis from y=-3.0 to y=3.0",
+    "reference_views": [
+      "overhead_empty_aisle_view",
+      "overhead_static_surveillance_full_shot"
+    ],
+    "negative_drift": [
+      "aisle width changing dynamically during robot navigation",
+      "shelves switching colors from orange/blue to all-grey or green",
+      "floor texture swapping to dark asphalt or wooden planks",
+      "lighting changing to warm yellow or sunset volumetric rays"
+    ]
+  },
+  "reference_assets": [
+    {
+      "asset_id": "canonical_canvas_01",
+      "kind": "canvas",
+      "target": "scene_registry.scene_id",
+      "description": "High-resolution master canvas showing the top-down overhead perspective of the complete warehouse aisle, empty of moving actors."
+    },
+    {
+      "asset_id": "robot_top_view_ref",
+      "kind": "object_view",
+      "target": "humanoid_robot_01",
+      "description": "Isolated high-resolution top-down ortho view of the humanoid robot standing upright with arms holding a spatial volume.",
+      "source_entity_id": "humanoid_robot_01"
+    },
+    {
+      "asset_id": "worker_top_view_ref",
+      "kind": "object_view",
+      "target": "human_worker_01",
+      "description": "Isolated high-resolution top-down view of the worker walking, establishing the yellow hardhat and safety vest boundaries.",
+      "source_entity_id": "human_worker_01"
+    },
+    {
+      "asset_id": "scenario_start_frame_01",
+      "kind": "start_frame",
+      "target": "warehouse_aisle_scene_01",
+      "description": "The initial frame of the video with the humanoid robot at y=-2.0 carrying the box, and the human worker partially concealed behind shelf_02 at y=1.0."
+    }
+  ],
+  "identity_checks": [
+    {
+      "check_id": "robot_color_consistency_check",
+      "scope": "object",
+      "target_id": "humanoid_robot_01",
+      "method": "RGB histogram and mask matching of the robot's limbs and torso across all keyframes.",
+      "pass_condition": "Color variation of white panels remains within Delta E < 3.0 relative to the reference_assets."
+    },
+    {
+      "check_id": "shelf_structural_integrity_check",
+      "scope": "scene",
+      "target_id": "warehouse_aisle_scene_01",
+      "method": "Structural line detection (Hough transform) tracking rack edge alignment across all video frames.",
+      "pass_condition": "Shelving alignment lines maintain a static parallel perspective with less than 1% pixel displacement."
+    },
+    {
+      "check_id": "worker_hard_hat_presence_check",
+      "scope": "series",
+      "target_id": "human_worker_01",
+      "method": "VLM classification check verifying the presence of the yellow hard hat on the worker's head throughout the duration.",
+      "pass_condition": "Hard hat identified on human head coordinates in 100% of visible video frames."
+    }
+  ],
+  "variation_policy": {
+    "allowed_camera_angles": [
+      "overhead_view"
+    ],
+    "allowed_event_types": [
+      "robot_straight_walk",
+      "human_sudden_step_out",
+      "human_drops_clipboard",
+      "robot_emergency_stop",
+      "human_crosses_aisle",
+      "robot_obstacle_avoidance"
+    ],
+    "allowed_position_deltas": [
+      {
+        "entity_id": "humanoid_robot_01",
+        "dx": [
+          -0.2,
+          0.2
+        ],
+        "dy": [
+          -2.5,
+          2.5
+        ]
+      },
+      {
+        "entity_id": "human_worker_01",
+        "dx": [
+          -0.6,
+          0.6
+        ],
+        "dy": [
+          -1.5,
+          1.5
+        ]
+      },
+      {
+        "entity_id": "cardboard_box_01",
+        "dx": [
+          -0.2,
+          0.2
+        ],
+        "dy": [
+          -2.5,
+          2.5
+        ]
+      }
+    ],
+    "event_timing_seconds": [
+      0.0,
+      2.5,
+      4.2,
+      6.0
+    ],
+    "forbidden_changes": [
+      "Never alter the floor material, lighting direction, or physical dimensions of the storage racks.",
+      "Never change the primary color scheme of the robot (white, grey, black) or the worker (neon-yellow vest, blue shirt).",
+      "Never add additional main actors such as forklift vehicles or extra human workers.",
+      "Do not change the camera focal length or translate the camera position; the camera must remain completely static overhead."
+    ],
+    "consistency_requirements": [
+      "The cardboard box must remain held by the robot until a collision or a drop event is triggered.",
+      "The spatial dimensions of the aisle must be identical across any generated scenarios.",
+      "Surveillance overlay elements (like recording indicator, timestamps) must be identical or mathematically sequential across variations.",
+      "The physical scale of the humanoid robot must remain constant relative to the floor grid markings."
+    ]
+  }
+}

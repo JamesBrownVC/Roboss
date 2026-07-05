@@ -35,9 +35,14 @@ class Settings:
     label_model: str
     gate2_enabled: bool
     label_on_accept: bool
+    annotate_enabled: bool
     deterministic_agents: bool
     start_frame_workers: int
     video_workers: int
+    # per-stage concurrency caps for the async pipeline
+    gen_workers: int       # concurrent video generations (network-bound)
+    verify_workers: int    # concurrent verifications (CPU-bound: YOLO)
+    label_workers: int     # concurrent labeling jobs (network-bound)
 
 
 def get_settings() -> Settings:
@@ -53,8 +58,12 @@ def get_settings() -> Settings:
         label_model=os.environ.get("ROBOSS_LABEL_MODEL", "gemini-3.5-flash"),
         gate2_enabled=_bool_env("ROBOSS_GATE2_ENABLED", True),
         label_on_accept=_bool_env("ROBOSS_LABEL_ON_ACCEPT", True),
+        annotate_enabled=_bool_env("ROBOSS_ANNOTATE_ENABLED", False),
         deterministic_agents=_bool_env("ROBOSS_DETERMINISTIC_AGENTS", True),
         start_frame_workers=_int_env("ROBOSS_START_FRAME_WORKERS", 2),
-        video_workers=_int_env("ROBOSS_VIDEO_WORKERS", 2),
+        video_workers=_int_env("ROBOSS_VIDEO_WORKERS", 8),
+        gen_workers=_int_env("ROBOSS_GEN_WORKERS", 4),
+        verify_workers=_int_env("ROBOSS_VERIFY_WORKERS", 2),
+        label_workers=_int_env("ROBOSS_LABEL_WORKERS", 4),
     )
 

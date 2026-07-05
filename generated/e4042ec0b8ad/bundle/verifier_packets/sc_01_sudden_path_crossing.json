@@ -1,0 +1,164 @@
+{
+  "scenario_prompt": "Sudden Path Crossing and Emergency Deceleration",
+  "video_prompt": "Realistic surveillance camera footage, slightly high-angle, static frame, neutral color grading, natural industrial warehouse atmosphere. Setting: A straight warehouse aisle bounded on both sides by tall industrial steel storage racks painted orange and blue, packed with wooden pallets holding shrink-wrapped boxes. The aisle floor is smooth, light grey polished concrete with painted yellow safety boundary lines running parallel to the racks., Polished light grey concrete with minor scuff marks and parallel yellow safety lines. floor, Even, overhead high-bay industrial LED lighting casting soft, diffuse shadows downwards.. Scene identity anchor: linear_aisle_flanked_by_multi_tier_racks; industrial_shelving_with_palletized_goods_extending_into_depth; overhead_diffuse_cool_white_led. Identical across all videos of this series: the same A bipedal humanoid robot standing 1.7 meters tall, featuring a matte white and dark grey composite chassis, exposed metallic silver joints at the knees and elbows, and a thin glowing blue horizontal status light strip on its chest plate. It has no facial features, only a smooth black glass visor on its head. (Matte composite polymer and brushed aluminum); the same A male human worker of medium build, wearing a bright neon yellow high-visibility safety vest with silver reflective strips over a navy blue long-sleeve shirt, dark grey work pants, tan steel-toe boots, and a white plastic hard hat. (Fabric, plastic, and leather); the same A standard rectangular corrugated cardboard box, plain brown with no printed text or logos, sealed along the center seam with clear glossy packing tape. Dimensions are approximately 40cm x 40cm x 30cm.. Object identity anchors: robot_01 = shape bipedal_humanoid_proportions_slender_torso, material matte_polymer_and_brushed_metal, color matte_white_and_dark_grey_with_blue_accent; human_01 = shape average_male_human_silhouette, material reflective_polyester_vest_and_cotton_denim, color neon_yellow_navy_blue_dark_grey; box_01 = shape rectangular_cuboid, material matte_fibrous_cardboard_with_glossy_tape_strip, color kraft_paper_brown. Camera: corner security camera, Static surveillance frame with a high-angle view looking down the warehouse aisle., 7 seconds. From 0s to 3s the A bipedal humanoid robot standing 1.7 meters tall, featuring a matte white and dark grey composite chassis, exposed metallic silver joints at the knees and elbows, and a thin glowing blue horizontal status light strip on its chest plate. It has no facial features, only a smooth black glass visor on its head. Walks forward down the aisle at a steady pace of 1.0 m/s, holding box_01 securely at chest level.. From 3s to 3.8s the A male human worker of medium build, wearing a bright neon yellow high-visibility safety vest with silver reflective strips over a navy blue long-sleeve shirt, dark grey work pants, tan steel-toe boots, and a white plastic hard hat. Steps blindly backward and sideways into the center of the aisle without looking behind.. From 3.2s to 4.5s the A bipedal humanoid robot standing 1.7 meters tall, featuring a matte white and dark grey composite chassis, exposed metallic silver joints at the knees and elbows, and a thin glowing blue horizontal status light strip on its chest plate. It has no facial features, only a smooth black glass visor on its head. Detects the human obstacle, shifts its status light to rapid blinking, and executes an emergency stop maneuver by leaning its upper torso backward.. From 4.5s to 7s the A bipedal humanoid robot standing 1.7 meters tall, featuring a matte white and dark grey composite chassis, exposed metallic silver joints at the knees and elbows, and a thin glowing blue horizontal status light strip on its chest plate. It has no facial features, only a smooth black glass visor on its head. Comes to a complete standstill 0.4 meters from human_01, maintaining a stable grip on box_01 without dropping it.. Do not change any object's identity, shape, color, material or size; do not alter the room layout, lighting or visual style; do not add new people or objects.",
+  "expected_objects": [
+    "humanoid robot",
+    "human worker",
+    "cardboard box"
+  ],
+  "expected_action": "sudden_path_crossing",
+  "expected_outcome": "The robot must detect the human crossing its path at 3.2 seconds, instantly trigger its joint braking system, tilt its torso backward to maintain balance and keep box_01 level, and come to a complete stop before making physical contact.",
+  "scenario_id": "sc_01_sudden_path_crossing",
+  "world_id": "warehouse_safety_world_01",
+  "object_registry": [
+    {
+      "entity_id": "robot_01",
+      "shape_signature": "bipedal_humanoid_proportions_slender_torso",
+      "material_signature": "matte_polymer_and_brushed_metal",
+      "color_signature": "matte_white_and_dark_grey_with_blue_accent",
+      "surface_details": "Seamless panel gaps, metallic bolts visible at joint pivots, smooth black glass visor reflecting overhead lights.",
+      "scale_signature": "height_1.7m_shoulder_width_0.45m",
+      "reference_views": [
+        "front_standing_pose",
+        "side_profile_walking_pose",
+        "rear_view_carrying_box"
+      ],
+      "negative_drift": [
+        "do_not_add_brand_logos_or_decals_to_chassis",
+        "do_not_change_blue_chest_light_to_red_or_green",
+        "do_not_morph_humanoid_limbs_into_wheels_or_tracks"
+      ]
+    },
+    {
+      "entity_id": "human_01",
+      "shape_signature": "average_male_human_silhouette",
+      "material_signature": "reflective_polyester_vest_and_cotton_denim",
+      "color_signature": "neon_yellow_navy_blue_dark_grey",
+      "surface_details": "Reflective silver stripes on vest front and back, matte white hard hat surface, fabric folds on sleeves and pants.",
+      "scale_signature": "height_1.8m_medium_build",
+      "reference_views": [
+        "front_standing_worker",
+        "back_walking_worker",
+        "three_quarter_stumbling_worker"
+      ],
+      "negative_drift": [
+        "do_not_remove_hard_hat_or_safety_vest",
+        "do_not_change_vest_color_to_orange_or_red",
+        "do_not_change_clothing_type_to_casual_wear"
+      ]
+    },
+    {
+      "entity_id": "box_01",
+      "shape_signature": "rectangular_cuboid",
+      "material_signature": "matte_fibrous_cardboard_with_glossy_tape_strip",
+      "color_signature": "kraft_paper_brown",
+      "surface_details": "Slightly visible corrugated texture lines, single strip of clear tape reflecting light along the top seam.",
+      "scale_signature": "width_0.4m_depth_0.4m_height_0.3m",
+      "reference_views": [
+        "isometric_top_down_view",
+        "side_view_held_by_robot"
+      ],
+      "negative_drift": [
+        "do_not_add_shipping_labels_or_barcodes",
+        "do_not_deform_box_corners_unless_impact_occurs",
+        "do_not_change_box_color_to_white_or_grey"
+      ]
+    }
+  ],
+  "scene_registry": {
+    "scene_id": "warehouse_aisle_01",
+    "layout_signature": "linear_aisle_flanked_by_multi_tier_racks",
+    "background_signature": "industrial_shelving_with_palletized_goods_extending_into_depth",
+    "lighting_signature": "overhead_diffuse_cool_white_led",
+    "spatial_map": "Aisle width 2.5 meters. Left rack boundary at x = -1.25m, right rack boundary at x = 1.25m. Robot starts at center x = 0.0m, y = 2.0m, moving forward along positive y-axis. Human starts at x = 0.8m, y = 4.5m.",
+    "reference_views": [
+      "high_angle_aisle_perspective",
+      "ground_level_aisle_view"
+    ],
+    "negative_drift": [
+      "do_not_change_rack_colors_from_orange_and_blue",
+      "do_not_introduce_forklifts_or_other_vehicles_in_background",
+      "do_not_change_floor_material_to_asphalt_or_wood"
+    ]
+  },
+  "reference_assets": [
+    {
+      "asset_id": "canvas_01",
+      "kind": "canvas",
+      "target": "warehouse_aisle_01",
+      "description": "The master background canvas of the empty warehouse aisle under high-bay lighting, used to anchor spatial consistency."
+    },
+    {
+      "asset_id": "robot_ref_01",
+      "kind": "object_view",
+      "target": "robot_01",
+      "description": "High-resolution orthographic views of the humanoid robot from front, side, and back.",
+      "source_entity_id": "robot_01"
+    },
+    {
+      "asset_id": "human_ref_01",
+      "kind": "object_view",
+      "target": "human_01",
+      "description": "Reference sheet of the human worker wearing the specified safety gear in various standing and walking poses.",
+      "source_entity_id": "human_01"
+    },
+    {
+      "asset_id": "start_frame_01",
+      "kind": "start_frame",
+      "target": "warehouse_aisle_01",
+      "description": "The initial frame of the video sequence showing the robot holding the box at y=2.0m and the human worker standing at y=4.5m, captured from the corner security camera view."
+    }
+  ],
+  "identity_checks": [
+    {
+      "check_id": "robot_color_consistency",
+      "scope": "object",
+      "target_id": "robot_01",
+      "method": "VLM color histogram comparison on cropped robot bounding box across frames",
+      "pass_condition": "Matte white and dark grey ratio remains within 5% tolerance across all frames, with blue status light present."
+    },
+    {
+      "check_id": "human_gear_verification",
+      "scope": "object",
+      "target_id": "human_01",
+      "method": "VLM attribute verification for safety gear presence",
+      "pass_condition": "Neon yellow vest and white hard hat must be detected on the human actor in 100% of frames where the actor is visible."
+    },
+    {
+      "check_id": "box_integrity_check",
+      "scope": "object",
+      "target_id": "box_01",
+      "method": "Bounding box aspect ratio and color consistency check",
+      "pass_condition": "The box must maintain its rectangular shape and plain brown color, remaining attached to the robot's hands unless a collision event occurs."
+    },
+    {
+      "check_id": "background_layout_stability",
+      "scope": "scene",
+      "target_id": "warehouse_aisle_01",
+      "method": "Structural similarity index (SSIM) on static background regions",
+      "pass_condition": "SSIM of non-moving background regions (racks, floor lines) remains above 0.92 relative to the first frame."
+    }
+  ],
+  "consistency_policy": {
+    "locked_entity_ids": [
+      "robot_01",
+      "human_01",
+      "box_01"
+    ],
+    "locked_scene_id": "warehouse_aisle_01",
+    "forbidden_changes": [
+      "robot_chassis_color",
+      "human_vest_color",
+      "box_material",
+      "aisle_rack_structure",
+      "camera_movement_type",
+      "lighting_intensity_and_direction"
+    ],
+    "consistency_requirements": [
+      "The humanoid robot must maintain its matte white and grey chassis across all frames.",
+      "The human worker must wear the neon yellow safety vest and white hard hat.",
+      "The cardboard box must remain held by the robot unless dropped during a collision event.",
+      "The camera must remain static to simulate a fixed surveillance feed."
+    ]
+  }
+}

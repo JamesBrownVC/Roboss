@@ -1,0 +1,19 @@
+{
+  "domain": "industrial warehouse",
+  "environment": "warehouse storage aisle with racking",
+  "main_task": "humanoid robot carrying a box down the aisle",
+  "risk_focus": "unpredictable human worker movements and near-miss collisions",
+  "actors": [
+    "humanoid robot",
+    "human worker"
+  ],
+  "objects": [
+    "cardboard box",
+    "storage shelves"
+  ],
+  "variation_count": 1,
+  "duration_seconds": 6.0,
+  "camera_style": "static surveillance-like",
+  "notes": "Scenarios should depict various unpredictable human behaviors, such as stepping out from behind shelving or suddenly dropping an item in the robot's path.",
+  "raw_intention": "Generate rare warehouse safety scenarios where a humanoid robot carries a box and a human worker behaves unpredictably"
+}

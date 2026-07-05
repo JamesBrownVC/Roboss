@@ -1,0 +1,222 @@
+{
+  "world_contract": {
+    "world_id": "robotics_safety_lab_01",
+    "description": "Rigid quadruped trajectory and articulation sequence testing environment",
+    "locked_entities": [
+      {
+        "id": "unitree_go2_01",
+        "type": "robot_quadruped",
+        "appearance": "sleek matte gray and black quadruped robotic chassis featuring four articulated legs with circular feet, a front head block with a black vertical face stripe, a central camera lens, a round spotlight, a chin sensor cluster, and white number 02 decals on its lateral panels; the rear is completely featureless without cameras or decals",
+        "identity_signature": "quadruped_go2_gray_matte_02_v1",
+        "locked_attributes": [
+          "chassis_color",
+          "head_configuration",
+          "leg_articulation_limitations",
+          "decal_markings",
+          "rigid_head_connection"
+        ],
+        "material": "matte_polymer_and_brushed_alloy",
+        "default_position": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      },
+      {
+        "id": "calibration_pad_01",
+        "type": "static_floor_fixture",
+        "appearance": "low-profile circular matte gray rubber calibration pad, 0.8 meters in diameter, with concentric light-gray rings and a small black crosshair at the direct center",
+        "identity_signature": "circular_calibration_pad_v1",
+        "locked_attributes": [
+          "diameter",
+          "ring_pattern",
+          "floor_adhesion",
+          "color_scheme"
+        ],
+        "material": "matte_synthetic_rubber",
+        "default_position": {
+          "x": -1.0,
+          "y": 1.5,
+          "z": 0.0
+        }
+      }
+    ],
+    "locked_environment": {
+      "layout": "spacious open-floor robotics research lab, free of clutter, with minimal wall-side workbenches and clear floor space of at least 10x10 meters",
+      "floor": "smooth polished concrete floor, light gray, displaying subtle non-repetitive micro-textures and soft specular reflections from diffuse overhead lighting",
+      "lighting": "bright, even, diffuse daylight entering from large high-altitude windows, casting soft, blurry shadows directly beneath the robot with minimal harsh glare",
+      "style": "realistic robotics laboratory footage, captured with a clean industrial camera, neutral color grading, and realistic physics"
+    },
+    "entity_ids": [
+      "unitree_go2_01",
+      "calibration_pad_01"
+    ]
+  },
+  "object_registry": [
+    {
+      "entity_id": "unitree_go2_01",
+      "shape_signature": "quadrupedal dog-like robot with four segmented legs, a distinct head assembly rigidly joined to the main torso, and a featureless flat rear shell",
+      "material_signature": "combination of matte-finished dark gray engineering polymers, brushed dark aluminum leg joints, and smooth black acrylic face inserts",
+      "color_signature": "dual-tone scheme featuring dark charcoal gray primary panels, black face stripe, and bright white number 02 markings",
+      "surface_details": "visible joints on upper and lower leg limbs, rubber-coated circular foot pads, a glass camera lens, and a circular LED spotlight dome on the front head face",
+      "scale_signature": "approximately 0.7 meters in length, 0.3 meters in torso width, and standing height of 0.5 meters when fully extended",
+      "reference_views": [
+        "front_head_view",
+        "rear_featureless_view",
+        "lateral_profile_02_view",
+        "top_down_rigid_alignment"
+      ],
+      "negative_drift": [
+        "head_tilting_independently",
+        "camera_lens_appearing_on_rear",
+        "missing_02_decals",
+        "changing_leg_segment_count",
+        "mirroring_head_and_rear_during_pivots"
+      ]
+    },
+    {
+      "entity_id": "calibration_pad_01",
+      "shape_signature": "flat circular disk, ultra-thin profile",
+      "material_signature": "high-friction vulcanized rubber with anti-reflective coating",
+      "color_signature": "medium gray body with high-contrast light gray concentric circles and black crosshair center",
+      "surface_details": "non-slip micro-textured surface with three concentric ring markings",
+      "scale_signature": "0.8 meter diameter, 5 millimeter height profile",
+      "reference_views": [
+        "top_down_orthographic",
+        "low_angle_sheen_view"
+      ],
+      "negative_drift": [
+        "sliding_on_concrete",
+        "distortion_to_oval_shape",
+        "color_shifting_to_blue_or_black"
+      ]
+    }
+  ],
+  "scene_registry": {
+    "scene_id": "bright_modern_lab_01",
+    "layout_signature": "spacious rectangular testing arena defined by a continuous smooth concrete floor, clean perimeter walls, and no intervening furniture",
+    "background_signature": "unobtrusive light gray walls, distant safety railings, and clean architectural lines without human actors or distractions",
+    "lighting_signature": "high-lux diffuse environment mimicking overcast midday daylight, producing zero sharp specular highlights and soft, short-contact ambient occlusion shadows",
+    "spatial_map": "flat 2D horizontal plane on Z=0 with robot origin at (0,0) and a reference calibration target located at X=-1.0, Y=1.5",
+    "reference_views": [
+      "overhead_full_arena_view",
+      "north_facing_horizon_view"
+    ],
+    "negative_drift": [
+      "concrete_cracks_appearing_or_disappearing",
+      "shifting_shadow_angles",
+      "walls_moving_closer_to_arena",
+      "changes_in_ambient_light_intensity"
+    ]
+  },
+  "reference_assets": [
+    {
+      "asset_id": "canonical_lab_canvas_01",
+      "kind": "canvas",
+      "target": "scene_and_objects",
+      "description": "An overhead high-resolution orthographic composite layout showing the concrete floor arena, the calibration pad, and the quadruped robot in its initial belly-down pose"
+    },
+    {
+      "asset_id": "unitree_front_reference_01",
+      "kind": "object_view",
+      "target": "unitree_go2_01",
+      "description": "Detailed top-down orthographic model view of the robot's front head showing the vertical stripe and chin sensor array"
+    },
+    {
+      "asset_id": "lab_floor_empty_reference_01",
+      "kind": "scene_view",
+      "target": "bright_modern_lab_01",
+      "description": "Clean canvas of the concrete floor without any robots or objects to serve as background validation"
+    },
+    {
+      "asset_id": "start_frame_awakening_01",
+      "kind": "start_frame",
+      "target": "scenario_sequence_01",
+      "description": "Initial top-down state frame at T=0s with the robot folded in a belly-flat pose aligned with the central grid"
+    }
+  ],
+  "identity_checks": [
+    {
+      "check_id": "robot_head_rear_asymmetry_check",
+      "scope": "object",
+      "target_id": "unitree_go2_01",
+      "method": "visual_template_matching_and_vlm_verification",
+      "pass_condition": "The front-end structure must contain the vertical stripe and sensor cluster in every frame, while the rear-end structure remains completely featureless throughout the clip"
+    },
+    {
+      "check_id": "calibration_pad_drift_check",
+      "scope": "scene",
+      "target_id": "calibration_pad_01",
+      "method": "bounding_box_and_centroid_tracking",
+      "pass_condition": "The calibration pad coordinates must remain locked at X=-1.0, Y=1.5 with zero deviation (+/- 0.01 meters) across all frames"
+    },
+    {
+      "check_id": "rigid_head_chassis_coupling_check",
+      "scope": "series",
+      "target_id": "unitree_go2_01",
+      "method": "optical_flow_joint_analysis",
+      "pass_condition": "The angular orientation of the head must match the angular orientation of the main chassis torso exactly, with zero relative yaw, pitch, or roll"
+    }
+  ],
+  "variation_policy": {
+    "allowed_camera_angles": [
+      "overhead_view"
+    ],
+    "allowed_event_types": [
+      "rise_from_belly",
+      "one_leg_wave",
+      "forward_gait",
+      "clockwise_pivot_90",
+      "play_bow_stretch",
+      "sit_pose",
+      "return_to_stand"
+    ],
+    "allowed_position_deltas": [
+      {
+        "entity_id": "unitree_go2_01",
+        "dx": [
+          -0.4,
+          0.4
+        ],
+        "dy": [
+          -0.4,
+          0.4
+        ]
+      },
+      {
+        "entity_id": "calibration_pad_01",
+        "dx": [
+          0.0,
+          0.0
+        ],
+        "dy": [
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "event_timing_seconds": [
+      0.0,
+      6.0,
+      11.0,
+      19.0,
+      24.0,
+      30.0
+    ],
+    "forbidden_changes": [
+      "tilting_or_panning_head",
+      "mirroring_head_and_rear_anatomy",
+      "changing_chassis_color_or_decals",
+      "introducing_human_actors",
+      "camera_movement_or_zoom",
+      "altering_concrete_floor_texture",
+      "dynamic_shadow_direction_changes"
+    ],
+    "consistency_requirements": [
+      "The '02' markings must be legible and consistent in font and position in all side views",
+      "The floor surface must maintain its micro-textures with no dynamic generation noise or shifting cracks",
+      "The robot's walking sequence must maintain physical gait contact without feet clipping through the ground plane",
+      "No independent head rotation relative to the chassis body is allowed"
+    ]
+  }
+}

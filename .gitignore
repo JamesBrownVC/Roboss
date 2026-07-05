@@ -39,7 +39,6 @@ credentials*.json
 *.ckpt
 *.pth
 .ultralytics/
-generated/
 
 # roboss-film: keep the text/code/manifest scaffolding, exclude heavy media
 # (669 PNG frames + 88 MP4 clips ≈ 667 MB — regenerable render artifacts)
@@ -89,7 +88,7 @@ demo/.cache/
 annotated*.mp4
 scenario_bundle/
 
-# Generated pipeline outputs (videos, reports, labels).
+# Generated pipeline outputs (videos, reports, labels).S
 /runs/*
 
 # OS

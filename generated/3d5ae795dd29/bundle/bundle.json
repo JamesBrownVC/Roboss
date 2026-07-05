@@ -1,0 +1,38 @@
+{
+  "intention": "Realistic 4K footage, eye-level static shot, a Unitree Go2 quadruped robot dog\n(appearance strictly as shown in the reference photos), on a smooth concrete\nfloor in a bright modern lab, soft daylight, shallow depth of field, no humans\nin frame, the robot stays fully visible in frame, no cuts.\n\nAnatomy anchor, identical throughout: the HEAD is the unit at the FRONT bearing\na black vertical face stripe with a camera lens and a round spotlight, a sensor\ncluster under the chin, and the number 02 on its sides; the REAR is plain and\nfeatureless with no camera, no lights, no markings. The robot always moves\nhead-first when walking forward. Never swap or mirror the head and the rear,\nnever show a camera on both ends, the body never reverses orientation between\nconsecutive moments.\n\nMechanical constraint: the robot's head is rigidly fixed to the body — it never\ntilts, pans, nods or moves independently of the torso; only the four legs\narticulate, and the whole body moves as one rigid unit.\n\nOne single continuous 30-second sequence, in this exact order:\n\n1 (0–6 s, awakening): the robot starts lying flat on its belly with legs folded,\nhead pointing toward the camera, then smoothly extends all four legs and rises\ninto a tall standing posture, settling into active balance with tiny\nmicro-adjustments of its legs.\n\n2 (6–11 s, greeting): standing, head facing the camera, it sits back slightly\nonto its hind legs and raises one front leg next to its head, waving it in a\nfriendly greeting gesture, then returns to standing.\n\n3 (11–19 s, exploration): it walks forward head-first with a natural dog-like\ngait, then pivots 90 degrees clockwise in place SLOWLY and smoothly over about\n3 full seconds — one single continuous rotation, no jumps, every intermediate\nangle visible — until the head points to the right of the frame, then slows\ninto a careful one-leg-at-a-time walk, still head-first.\n\n4 (19–24 s, stretch): now in side profile with the head on the right of the\nframe, it bows deeply into a play-bow stretch: BOTH front legs fully extended\nforward and flat on the ground, chest lowered between them, while the\nfeatureless back half stays raised on the hind legs, then it rises back to\nstanding.\n\n5 (24–30 s, calm ending): still in side profile, it lowers its back half into a\ndog-like sitting pose (head up), pauses for a moment, then pushes back up with\nits hind legs and returns to a tall, stable standing posture, ending motionless\nand upright.",
+  "world_id": "robotics_safety_lab_01",
+  "scene_id": "bright_modern_lab_01",
+  "locked_entities": [
+    "unitree_go2_01",
+    "calibration_pad_01"
+  ],
+  "reference_assets_planned": 4,
+  "identity_checks": [
+    "robot_head_rear_asymmetry_check",
+    "calibration_pad_drift_check",
+    "rigid_head_chassis_coupling_check"
+  ],
+  "scenarios_valid": [
+    "sc_01_gait_and_pivot",
+    "sc_02_belly_rise_and_wave"
+  ],
+  "scenarios_dropped": {},
+  "canvas": "generated\\3d5ae795dd29\\bundle\\canvas.png",
+  "canvas_error": null,
+  "start_frames": {
+    "sc_01_gait_and_pivot": "generated\\3d5ae795dd29\\bundle\\frames\\sc_01_gait_and_pivot_start.png",
+    "sc_02_belly_rise_and_wave": "generated\\3d5ae795dd29\\bundle\\frames\\sc_02_belly_rise_and_wave_start.png"
+  },
+  "generation": {
+    "text_model": "gemini-3.5-flash",
+    "image_model": "gemini-3-pro-image",
+    "video_model": "veo-3.1-generate-preview",
+    "strategy": "image-to-video from per-scenario start frames derived from one canonical canvas"
+  },
+  "files": {
+    "intent": "intent.json",
+    "contract": "contract.json",
+    "scenarios": "scenarios.json",
+    "verifier_packets": "verifier_packets/"
+  }
+}

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Download, ImagePlus, Info, LoaderCircle, Play, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
-import AgentLogsPanel from "../components/AgentLogsPanel.jsx";
 import PageHeader from "../components/PageHeader.jsx";
+import PipelineCircuitPanel from "../components/PipelineCircuitPanel.jsx";
 import VideoCard, { STATUS_LABELS, annotationCount } from "../components/VideoCard.jsx";
 import {
   clearActiveBatchId,
@@ -559,7 +559,7 @@ export default function Studio() {
         </div>
       ) : null}
 
-      <AgentLogsPanel />
+      <PipelineCircuitPanel batch={batch} />
     </>
   );
 }

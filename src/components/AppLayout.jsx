@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { Bot } from "lucide-react";
 import { getHealth } from "../lib/api.js";
 
 const NAV_ITEMS = [
@@ -46,8 +45,13 @@ export default function AppLayout() {
       <header className="sticky top-0 z-20 border-b border-surface-700 bg-black/60 backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 pt-4 lg:px-10">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-neon-magenta to-neon-violet text-[#0b0714] shadow-[0_0_18px_rgba(241,61,245,0.6)]">
-              <Bot size={18} aria-hidden="true" />
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md border border-neon-cyan/30 bg-surface-950 shadow-[0_0_18px_rgba(241,61,245,0.42)]">
+              <img
+                src="/robot-hero.png"
+                alt="Roboss"
+                className="h-8 w-8 object-contain"
+                draggable="false"
+              />
             </div>
             <div className="flex items-baseline gap-2.5">
               <span className="text-[15px] font-semibold uppercase tracking-wide text-white">Roboss</span>

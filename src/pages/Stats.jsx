@@ -89,7 +89,7 @@ const CHART_CURSOR = { stroke: "rgba(204, 204, 220, 0.35)", strokeWidth: 1 };
 
 function renderLegend({ payload }) {
   return (
-    <div className="mt-1 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 pl-8 text-xs text-sage-300">
+    <div className="mt-1 flex flex-wrap items-center justify-start gap-x-3 gap-y-1 text-[11px] text-sage-300 sm:gap-x-4 sm:pl-8 sm:text-xs">
       {(payload || []).map((entry) => (
         <span key={entry.value} className="flex items-center gap-1.5">
           <span className="h-[3px] w-4 rounded-full" style={{ backgroundColor: entry.color }} />
@@ -125,12 +125,12 @@ function average(values) {
 
 function StatCard({ icon: Icon, label, value, hint }) {
   return (
-    <div className="rounded-lg border border-surface-700 bg-surface-900 p-5">
+    <div className="rounded-lg border border-surface-700 bg-surface-900 p-4 sm:p-5">
       <div className="flex items-center gap-2 text-sage-400">
         <Icon size={16} aria-hidden="true" />
         <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
       </div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight text-white">{value}</div>
+      <div className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{value}</div>
       {hint ? <div className="mt-1 text-xs text-sage-500">{hint}</div> : null}
     </div>
   );
@@ -139,7 +139,7 @@ function StatCard({ icon: Icon, label, value, hint }) {
 // Grafana-like panel: small centered title, tight body padding.
 function ChartCard({ title, children }) {
   return (
-    <div className="rounded-lg border border-surface-700 bg-surface-900 px-3 pb-3 pt-2">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-surface-700 bg-surface-900 px-2 pb-3 pt-2 sm:px-3">
       <h2 className="mb-2 text-center text-[13px] font-medium text-sage-200">{title}</h2>
       {children}
     </div>
@@ -258,7 +258,7 @@ export default function Stats() {
             : `Pipeline activity overview. Data source: ${source === "api" ? "backend" : "this browser"}.`
         }
       >
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
           {isDemo ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-surface-600 bg-surface-850 px-3 py-1.5 text-xs font-medium text-sage-300">
               <span className="h-1.5 w-1.5 rounded-full bg-sage-400" />
@@ -268,7 +268,7 @@ export default function Stats() {
           <button
             type="button"
             onClick={load}
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-4 text-sm font-medium text-sage-200 transition hover:border-sage-500 hover:text-white"
+            className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-4 text-sm font-medium text-sage-200 transition hover:border-sage-500 hover:text-white sm:flex-none"
           >
             <RefreshCw size={15} className={isLoading ? "animate-spin" : ""} aria-hidden="true" />
             Refresh
@@ -314,10 +314,11 @@ export default function Stats() {
             />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-3">
-            <div className="xl:col-span-2">
+          <div className="grid min-w-0 gap-6 xl:grid-cols-3">
+            <div className="min-w-0 xl:col-span-2">
               <ChartCard title="Generations over time">
-                <ResponsiveContainer width="100%" height={260}>
+                <div className="h-[220px] sm:h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={timeline} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                     <defs>
                       <linearGradient id="videosFill" x1="0" y1="0" x2="0" y2="1">
@@ -356,11 +357,13 @@ export default function Stats() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+                </div>
               </ChartCard>
             </div>
 
             <ChartCard title="Outcome">
-              <ResponsiveContainer width="100%" height={260}>
+              <div className="h-[220px] sm:h-[260px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={outcome}
@@ -379,6 +382,7 @@ export default function Stats() {
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
               <div className="mt-1 flex flex-col gap-1 px-2 text-xs text-sage-300">
                 {outcome.map((slice) => {
                   const total = outcome.reduce((sum, item) => sum + item.value, 0);
@@ -397,13 +401,14 @@ export default function Stats() {
             </ChartCard>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-3">
+          <div className="grid min-w-0 gap-6 xl:grid-cols-3">
             <ChartCard title="Average latency per stage">
-              <ResponsiveContainer width="100%" height={240}>
+              <div className="h-[230px] sm:h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={latencyByStage}
                   layout="vertical"
-                  margin={{ top: 8, right: 40, bottom: 0, left: 8 }}
+                  margin={{ top: 8, right: 28, bottom: 0, left: 0 }}
                 >
                   <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" horizontal={false} />
                   <XAxis
@@ -435,12 +440,13 @@ export default function Stats() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             </ChartCard>
 
-            <div className="xl:col-span-2">
+            <div className="min-w-0 xl:col-span-2">
               <ChartCard title="Recent runs">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
+                <div className="max-w-full overflow-x-auto">
+                  <table className="min-w-[620px] w-full text-left text-xs sm:text-sm">
                     <thead>
                       <tr className="border-b border-surface-600 text-xs uppercase tracking-wide text-sage-500">
                         <th className="pb-2 pr-4 font-medium">Date</th>

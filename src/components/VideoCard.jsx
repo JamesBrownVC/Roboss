@@ -63,8 +63,8 @@ export default function VideoCard({ job, aspectRatio }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-2.5 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-white">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="min-w-0 text-sm font-semibold text-white">
             {job.cameraVariant?.title || `Video ${job.index}`}
           </span>
           {showStatusBadge ? (
@@ -85,7 +85,7 @@ export default function VideoCard({ job, aspectRatio }) {
         {job.labelError ? <p className="line-clamp-2 text-xs text-[#ff3b6b]">{job.labelError}</p> : null}
 
         {videoUrl ? (
-          <div className={`mt-auto grid gap-2 pt-1 ${labeledVideoUrl ? "grid-cols-2" : "grid-cols-1"}`}>
+          <div className={`mt-auto grid gap-2 pt-1 ${labeledVideoUrl ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
             <a
               href={videoUrl}
               download

@@ -346,7 +346,7 @@ export default function Studio() {
       {apiKeyMissing ? (
         <div className="mb-6 flex items-start gap-3 rounded-md border border-accent-500/30 bg-accent-500/5 px-4 py-3 text-sm text-accent-200">
           <AlertTriangle className="mt-0.5 shrink-0 text-accent-300" size={18} aria-hidden="true" />
-          <p>
+          <p className="min-w-0 break-words">
             Missing Gemini API key. Add `GEMINI_API_KEY=your_key_here` to the project root `.env`
             file, then restart the backend.
           </p>
@@ -356,7 +356,7 @@ export default function Studio() {
       <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
         <form
           onSubmit={handleSubmit}
-          className="flex h-fit flex-col gap-6 rounded-lg border border-surface-700 bg-surface-900 p-5"
+          className="flex h-fit flex-col gap-5 rounded-lg border border-surface-700 bg-surface-900 p-4 sm:gap-6 sm:p-5"
         >
           <label className="flex flex-col gap-2">
             <span className={LABEL_CLASS}>Prompt</span>
@@ -397,7 +397,7 @@ export default function Studio() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 rounded-md border border-dashed border-surface-600 bg-surface-950 px-3 py-4 text-xs font-medium text-sage-400 transition hover:border-sage-400 hover:text-white"
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-surface-600 bg-surface-950 px-3 py-4 text-xs font-medium text-sage-400 transition hover:border-sage-400 hover:text-white"
               >
                 <ImagePlus size={16} aria-hidden="true" />
                 Add an image or video reference
@@ -415,14 +415,14 @@ export default function Studio() {
 
           <div className="flex flex-col gap-3">
             <span className={LABEL_CLASS}>Format</span>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               {["16:9", "9:16"].map((ratio) => (
                 <button
                   key={ratio}
                   type="button"
                   disabled={busy}
                   onClick={() => setAspectRatio(ratio)}
-                  className={`rounded-md border px-4 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                  className={`inline-flex justify-center rounded-md border px-4 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-45 ${
                     aspectRatio === ratio
                       ? "border-sage-300 bg-surface-800 text-white"
                       : "border-surface-600 bg-surface-950 text-sage-400 hover:border-sage-500 hover:text-white"
@@ -455,7 +455,7 @@ export default function Studio() {
           <button
             type="submit"
             disabled={busy || !canSubmit}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-4 text-sm font-medium text-[#0b0714] shadow-[0_0_20px_rgba(241,61,245,0.4)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:bg-none disabled:text-sage-500 disabled:shadow-none"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-4 text-sm font-medium text-[#0b0714] shadow-[0_0_20px_rgba(241,61,245,0.4)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:bg-none disabled:text-sage-500 disabled:shadow-none"
           >
             {apiKeyMissing ? (
               <>
@@ -485,23 +485,23 @@ export default function Studio() {
           </div>
         </form>
 
-        <div className="flex min-h-[540px] flex-col rounded-lg border border-surface-700 bg-surface-900 p-4">
-          <div className="flex items-center justify-between gap-4 border-b border-surface-700 pb-3">
+        <div className="flex min-h-[420px] flex-col rounded-lg border border-surface-700 bg-surface-900 p-3 sm:min-h-[540px] sm:p-4">
+          <div className="flex flex-col items-stretch justify-between gap-3 border-b border-surface-700 pb-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-white">Output</span>
               <span className="text-xs text-sage-500">{STATUS_LABELS[currentStatus]}</span>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
               <button
                 type="button"
                 onClick={handleDownloadAll}
                 disabled={!batch?.id || downloadableVideoCount === 0}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-200 transition hover:border-sage-500 hover:text-white disabled:cursor-not-allowed disabled:text-sage-500 disabled:hover:border-surface-600"
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-200 transition hover:border-sage-500 hover:text-white disabled:cursor-not-allowed disabled:text-sage-500 disabled:hover:border-surface-600 sm:w-auto"
               >
                 <Download size={14} aria-hidden="true" />
                 Download all videos
               </button>
-              <div className="h-1.5 w-40 overflow-hidden rounded-full bg-surface-700">
+              <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-700 sm:w-40 sm:flex-none">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-neon-magenta to-neon-cyan transition-all duration-500"
                   style={{ width: `${progress.pct}%` }}
@@ -515,13 +515,13 @@ export default function Studio() {
 
           <div className="flex flex-1 py-4">
             {previewJobs.length ? (
-              <div className="grid w-full auto-rows-min gap-4 sm:grid-cols-2">
+              <div className="grid w-full auto-rows-min gap-4 md:grid-cols-2">
                 {previewJobs.map((job) => (
                   <VideoCard key={job.id} job={job} aspectRatio={batch.aspect_ratio} />
                 ))}
               </div>
             ) : (
-              <div className="grid w-full auto-rows-min gap-4 sm:grid-cols-2">
+              <div className="grid w-full auto-rows-min gap-4 md:grid-cols-2">
                 {Array.from({ length: placeholderCount }, (_, index) => (
                   <div
                     key={index}
@@ -555,7 +555,7 @@ export default function Studio() {
       {error ? (
         <div className="mt-6 flex items-start gap-3 rounded-md border border-[#ff3b6b]/40 bg-[#ff3b6b]/10 px-4 py-3 text-sm text-[#ff3b6b]">
           <AlertTriangle className="mt-0.5 shrink-0" size={18} aria-hidden="true" />
-          <p>{error}</p>
+          <p className="min-w-0 break-words">{error}</p>
         </div>
       ) : null}
 

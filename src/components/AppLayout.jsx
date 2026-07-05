@@ -30,7 +30,13 @@ export default function AppLayout() {
     if (!nav) {
       return;
     }
+    const canAnimateWave = window.innerWidth >= 1024 && wave.amp > 0;
     nav.querySelectorAll("a").forEach((link) => {
+      if (!canAnimateWave) {
+        link.style.translate = "0 0";
+        link.style.transition = "translate 160ms ease-out";
+        return;
+      }
       const rect = link.getBoundingClientRect();
       const center = rect.left + rect.width / 2;
       const dist = center - wave.x;
@@ -87,9 +93,9 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-transparent text-sage-100">
-      <header className="sticky top-0 z-20 border-b border-surface-700 bg-black/60 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 pt-4 lg:px-10">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-20 overflow-x-clip border-b border-surface-700 bg-black/60 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-start justify-between gap-3 px-4 pt-3 sm:items-center sm:px-6 sm:pt-4 lg:px-10">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md border border-neon-cyan/30 bg-surface-950 shadow-[0_0_18px_rgba(241,61,245,0.42)]">
               <img
                 src="/robot-hero.png"
@@ -98,16 +104,16 @@ export default function AppLayout() {
                 draggable="false"
               />
             </div>
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-[15px] font-semibold uppercase tracking-wide text-white">Roboss</span>
-              <span className="text-sage-500" aria-hidden="true">
+            <div className="flex min-w-0 items-baseline gap-2.5">
+              <span className="shrink-0 text-[15px] font-semibold uppercase tracking-wide text-white">Roboss</span>
+              <span className="hidden text-sage-500 sm:inline" aria-hidden="true">
                 //
               </span>
-              <span className="text-sm text-sage-300">Video Data Studio</span>
+              <span className="hidden truncate text-sm text-sage-300 sm:inline">Video Data Studio</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-full border border-surface-600 px-3 py-1.5 text-xs font-medium text-sage-300">
+          <div className="flex shrink-0 items-center gap-2 rounded-full border border-surface-600 px-2.5 py-1.5 text-xs font-medium text-sage-300 sm:px-3">
             <span
               className={`h-2 w-2 rounded-full ${
                 !checked
@@ -123,14 +129,17 @@ export default function AppLayout() {
           </div>
         </div>
 
-        <nav ref={navRef} className="mx-auto flex w-full max-w-7xl items-end justify-center gap-5 px-6 pb-0 pt-4 lg:gap-8 lg:px-10">
+        <nav
+          ref={navRef}
+          className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-2 px-4 pb-2 pt-3 sm:grid-cols-4 sm:px-6 lg:flex lg:items-end lg:justify-center lg:gap-8 lg:px-10 lg:pb-0 lg:pt-4"
+        >
           {NAV_ITEMS.map(({ to, label }) => (
             <NavLink
               key={to}
               to={to}
               end={to === "/"}
               className={({ isActive }) =>
-                `min-w-[230px] -translate-y-[3px] px-12 py-4 text-center text-base font-semibold uppercase tracking-[0.24em] transition duration-200 hover:-translate-y-[8px] ${
+                `min-w-0 px-3 py-3 text-center text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 hover:bg-surface-900 hover:text-white sm:px-4 sm:text-sm sm:tracking-[0.16em] lg:min-w-[230px] lg:-translate-y-[3px] lg:px-12 lg:py-4 lg:text-base lg:tracking-[0.24em] lg:hover:-translate-y-[8px] ${
                   isActive
                     ? "bg-surface-850 text-white shadow-[0_0_22px_rgba(241,61,245,0.32),inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-3px_0_#2fe8ea]"
                     : "text-sage-300 hover:bg-surface-900 hover:text-white hover:shadow-[0_0_18px_rgba(47,232,234,0.16),inset_0_-3px_0_rgba(47,232,234,0.35)]"
@@ -182,7 +191,7 @@ export default function AppLayout() {
       </header>
 
       <main>
-        <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-10">
+        <div className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-10">
           <Outlet context={{ health }} />
         </div>
       </main>

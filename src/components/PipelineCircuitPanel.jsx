@@ -242,21 +242,51 @@ function StatusBadge({ status }) {
 function StageCard({ stage, index, status, active, running, jumpKey }) {
   const styles = STATUS_STYLES[status] || STATUS_STYLES.queued;
   return (
-    <div className={`relative min-h-[112px] rounded-lg border p-3 transition ${styles.node}`}>
-      {active ? (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 lg:hidden">
-          <div key={jumpKey} className={jumpKey > 0 ? "roboss-dog-jump" : ""}>
-            <RobotDog running={running || active} className="h-[42px] w-[70px]" />
-          </div>
-        </div>
-      ) : null}
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <div
+      className={`relative min-h-[92px] overflow-hidden rounded-lg border p-2.5 transition min-[560px]:min-h-[104px] min-[560px]:p-3 ${styles.node}`}
+    >
+      <div className="mb-2 flex min-h-9 items-start justify-between gap-2">
         <span className="font-mono text-xs text-sage-500">{String(index + 1).padStart(2, "0")}</span>
+        {active ? (
+          <div key={jumpKey} className={`-mr-1 -mt-2 shrink-0 ${jumpKey > 0 ? "roboss-dog-jump" : ""}`}>
+            <RobotDog running={running || active} className="h-[36px] w-[58px] min-[560px]:h-[42px] min-[560px]:w-[68px]" />
+          </div>
+        ) : null}
         <span className={`h-2 w-2 rounded-full ${styles.dot}`} />
       </div>
-      <p className="min-h-[34px] text-sm font-semibold leading-tight text-inherit">{stage.label}</p>
-      <div className="mt-3">
+      <p className="line-clamp-2 min-h-[30px] text-[13px] font-semibold leading-tight text-inherit min-[560px]:text-sm">
+        {stage.label}
+      </p>
+      <div className="mt-2">
         <StatusBadge status={status} />
+      </div>
+    </div>
+  );
+}
+
+function MobileCircuit({ activeIndex, running, statuses, jumpKey }) {
+  return (
+    <div className="relative overflow-hidden rounded-lg border border-surface-700 bg-surface-950/65 p-3 lg:hidden">
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-[repeating-linear-gradient(90deg,rgba(169,150,201,0.12)_0_8px,rgba(169,150,201,0.04)_8px_16px)]"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute left-4 right-4 top-[54px] h-px bg-gradient-to-r from-neon-magenta/70 via-neon-violet/60 to-neon-cyan/70 min-[560px]:top-[58px]"
+        aria-hidden="true"
+      />
+      <div className="relative z-10 grid grid-cols-2 gap-2 min-[560px]:grid-cols-4 min-[560px]:gap-3">
+        {STAGES.map((stage, index) => (
+          <StageCard
+            key={stage.key}
+            stage={stage}
+            index={index}
+            status={statuses[index]}
+            active={index === activeIndex}
+            running={running}
+            jumpKey={jumpKey}
+          />
+        ))}
       </div>
     </div>
   );
@@ -408,11 +438,11 @@ export default function PipelineCircuitPanel({ batch }) {
       </div>
 
       <div className="p-4">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-surface-700 bg-surface-950 px-3 py-2 text-xs">
+        <div className="mb-4 flex flex-col items-stretch justify-between gap-2 rounded-md border border-surface-700 bg-surface-950 px-3 py-2 text-xs sm:flex-row sm:flex-wrap sm:items-center">
           <span className="font-medium text-sage-200">
             Current step: {circuit.lastStage?.label || "Queue"}
           </span>
-          <span className="min-w-0 flex-1 truncate text-right text-sage-500">{lastMessage}</span>
+          <span className="min-w-0 flex-1 truncate text-left text-sage-500 sm:text-right">{lastMessage}</span>
         </div>
 
         <DesktopCircuit
@@ -422,19 +452,12 @@ export default function PipelineCircuitPanel({ batch }) {
           jumpKey={jumpKey}
         />
 
-        <div className="grid grid-cols-2 gap-3 pt-8 sm:grid-cols-4 lg:hidden">
-          {STAGES.map((stage, index) => (
-            <StageCard
-              key={stage.key}
-              stage={stage}
-              index={index}
-              status={circuit.statuses[index]}
-              active={index === circuit.activeIndex}
-              running={circuit.running}
-              jumpKey={jumpKey}
-            />
-          ))}
-        </div>
+        <MobileCircuit
+          activeIndex={circuit.activeIndex}
+          running={circuit.running}
+          statuses={circuit.statuses}
+          jumpKey={jumpKey}
+        />
       </div>
     </section>
   );

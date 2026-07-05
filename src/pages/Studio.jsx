@@ -193,12 +193,18 @@ export default function Studio() {
   }, [batch, safeDatasetCount]);
 
   const acceptedJobs = useMemo(
-    () => (batch?.jobs ?? []).filter((job) => job.status !== "failed" && job.reviewStatus !== "rejected"),
+    () =>
+      (batch?.jobs ?? []).filter(
+        (job) => job.status !== "failed" && !["failed", "rejected"].includes(job.reviewStatus),
+      ),
     [batch]
   );
-  
+
   const quarantinedJobs = useMemo(
-    () => (batch?.jobs ?? []).filter((job) => job.status === "failed" || job.reviewStatus === "rejected"),
+    () =>
+      (batch?.jobs ?? []).filter(
+        (job) => job.status === "failed" || ["failed", "rejected"].includes(job.reviewStatus),
+      ),
     [batch]
   );
 

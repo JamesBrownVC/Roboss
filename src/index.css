@@ -23,6 +23,10 @@ body {
   background-attachment: fixed;
 }
 
+body.title-lift-active .header-divider-wave {
+  opacity: 1;
+}
+
 button,
 textarea,
 input,

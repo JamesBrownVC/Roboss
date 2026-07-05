@@ -217,7 +217,11 @@ export default function Studio() {
     () => (batch?.jobs ?? []).filter((job) => job.videoUrl || job.labeledVideoUrl).length,
     [batch],
   );
-  
+
+  // the labeled-dataset ZIP is complete once generation has finished
+  const isBatchDone = ["completed", "partial", "failed"].includes(currentStatus);
+  const canExportDataset = Boolean(batch?.id) && isBatchDone && downloadableVideoCount > 0;
+
   const placeholderCount = Math.min(
     PREVIEW_LIMIT,
     activeTab === "accepted" ? Math.max(0, safeDatasetCount - quarantinedJobs.length - acceptedJobs.length) : 0
@@ -469,7 +473,7 @@ export default function Studio() {
   }
 
   function handleDownloadAll() {
-    if (!batch?.id || downloadableVideoCount === 0) {
+    if (!canExportDataset) {
       return;
     }
     window.location.href = getBatchDownloadUrl(batch.id);
@@ -678,11 +682,20 @@ export default function Studio() {
               <button
                 type="button"
                 onClick={handleDownloadAll}
-                disabled={!batch?.id || downloadableVideoCount === 0}
+                disabled={!canExportDataset}
+                title={
+                  canExportDataset
+                    ? "Download a ZIP with videos, labels, verifier reports and the world contract"
+                    : isBatchActive
+                      ? "Available when generation finishes"
+                      : "Generate a dataset first"
+                }
                 className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-surface-600 bg-surface-950 px-3 text-xs font-medium text-sage-200 transition hover:border-sage-500 hover:text-white disabled:cursor-not-allowed disabled:text-sage-500 disabled:hover:border-surface-600 sm:w-auto"
               >
                 <Download size={14} aria-hidden="true" />
-                Download dataset
+                {canExportDataset
+                  ? `Export dataset ZIP (${downloadableVideoCount})`
+                  : "Export dataset ZIP"}
               </button>
               <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-700 sm:w-40 sm:flex-none">
 

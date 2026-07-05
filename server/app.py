@@ -281,70 +281,182 @@ def get_batch_route(batch_id: str) -> dict[str, Any]:
     return restored
 
 
-@app.get("/api/batches/{batch_id}/download")
-def download_batch_videos(batch_id: str) -> Response:
+def _job_views(batch_id: str) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    """Uniform job dicts for both live (in-memory) and restored batches."""
     batch = get_batch(batch_id)
-    batch_dir = generated_batch_dir(batch_id)
-    if batch is None and batch_dir is None:
-        raise HTTPException(status_code=404, detail="Batch not found.")
-
-    files: list[tuple[str, Path]] = []
-    data_files: list[tuple[str, bytes]] = []
     if batch is not None:
-        data_files.append(
-            (
-                "manifest.json",
-                json.dumps(batch.to_dict(), indent=2, ensure_ascii=False).encode("utf-8"),
-            )
-        )
+        jobs = []
         for job in batch.jobs:
-            for kind, url in (("raw", job.videoUrl), ("labeled", job.labeledVideoUrl)):
-                path = generated_url_to_path(url)
-                if path is not None:
-                    files.append((f"{kind}/{job.index:03d}_{path.name}", path))
-            if job.label is not None:
-                data_files.append(
-                    (
-                        f"labels/{job.index:03d}_{job.id}_labels.json",
-                        json.dumps(job.label, indent=2, ensure_ascii=False).encode("utf-8"),
-                    )
-                )
-            if job.review is not None:
-                data_files.append(
-                    (
-                        f"reviews/{job.index:03d}_{job.id}_review.json",
-                        json.dumps(job.review, indent=2, ensure_ascii=False).encode("utf-8"),
-                    )
-                )
-    elif batch_dir is not None:
-        for path in sorted(item for item in batch_dir.rglob("*") if item.is_file()):
-            relative_path = path.relative_to(batch_dir).as_posix()
-            files.append((f"generated/{batch_id}/{relative_path}", path))
+            view = job.to_dict()
+            view["scenario_id"] = job.scenario_id
+            jobs.append(view)
+        manifest = batch.to_dict()
+        manifest["prompt"] = batch.prompt
+        return jobs, manifest
+    restored = generated_batch_payload(batch_id)
+    if restored is not None:
+        jobs = []
+        for job in restored.get("jobs", []):
+            view = dict(job)
+            view.setdefault("scenario_id",
+                            (job.get("cameraVariant") or {}).get("name"))
+            jobs.append(view)
+        return jobs, restored
+    return [], None
 
-    if not files and not data_files:
-        raise HTTPException(status_code=404, detail="No dataset files are available for this batch yet.")
+
+def build_dataset_archive(batch_id: str) -> bytes | None:
+    """Dataset-shaped ZIP: world context + one folder per labeled sample.
+
+    dataset.json                    index of every sample with decision/score
+    world/contract.json|canvas.png  shared canvas the series was locked to
+    samples/<scenario>/video.mp4, labeled_preview.mp4, labels.json,
+                       report.json, semantics.json, scenario.json,
+                       start_frame.png
+    """
+    jobs, manifest = _job_views(batch_id)
+    if manifest is None:
+        return None
+    batch_dir = generated_batch_dir(batch_id)
+    bundle_dir = batch_dir / "bundle" if batch_dir else None
+
+    scenarios_payload = (read_json_file(bundle_dir / "scenarios.json")
+                         if bundle_dir else None) or {}
+    scenarios = {
+        s.get("scenario_id"): s
+        for s in scenarios_payload.get("scenarios", [])
+        if isinstance(s, dict) and s.get("scenario_id")
+    }
 
     archive_bytes = io.BytesIO()
-    with zipfile.ZipFile(archive_bytes, mode="w", compression=zipfile.ZIP_STORED) as archive:
+    index_samples: list[dict[str, Any]] = []
+    with zipfile.ZipFile(archive_bytes, mode="w",
+                         compression=zipfile.ZIP_STORED) as archive:
         used_names: set[str] = set()
-        def unique_archive_name(archive_name: str) -> str:
-            suffix = 2
-            while archive_name in used_names:
-                base = Path(archive_name)
-                archive_name = f"{base.parent}/{base.stem}_{suffix}{base.suffix}"
-                suffix += 1
-            used_names.add(archive_name)
-            return archive_name
 
-        for archive_name, path in files:
-            archive.write(path, unique_archive_name(archive_name))
-        for archive_name, data in data_files:
-            archive.writestr(unique_archive_name(archive_name), data)
+        def unique(name: str) -> str:
+            suffix = 2
+            while name in used_names:
+                base = Path(name)
+                name = f"{base.parent.as_posix()}/{base.stem}_{suffix}{base.suffix}"
+                suffix += 1
+            used_names.add(name)
+            return name
+
+        def put_file(name: str, path: Path | None) -> str | None:
+            if path is None or not path.is_file():
+                return None
+            final = unique(name)
+            archive.write(path, final)
+            return final
+
+        def put_json(name: str, data: Any) -> str | None:
+            if data is None:
+                return None
+            final = unique(name)
+            archive.writestr(final, json.dumps(data, indent=2,
+                                               ensure_ascii=False))
+            return final
+
+        # shared world context (canvas anchor + contract the series obeyed)
+        if bundle_dir and bundle_dir.is_dir():
+            put_file("world/contract.json", bundle_dir / "contract.json")
+            put_file("world/canvas.png", bundle_dir / "canvas.png")
+
+        for job in jobs:
+            video_path = generated_url_to_path(job.get("videoUrl"))
+            labeled_path = generated_url_to_path(job.get("labeledVideoUrl"))
+            if video_path is None and labeled_path is None:
+                continue  # nothing generated for this job yet
+            sid = job.get("scenario_id") or job.get("id")
+            sample_dir = f"samples/{sid}"
+            job_dir = batch_dir / job["id"] if batch_dir else None
+
+            files: dict[str, str | None] = {
+                "video": put_file(f"{sample_dir}/video.mp4", video_path),
+                "labeled_preview": put_file(
+                    f"{sample_dir}/labeled_preview.mp4", labeled_path),
+            }
+
+            # disk artifacts written by the batch worker win over the
+            # in-memory copies; fall back to memory for live batches
+            report = None
+            labels = job.get("label")
+            semantics = None
+            if job_dir and job_dir.is_dir():
+                report_path = next(job_dir.glob("*_report.json"), None)
+                labels_path = next(job_dir.glob("*_labels.json"), None)
+                semantics_path = next(job_dir.glob("*semantics*.json"), None)
+                report = read_json_file(report_path) if report_path else None
+                labels = (read_json_file(labels_path) if labels_path
+                          else labels)
+                semantics = (read_json_file(semantics_path)
+                             if semantics_path else None)
+            if report is None:
+                report = job.get("review")
+
+            files["labels"] = put_json(f"{sample_dir}/labels.json", labels)
+            files["report"] = put_json(f"{sample_dir}/report.json", report)
+            files["semantics"] = put_json(f"{sample_dir}/semantics.json",
+                                          semantics)
+            files["scenario"] = put_json(f"{sample_dir}/scenario.json",
+                                         scenarios.get(sid))
+            if bundle_dir:
+                files["start_frame"] = put_file(
+                    f"{sample_dir}/start_frame.png",
+                    bundle_dir / "frames" / f"{sid}_start.png")
+
+            decision = str((report or {}).get("decision")
+                           or job.get("reviewStatus") or "unknown")
+            index_samples.append({
+                "scenario_id": sid,
+                "job_id": job.get("id"),
+                "decision": decision,
+                "accepted": decision in {"accept", "passed"},
+                "plausibility_score": (report or {}).get("plausibility_score"),
+                "expected_labels": (scenarios.get(sid) or {}).get(
+                    "expected_labels") or (labels or {}).get("labels"),
+                "files": {k: v for k, v in files.items() if v},
+            })
+
+        if not index_samples:
+            return None
+
+        put_json("dataset.json", {
+            "batch_id": batch_id,
+            "prompt": manifest.get("prompt"),
+            "exported_at": _utc_now_iso(),
+            "counts": {
+                "samples": len(index_samples),
+                "accepted": sum(1 for s in index_samples if s["accepted"]),
+                "rejected": sum(1 for s in index_samples
+                                if not s["accepted"]),
+            },
+            "samples": index_samples,
+        })
+        put_json("manifest.json", manifest)
+
+    return archive_bytes.getvalue()
+
+
+def _utc_now_iso() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).replace(
+        microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+@app.get("/api/batches/{batch_id}/download")
+def download_batch_dataset(batch_id: str) -> Response:
+    content = build_dataset_archive(batch_id)
+    if content is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No dataset files are available for this batch yet.")
 
     filename = f"roboss-{batch_id}-dataset.zip"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return Response(
-        content=archive_bytes.getvalue(),
+        content=content,
         media_type="application/zip",
         headers=headers,
     )

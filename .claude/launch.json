@@ -9,7 +9,7 @@
     },
     {
       "name": "backend-api",
-      "runtimeExecutable": "C:\\Users\\james\\miniconda3\\envs\\ml\\python.exe",
+      "runtimeExecutable": ".venv\\Scripts\\python.exe",
       "runtimeArgs": ["-m", "uvicorn", "server.app:app", "--host", "127.0.0.1", "--port", "8010"],
       "port": 8010
     },
@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5174
+    },
+    {
+      "name": "frontend-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5199"],
+      "port": 5199
     }
   ]
 }

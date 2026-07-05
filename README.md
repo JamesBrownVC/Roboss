@@ -66,12 +66,16 @@ generated video (+ optional scenario metadata)
  3. GATE 1: physics rule engine   10 deterministic checks (pure NumPy)
         │
         ▼
- 4. GATE 2 (optional): semantic reviewer
-    sampled frames + gate-1 findings → multimodal Gemini model
-    → strict-JSON verdict on what rules cannot see
+ 4. GATE 2 (optional): semantic reviewer     ─┐ run in parallel
+    sampled frames + gate-1 findings          │ threads
+    → strict-JSON advisory verdict            │
+ 4b. SEMANTIC ANNOTATOR (optional)           ─┘
+    frames + planned scenario + gate-1 grounding → captions, action
+    phases, interactions, risk states, outcome, QA pairs
         │
         ▼
- 5. report                 plausible? score, violations per gate, frames
+ 5. report                 plausible? score, violations per gate,
+                           semantics section + <video>_semantics.json
 ```
 
 ## Gate 1 — formal checks (deterministic)
@@ -257,7 +261,25 @@ curl -X POST http://127.0.0.1:8000/robot-dataset-exports \
 ```bash
 python -m verifier path/to/generated_video.mp4 \
     --scenario scenario.example.json \
+    --gate2 --annotate \
     --annotated annotated.mp4
+```
+
+`--annotate` runs the **semantic annotator** in a thread parallel to gate 2:
+it consumes the planned scenario plus a gate-1 evidence summary and emits
+`<video>_semantics.json` — global caption, scene context, actors,
+time-stamped `action_phases` aligned with the physical labels,
+interactions, risk states, outcome (success/failure/near_miss),
+prompt-alignment check and QA pairs. Structure is enforced
+deterministically (`normalize_annotation`): phases sorted and clamped to
+the clip, vocabularies fixed.
+
+**Batch mode** — several scenarios verified and annotated in parallel;
+packets are matched per video by stem from the agents bundle:
+
+```bash
+python -m verifier runs/x/sc_001.mp4 runs/x/sc_002.mp4 runs/x/sc_003.mp4 \
+    --scenario-dir runs/x/verifier_packets --gate2 --annotate --parallel 3
 ```
 
 Writes `<video>_report.json` and prints a summary:
@@ -330,13 +352,15 @@ verifier/
   extract.py   video → tracks (YOLO11-pose + YOLO11 detect/track)
   checks.py    the 10 gate-1 physics checks (model-free, unit-tested)
   gate2.py     gate-2 semantic reviewer (Gemini API, structured outputs)
+  annotate.py  semantic annotator: captions/phases/risks/QA (dataset text)
   scoring.py   violations → score → accept/reject
   report.py    final JSON report (+ scenario match, per-gate status)
   viz.py       annotated demo video (skeletons, boxes, violation timeline)
-  __main__.py  CLI
+  __main__.py  CLI (single video or parallel batch)
 tests/
-  test_checks.py   gate-1 physics checks
-  test_agents.py   scenario compiler
+  test_checks.py    gate-1 physics checks
+  test_agents.py    scenario compiler
+  test_annotate.py  annotator structure enforcement
 ```
 
 ## Models
@@ -347,6 +371,7 @@ tests/
 | scenario canvas (image) | `gemini-3.1-flash-image` | `agents/config.py` |
 | video generation | `gemini-omni-flash-preview` | `gemini_service.py` |
 | Gate 2 reviewer | `gemini-3.5-flash` | `verifier/config.py` |
+| semantic annotator | `gemini-3.5-flash` | `verifier/config.py` |
 | auto-labeling | `gemini-3.5-flash` | `gemini_service.py` |
 
 ## Known limitations

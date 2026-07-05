@@ -86,6 +86,10 @@ class Thresholds:
                                       # hard-reject on its own — the
                                       # deterministic gate stays the judge
 
+    # --- semantic annotator (dataset enrichment, not a gate) ---
+    annotate_model: str = "gemini-3.5-flash"
+    annotate_frames: int = 14       # denser than gate 2: it narrates time
+
     # --- decision ---
     accept_score: float = 0.72
     critical_severity: float = 0.85

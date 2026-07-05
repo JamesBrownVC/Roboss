@@ -135,24 +135,6 @@ function renderDirector(j, box) {
     `director: <b>${j.director === "gemini" ? "Gemini (LLM)" : "deterministic"}</b>`));
   meta.append(el("span", "chip", `${j.n_events} event${j.n_events > 1 ? "s" : ""} × ${j.n_cameras} camera${j.n_cameras > 1 ? "s" : ""} = <b>${j.variants.length} videos planned</b>`));
   box.append(meta);
-  if (j.synthetic_scenario) {
-    const s = j.synthetic_scenario;
-    const scenario = el("div", "mini-card pop");
-    scenario.append(el("div", "mini-title", `synthetic scenario · ${esc(s.scenario_id)}`));
-    scenario.append(el("div", "mini-prompt",
-      `${esc(s.subject)} · ${esc(s.motion)} · ${esc(s.scene)} · source=${esc(s.source)}`));
-    const chips = el("div", "chip-row tight");
-    for (const label of s.expected_labels || []) {
-      chips.append(el("span", "chip sm skill", esc(label)));
-    }
-    if (s.synthetic_controls) {
-      chips.append(el("span", "chip sm", `generation ${esc(s.synthetic_controls.generation)}`));
-      chips.append(el("span", "chip sm", esc(s.synthetic_controls.video_asset)));
-      chips.append(el("span", "chip sm", `robot ${esc(s.synthetic_controls.retarget_robot)}`));
-    }
-    scenario.append(chips);
-    box.append(scenario);
-  }
   const camsById = {};
   for (const c of j.cameras || []) camsById[c.cam_id] = c;
   const grid = el("div", "card-grid");
@@ -461,13 +443,11 @@ function renderJob(j, { replay = false } = {}) {
 
 async function fetchJobs() {
   try {
-    const [syngenRes, demoRes] = await Promise.all([
+    const [syngenRes] = await Promise.all([
       fetch("/api/syngen"),
-      fetch("/api/label-demo/jobs"),
     ]);
     const syngen = syngenRes.ok ? (await syngenRes.json()).jobs || [] : [];
-    const demo = demoRes.ok ? (await demoRes.json()).jobs || [] : [];
-    return [...demo, ...syngen];
+    return syngen;
   } catch (e) { return []; }
 }
 
@@ -553,33 +533,6 @@ $("#sgForm").addEventListener("submit", async (ev) => {
     status.textContent = "failed to start: " + e.message;
   } finally {
     btn.disabled = false; btn.textContent = "▶ Generate";
-  }
-});
-
-$("#labelDemoBtn").addEventListener("click", async () => {
-  const btn = $("#labelDemoBtn"), status = $("#sgStatus");
-  $("#sgPrompt").value =
-    "A dog runs forward across the frame with a clear quadruped gait cycle; label and package the local demo video.";
-  btn.disabled = true;
-  btn.textContent = "launching…";
-  status.hidden = false;
-  status.textContent = "starting parallel dog label demo…";
-  try {
-    const res = await fetch("/api/label-demo/run", { method: "POST" });
-    const out = await res.json();
-    if (!res.ok) throw new Error(out.detail || res.statusText);
-    status.textContent =
-      `job ${out.job_id} running — local ai_dog.mp4, generation skipped`;
-    currentJobId = out.job_id;
-    $("#stages").dataset.job = "";
-    await refresh();
-    startPolling();
-    setTimeout(() => window.scrollTo({ top: $("#flowRoot").offsetTop - 90, behavior: "smooth" }), 150);
-  } catch (e) {
-    status.textContent = "failed to start demo: " + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "▶ Dog label demo";
   }
 });
 

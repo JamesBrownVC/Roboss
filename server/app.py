@@ -17,9 +17,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from starlette.responses import Response, StreamingResponse
+from starlette.responses import FileResponse, Response, StreamingResponse
 
-from .batches import GENERATED_DIR, ReferenceAsset, create_batch, get_batch, list_stats_runs
+from .batches import GENERATED_DIR, ReferenceAsset, create_batch, create_demo_dog_batch, get_batch, list_stats_runs
 from .logs import LOG_STORE
 
 app = FastAPI(title="Roboss API", version="0.1.0")
@@ -35,6 +35,9 @@ app.add_middleware(
 GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/generated", StaticFiles(directory=str(GENERATED_DIR)), name="generated")
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+DOG_DEMO_VIDEO = ROOT_DIR / "demo" / "label_demo" / "ai_dog.mp4"
+
 
 def gemini_api_key_configured() -> bool:
     load_dotenv()
@@ -42,6 +45,8 @@ def gemini_api_key_configured() -> bool:
 
 
 def generated_url_to_path(url: str | None) -> Path | None:
+    if url == "/api/demo/dog/video":
+        return DOG_DEMO_VIDEO if DOG_DEMO_VIDEO.is_file() else None
     if not url or not url.startswith("/generated/"):
         return None
     relative = Path(url.removeprefix("/generated/"))
@@ -186,6 +191,21 @@ def post_videos(body: CreateBatchRequest) -> dict[str, Any]:
         reference=reference,
     )
     return batch.to_dict()
+
+
+@app.post("/api/demo/dog")
+def post_demo_dog() -> dict[str, Any]:
+    if not DOG_DEMO_VIDEO.is_file():
+        raise HTTPException(status_code=404, detail="Dog demo video not found.")
+    batch = create_demo_dog_batch(video_url="/api/demo/dog/video")
+    return batch.to_dict()
+
+
+@app.get("/api/demo/dog/video")
+def get_demo_dog_video() -> FileResponse:
+    if not DOG_DEMO_VIDEO.is_file():
+        raise HTTPException(status_code=404, detail="Dog demo video not found.")
+    return FileResponse(DOG_DEMO_VIDEO, media_type="video/mp4")
 
 
 @app.get("/api/batches/{batch_id}")

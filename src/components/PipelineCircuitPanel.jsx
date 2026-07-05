@@ -504,12 +504,15 @@ export default function PipelineCircuitPanel({ batch }) {
           jumpKey={jumpKey}
         />
 
-        {batch?.jobs?.some(job => job.reviewStatus === "rejected" || job.status === "failed") && (
+        {batch?.jobs?.some(job => job.reviewStatus === "failed" || job.status === "failed") && (
           <div className="mt-4 flex items-start gap-3 rounded-md border border-[#ff3b6b]/40 bg-[#ff3b6b]/10 px-4 py-3 text-sm text-[#ff3b6b] animate-pulse">
             <span className="mt-0.5 font-bold tracking-widest uppercase">⚠️ Anomaly detected:</span>
             <p>
-              discarding video {batch.jobs.find(job => job.reviewStatus === "rejected" || job.status === "failed")?.cameraVariant?.title || "Unknown"} (
-              {batch.jobs.find(job => job.reviewStatus === "rejected" || job.status === "failed")?.labelError || "low plausibility score"})
+              discarding video {batch.jobs.find(job => job.reviewStatus === "failed" || job.status === "failed")?.cameraVariant?.title || "Unknown"} (
+              {(() => {
+                const rejected = batch.jobs.find(job => job.reviewStatus === "failed" || job.status === "failed");
+                return rejected?.review?.summary || rejected?.error || "low plausibility score";
+              })()})
             </p>
           </div>
         )}

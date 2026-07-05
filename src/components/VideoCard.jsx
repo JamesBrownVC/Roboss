@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Download, Film, LoaderCircle } from "lucide-react";
 
 export const STATUS_LABELS = {
@@ -28,7 +29,12 @@ export function annotationCount(label) {
 export default function VideoCard({ job, aspectRatio }) {
   const videoUrl = job.videoUrl ? `${job.videoUrl}?t=${job.id}` : "";
   const labeledVideoUrl = job.labeledVideoUrl ? `${job.labeledVideoUrl}?t=${job.id}-labeled` : "";
-  const displayVideoUrl = videoUrl || labeledVideoUrl;
+  // Default to the labeled (annotated) video so the boxes/pose/labels show — and so the
+  // player's own download control grabs the labeled file rather than the raw one.
+  const [showLabeled, setShowLabeled] = useState(true);
+  const preferLabeled = showLabeled && Boolean(labeledVideoUrl);
+  const displayVideoUrl = preferLabeled ? labeledVideoUrl : (videoUrl || labeledVideoUrl);
+  const hasBothVersions = Boolean(videoUrl) && Boolean(labeledVideoUrl);
   const isActive = ACTIVE_JOB_STATUSES.includes(job.status);
   const showStatusBadge = job.status !== "completed";
 
@@ -53,6 +59,28 @@ export default function VideoCard({ job, aspectRatio }) {
                   : ""
               }`}
             />
+            {hasBothVersions ? (
+              <div className="absolute left-2 top-2 z-20 flex items-center gap-0.5 rounded-md bg-black/70 p-0.5 backdrop-blur-sm">
+                <button
+                  type="button"
+                  onClick={() => setShowLabeled(true)}
+                  className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition ${
+                    preferLabeled ? "bg-neon-magenta text-[#0b0714]" : "text-sage-300 hover:text-white"
+                  }`}
+                >
+                  Labeled
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLabeled(false)}
+                  className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition ${
+                    !preferLabeled ? "bg-surface-600 text-white" : "text-sage-300 hover:text-white"
+                  }`}
+                >
+                  Raw
+                </button>
+              </div>
+            ) : null}
             {job.reviewStatus === "rejected" || job.status === "failed" ? (
               <>
                 {/* Glitch Overlay */}
@@ -69,10 +97,10 @@ export default function VideoCard({ job, aspectRatio }) {
                 <div className="absolute inset-x-0 bottom-0 translate-y-full flex-col bg-black/90 border-t border-[#ff3b6b]/50 p-4 transition-transform duration-300 ease-out group-hover/video:translate-y-0 flex backdrop-blur-md">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-[#ff3b6b] uppercase tracking-wider">Physics Violation</span>
-                    <span className="text-xs font-mono text-white/70 bg-white/10 px-2 py-0.5 rounded">Score: {job.review?.plausibility_score || 0}/100</span>
+                    <span className="text-xs font-mono text-white/70 bg-white/10 px-2 py-0.5 rounded">Score: {Math.round((job.review?.score ?? 0) * 100)}/100</span>
                   </div>
                   <ul className="space-y-1.5 text-xs text-sage-200 font-mono">
-                    {(job.review?.violations || ["Unspecified error"]).map((violation, i) => (
+                    {(job.review?.issues?.length ? job.review.issues : [job.review?.summary || job.error || "Unspecified error"]).map((violation, i) => (
                       <li key={i} className="flex gap-2">
                         <span className="text-[#ff3b6b] mt-0.5">►</span>
                         <span className="leading-relaxed">{violation}</span>

@@ -7,6 +7,7 @@ import VideoCard, { STATUS_LABELS, annotationCount } from "../components/VideoCa
 import {
   clearActiveBatchId,
   createBatch,
+  createDogDemoBatch,
   getBatch,
   getBatchDownloadUrl,
   readActiveBatchId,
@@ -29,6 +30,8 @@ const DEFAULT_PROMPT =
   "A loaded wooden pallet sits slightly unstable on a lower warehouse rack, boxes leaning, " +
   "shrink wrap stretched unevenly. The pallet shifts, tips forward and the load falls onto " +
   "the warehouse floor in realistic slow motion, leaving damaged boxes and scattered products.";
+const DOG_DEMO_PROMPT =
+  "A dog moves and runs forward with a clear quadruped gait; convert that dog motion into synthetic training data for a robot dog.";
 
 const LABEL_CLASS = "text-xs font-medium uppercase tracking-label text-sage-400";
 
@@ -106,6 +109,7 @@ export default function Studio() {
   const [reference, setReference] = useState(() => studioReferenceCache);
   const [referenceNotice, setReferenceNotice] = useState("");
   const [batch, setBatch] = useState(() => savedStudioState.batch || null);
+  const [pipelineMode, setPipelineMode] = useState(savedStudioState.pipelineMode || "classic");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
@@ -116,7 +120,12 @@ export default function Studio() {
   const apiKeyMissing = Boolean(health?.ok) && health.geminiApiKeyConfigured === false;
   const currentStatus = batch?.status ?? "idle";
   const isBatchActive = ["queued", "running"].includes(currentStatus);
-  const canSubmit = prompt.trim().length > 0 && !isSubmitting && !isBatchActive && !apiKeyMissing;
+  const isDogDemoMode = pipelineMode === "dog";
+  const canSubmit =
+    (isDogDemoMode || prompt.trim().length > 0) &&
+    !isSubmitting &&
+    !isBatchActive &&
+    (!apiKeyMissing || isDogDemoMode);
   const busy = isSubmitting || isBatchActive;
 
   const safeDatasetCount = clampDataset(datasetCount || MIN_DATASET);
@@ -138,8 +147,8 @@ export default function Studio() {
   const placeholderCount = Math.min(PREVIEW_LIMIT, safeDatasetCount);
 
   useEffect(() => {
-    saveStudioState({ prompt, aspectRatio, datasetCount: safeDatasetCount });
-  }, [prompt, aspectRatio, safeDatasetCount]);
+    saveStudioState({ prompt, aspectRatio, datasetCount: safeDatasetCount, pipelineMode });
+  }, [prompt, aspectRatio, safeDatasetCount, pipelineMode]);
 
   useEffect(() => {
     if (batch?.id) {
@@ -307,23 +316,26 @@ export default function Studio() {
     submitTimeRef.current = Date.now();
 
     try {
-      const nextBatch = await createBatch({
-        prompt: prompt.trim(),
-        aspectRatio,
-        count: safeDatasetCount,
-        reference,
-      });
+      const nextBatch = isDogDemoMode
+        ? await createDogDemoBatch()
+        : await createBatch({
+            prompt: prompt.trim(),
+            aspectRatio,
+            count: safeDatasetCount,
+            reference,
+          });
       saveActiveBatchId(nextBatch.id);
       saveStudioState({
-        prompt: prompt.trim(),
+        prompt: isDogDemoMode ? DOG_DEMO_PROMPT : prompt.trim(),
         aspectRatio,
         datasetCount: safeDatasetCount,
+        pipelineMode,
         batchId: nextBatch.id,
         batch: compactBatchForStorage(nextBatch),
       });
       setBatch(nextBatch);
     } catch (submitError) {
-      setError(submitError.message || "Could not start generation.");
+      setError(submitError.message || "Could not start pipeline.");
     } finally {
       setIsSubmitting(false);
     }
@@ -343,7 +355,7 @@ export default function Studio() {
         subtitle="One prompt in, an annotated training dataset out. Describe an industrial incident and generate as many labeled videos as you need."
       />
 
-      {apiKeyMissing ? (
+      {apiKeyMissing && !isDogDemoMode ? (
         <div className="mb-6 flex items-start gap-3 rounded-md border border-accent-500/30 bg-accent-500/5 px-4 py-3 text-sm text-accent-200">
           <AlertTriangle className="mt-0.5 shrink-0 text-accent-300" size={18} aria-hidden="true" />
           <p className="min-w-0 break-words">
@@ -361,8 +373,9 @@ export default function Studio() {
           <label className="flex flex-col gap-2">
             <span className={LABEL_CLASS}>Prompt</span>
             <textarea
-              value={prompt}
+              value={isDogDemoMode ? DOG_DEMO_PROMPT : prompt}
               onChange={(event) => setPrompt(event.target.value)}
+              disabled={isDogDemoMode || busy}
               maxLength={4000}
               className="min-h-44 resize-y rounded-md border border-surface-600 bg-surface-950 px-3 py-3 text-sm leading-6 text-sage-50 outline-none transition placeholder:text-sage-500 focus:border-sage-400 focus:ring-2 focus:ring-white/10"
               placeholder="Describe the industrial incident to generate..."
@@ -420,7 +433,7 @@ export default function Studio() {
                 <button
                   key={ratio}
                   type="button"
-                  disabled={busy}
+                  disabled={busy || isDogDemoMode}
                   onClick={() => setAspectRatio(ratio)}
                   className={`inline-flex justify-center rounded-md border px-4 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-45 ${
                     aspectRatio === ratio
@@ -444,7 +457,7 @@ export default function Studio() {
               min={MIN_DATASET}
               max={MAX_DATASET}
               value={datasetCount}
-              disabled={busy}
+              disabled={busy || isDogDemoMode}
               onChange={(event) => setDatasetCount(event.target.value === "" ? "" : clampDataset(event.target.value))}
               onBlur={() => setDatasetCount((value) => clampDataset(value || MIN_DATASET))}
               className="h-11 rounded-md border border-surface-600 bg-surface-950 px-3 text-sm text-sage-50 outline-none transition disabled:cursor-not-allowed disabled:text-sage-500 focus:border-sage-400 focus:ring-2 focus:ring-white/10"
@@ -457,7 +470,7 @@ export default function Studio() {
             disabled={busy || !canSubmit}
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-4 text-sm font-medium text-[#0b0714] shadow-[0_0_20px_rgba(241,61,245,0.4)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:bg-none disabled:text-sage-500 disabled:shadow-none"
           >
-            {apiKeyMissing ? (
+            {apiKeyMissing && !isDogDemoMode ? (
               <>
                 <AlertTriangle size={16} aria-hidden="true" />
                 Missing API key
@@ -465,12 +478,12 @@ export default function Studio() {
             ) : busy ? (
               <>
                 <LoaderCircle className="animate-spin" size={16} aria-hidden="true" />
-                Generating {progress.done}/{progress.total}
+                {isDogDemoMode ? "Running dog demo" : `Generating ${progress.done}/${progress.total}`}
               </>
             ) : (
               <>
                 <Play size={16} aria-hidden="true" />
-                Generate dataset
+                {isDogDemoMode ? "Run robot dog demo" : "Generate dataset"}
               </>
             )}
           </button>
@@ -478,9 +491,9 @@ export default function Studio() {
           <div className="flex items-start gap-2.5 rounded-md border border-surface-700 bg-surface-850 p-3 text-xs leading-relaxed text-sage-300">
             <Info size={15} className="mt-0.5 shrink-0 text-sage-400" aria-hidden="true" />
             <p>
-              Videos share the same incident and environment with varied camera angles and details.
-              Each one is automatically verified and annotated. The preview shows the first
-              four; the full dataset is available for download.
+              {isDogDemoMode
+                ? "Dog demo mode runs a parallel front pipeline using the local ai_dog.mp4 asset. It skips generation and returns synthetic robot-dog labels/data for GO2."
+                : "Videos share the same incident and environment with varied camera angles and details. Each one is automatically verified and annotated. The preview shows the first four; the full dataset is available for download."}
             </p>
           </div>
         </form>
@@ -547,7 +560,9 @@ export default function Studio() {
           <p className="border-t border-surface-700 pt-3 text-center text-xs text-sage-500">
             {previewJobs.length
               ? `Previewing the first ${previewJobs.length} of ${progress.total} videos in this dataset.`
-              : `Submit a prompt to generate a dataset of ${safeDatasetCount} videos (previewing the first ${placeholderCount}).`}
+              : isDogDemoMode
+                ? "Run the robot dog demo pipeline to preview the bundled dog-motion clip and synthetic labels."
+                : `Submit a prompt to generate a dataset of ${safeDatasetCount} videos (previewing the first ${placeholderCount}).`}
           </p>
         </div>
       </div>
@@ -558,6 +573,45 @@ export default function Studio() {
           <p className="min-w-0 break-words">{error}</p>
         </div>
       ) : null}
+
+      <section className="mt-6 rounded-lg border border-surface-700 bg-surface-900 p-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-label text-sage-400">Pipeline mode</p>
+            <h2 className="mt-1 text-sm font-medium text-white">
+              Choose the real pipeline or the robot dog demo pipeline
+            </h2>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setPipelineMode("classic")}
+              className={`rounded-md border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                !isDogDemoMode
+                  ? "border-neon-cyan/60 bg-neon-cyan/10 text-white shadow-[0_0_18px_rgba(47,232,234,0.18)]"
+                  : "border-surface-600 bg-surface-950 text-sage-300 hover:border-sage-500 hover:text-white"
+              }`}
+            >
+              <span className="block text-xs font-semibold uppercase tracking-label">Real pipeline</span>
+              <span className="mt-1 block text-xs text-sage-400">Prompt → generate → verify → labels</span>
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setPipelineMode("dog")}
+              className={`rounded-md border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                isDogDemoMode
+                  ? "border-neon-violet/70 bg-neon-violet/10 text-white shadow-[0_0_18px_rgba(139,92,246,0.22)]"
+                  : "border-surface-600 bg-surface-950 text-sage-300 hover:border-sage-500 hover:text-white"
+              }`}
+            >
+              <span className="block text-xs font-semibold uppercase tracking-label">Robot dog demo</span>
+              <span className="mt-1 block text-xs text-sage-400">ai_dog.mp4 → synthetic GO2 data</span>
+            </button>
+          </div>
+        </div>
+      </section>
 
       <PipelineCircuitPanel batch={batch} />
     </>

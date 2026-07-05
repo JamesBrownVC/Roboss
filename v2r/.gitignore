@@ -17,7 +17,12 @@ pnpm-debug.log*
 # Local model/cache outputs
 .ultralytics/
 generated/
-workspaces/
+# Workspaces: ignore heavy generated media but DO commit the tabular
+# label/retarget parquets (cmd_twist, qpos, keypoints...). `**/` re-includes
+# the directories so git can descend; the *.parquet negation then overrides
+# both this rule and the global *.parquet below.
+workspaces/**
+!workspaces/**/
 .gpu_locks/
 data/**
 # ...but DO commit the specific clips the bench fixture + tests reference so
@@ -87,3 +92,6 @@ assets/robots/*/meshes/
 !data/syngen/web_175617/videos/e02_cam0.mp4
 !data/syngen/web_175617/videos/e03_cam0.mp4
 !data/syngen/veo1/videos/e00_cam0.mp4
+# Workspace tabular artifacts (cmd_twist, qpos, keypoints...): must be
+# re-included AFTER the global *.parquet exclude above to take effect.
+!workspaces/**/*.parquet

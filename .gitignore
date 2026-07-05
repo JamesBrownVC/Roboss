@@ -98,7 +98,13 @@ v2r/data/**
 !v2r/data/syngen/veo1/
 !v2r/data/syngen/veo1/videos/
 !v2r/data/syngen/veo1/videos/e00_cam0.mp4
-v2r/workspaces/
+# Workspaces: ignore heavy generated media (videos, depth PNGs, hdf5) but DO
+# commit the tabular label/retarget artifacts (*.parquet, e.g. cmd_twist,
+# qpos, keypoints). The **/ un-ignore lets git descend into the tree; the
+# trailing negation overrides both this rule and the global *.parquet above.
+v2r/workspaces/**
+!v2r/workspaces/**/
+!v2r/workspaces/**/*.parquet
 v2r/.gpu_locks/
 demo/.cache/
 *_report.json

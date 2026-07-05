@@ -455,7 +455,7 @@ export default function Studio() {
           <button
             type="submit"
             disabled={busy || !canSubmit}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-medium text-black transition hover:bg-sage-200 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:text-sage-500"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-4 text-sm font-medium text-[#0b0714] shadow-[0_0_20px_rgba(241,61,245,0.4)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-800 disabled:bg-none disabled:text-sage-500 disabled:shadow-none"
           >
             {apiKeyMissing ? (
               <>
@@ -503,7 +503,7 @@ export default function Studio() {
               </button>
               <div className="h-1.5 w-40 overflow-hidden rounded-full bg-surface-700">
                 <div
-                  className="h-full rounded-full bg-white transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-neon-magenta to-neon-cyan transition-all duration-500"
                   style={{ width: `${progress.pct}%` }}
                 />
               </div>
@@ -553,7 +553,7 @@ export default function Studio() {
       </div>
 
       {error ? (
-        <div className="mt-6 flex items-start gap-3 rounded-md border border-[#e5484d]/40 bg-[#e5484d]/10 px-4 py-3 text-sm text-[#ff6166]">
+        <div className="mt-6 flex items-start gap-3 rounded-md border border-[#ff3b6b]/40 bg-[#ff3b6b]/10 px-4 py-3 text-sm text-[#ff3b6b]">
           <AlertTriangle className="mt-0.5 shrink-0" size={18} aria-hidden="true" />
           <p>{error}</p>
         </div>

@@ -8,7 +8,7 @@ const LEVELS = ["all", "info", "warn", "error"];
 const LEVEL_TONES = {
   info: "text-sage-200",
   warn: "text-accent-300",
-  error: "text-[#ff6166]",
+  error: "text-[#ff3b6b]",
 };
 
 const AGENT_TONES = {
@@ -20,7 +20,7 @@ const AGENT_TONES = {
   canvas: "border-pink-400/30 text-pink-300",
   omni: "border-sage-500 text-sage-200",
   veo: "border-sage-500 text-sage-200",
-  verifier: "border-[#45a557]/40 text-[#62c073]",
+  verifier: "border-[#3cf28a]/40 text-[#3cf28a]",
   pipeline: "border-surface-600 text-sage-300",
   api: "border-surface-600 text-sage-200",
   system: "border-surface-600 text-sage-400",
@@ -162,13 +162,13 @@ export default function AgentLogsPanel() {
         <div className="flex items-center gap-2 rounded-md border border-surface-600 bg-surface-900 px-3 py-2 text-xs font-medium">
           {live ? (
             <>
-              <Radio className="text-[#45a557]" size={14} aria-hidden="true" />
-              <span className="text-[#62c073]">Live</span>
+              <Radio className="text-[#3cf28a]" size={14} aria-hidden="true" />
+              <span className="text-[#3cf28a]">Live</span>
             </>
           ) : (
             <>
-              <WifiOff className="text-[#e5484d]" size={14} aria-hidden="true" />
-              <span className="text-[#ff6166]">Offline</span>
+              <WifiOff className="text-[#ff3b6b]" size={14} aria-hidden="true" />
+              <span className="text-[#ff3b6b]">Offline</span>
             </>
           )}
         </div>
@@ -227,7 +227,7 @@ export default function AgentLogsPanel() {
           <button
             type="button"
             onClick={reconnect}
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-white px-3 text-xs font-medium text-black transition hover:bg-sage-200"
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-3 text-xs font-medium text-[#0b0714] shadow-[0_0_16px_rgba(241,61,245,0.35)] transition hover:brightness-110"
           >
             Reconnect
           </button>

@@ -8,12 +8,19 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color-scheme: dark;
-  font-family: "Geist", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  font-family: "Chakra Petch", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 }
 
 body {
   margin: 0;
-  background-color: #000000;
+  min-height: 100vh;
+  background-color: #07040d;
+  background-image:
+    radial-gradient(1100px 550px at 10% -10%, rgba(241, 61, 245, 0.14), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(47, 232, 234, 0.12), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(180, 120, 255, 0.07) 0 1px, transparent 1px 42px),
+    repeating-linear-gradient(90deg, rgba(180, 120, 255, 0.07) 0 1px, transparent 1px 42px);
+  background-attachment: fixed;
 }
 
 button,
@@ -33,10 +40,10 @@ select {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: rgba(139, 92, 246, 0.35);
   border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #444444;
+  background: rgba(241, 61, 245, 0.5);
 }

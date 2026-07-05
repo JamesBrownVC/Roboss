@@ -19,18 +19,18 @@ import { Boxes, Clock3, Film, LineChart as LineChartIcon, Percent, RefreshCw, Sh
 import PageHeader from "../components/PageHeader.jsx";
 import { getStats } from "../lib/api.js";
 
-// Grafana classic palette.
-const GRAFANA_GREEN = "#73bf69";
-const GRAFANA_YELLOW = "#fade2a";
-const GRAFANA_BLUE = "#5794f2";
-const GRAFANA_ORANGE = "#ff9830";
-const GRAFANA_RED = "#f2495c";
-const GRAFANA_PURPLE = "#b877d9";
-const STAGE_COLORS = [GRAFANA_GREEN, GRAFANA_YELLOW, GRAFANA_BLUE, GRAFANA_ORANGE, GRAFANA_PURPLE];
-const GREEN = GRAFANA_GREEN;
-const RED = GRAFANA_RED;
-const AXIS_TICK = "#9fa7b3";
-const GRID_STROKE = "rgba(204, 204, 220, 0.12)";
+// Neon palette (mirrors the tailwind `neon` tokens).
+const NEON_GREEN = "#3cf28a";
+const NEON_AMBER = "#ffb020";
+const NEON_CYAN = "#2fe8ea";
+const NEON_MAGENTA = "#f13df5";
+const NEON_RED = "#ff3b6b";
+const NEON_VIOLET = "#8b5cf6";
+const STAGE_COLORS = [NEON_CYAN, NEON_AMBER, NEON_MAGENTA, NEON_VIOLET, NEON_GREEN];
+const GREEN = NEON_GREEN;
+const RED = NEON_RED;
+const AXIS_TICK = "#a996c9";
+const GRID_STROKE = "rgba(139, 92, 246, 0.16)";
 
 const MOCK_CAMERAS = ["front_view", "rear_view", "side_view", "high_angle_inspection"];
 const MOCK_PER_DAY = [4, 6, 5, 7, 6, 8];
@@ -77,7 +77,7 @@ function buildMockRuns() {
 
 // Grafana-style dark tooltip.
 const CHART_TOOLTIP_STYLE = {
-  backgroundColor: "#181b1f",
+  backgroundColor: "#0f0a1a",
   border: "1px solid rgba(204, 204, 220, 0.2)",
   borderRadius: 2,
   color: "#ccccdc",
@@ -321,12 +321,12 @@ export default function Stats() {
                   <AreaChart data={timeline} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                     <defs>
                       <linearGradient id="videosFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={GRAFANA_GREEN} stopOpacity={0.25} />
-                        <stop offset="100%" stopColor={GRAFANA_GREEN} stopOpacity={0.02} />
+                        <stop offset="0%" stopColor={NEON_MAGENTA} stopOpacity={0.25} />
+                        <stop offset="100%" stopColor={NEON_MAGENTA} stopOpacity={0.02} />
                       </linearGradient>
                       <linearGradient id="datasetsFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={GRAFANA_BLUE} stopOpacity={0.25} />
-                        <stop offset="100%" stopColor={GRAFANA_BLUE} stopOpacity={0.02} />
+                        <stop offset="0%" stopColor={NEON_CYAN} stopOpacity={0.25} />
+                        <stop offset="100%" stopColor={NEON_CYAN} stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" vertical={false} />
@@ -338,20 +338,20 @@ export default function Stats() {
                       type="monotone"
                       dataKey="videos"
                       name="Videos"
-                      stroke={GRAFANA_GREEN}
+                      stroke={NEON_MAGENTA}
                       strokeWidth={1.5}
                       fill="url(#videosFill)"
-                      dot={{ r: 2, fill: GRAFANA_GREEN, strokeWidth: 0 }}
+                      dot={{ r: 2, fill: NEON_MAGENTA, strokeWidth: 0 }}
                       activeDot={{ r: 4, strokeWidth: 0 }}
                     />
                     <Area
                       type="monotone"
                       dataKey="datasets"
                       name="Datasets"
-                      stroke={GRAFANA_BLUE}
+                      stroke={NEON_CYAN}
                       strokeWidth={1.5}
                       fill="url(#datasetsFill)"
-                      dot={{ r: 2, fill: GRAFANA_BLUE, strokeWidth: 0 }}
+                      dot={{ r: 2, fill: NEON_CYAN, strokeWidth: 0 }}
                       activeDot={{ r: 4, strokeWidth: 0 }}
                     />
                   </AreaChart>
@@ -369,7 +369,7 @@ export default function Stats() {
                     innerRadius={64}
                     outerRadius={94}
                     paddingAngle={1}
-                    stroke="#0a0a0a"
+                    stroke="#07040d"
                     strokeWidth={2}
                   >
                     {outcome.map((slice) => (
@@ -461,8 +461,8 @@ export default function Stats() {
                             <span
                               className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
                                 isSuccess(run)
-                                  ? "border-[#45a557]/40 bg-[#45a557]/10 text-[#62c073]"
-                                  : "border-[#e5484d]/40 bg-[#e5484d]/10 text-[#ff6166]"
+                                  ? "border-[#3cf28a]/40 bg-[#3cf28a]/10 text-[#3cf28a]"
+                                  : "border-[#ff3b6b]/40 bg-[#ff3b6b]/10 text-[#ff3b6b]"
                               }`}
                             >
                               {run.status || "unknown"}

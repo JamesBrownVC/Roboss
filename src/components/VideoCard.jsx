@@ -71,7 +71,7 @@ export default function VideoCard({ job, aspectRatio }) {
             <span
               className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                 job.status === "failed"
-                  ? "border-[#e5484d]/40 bg-[#e5484d]/10 text-[#ff6166]"
+                  ? "border-[#ff3b6b]/40 bg-[#ff3b6b]/10 text-[#ff3b6b]"
                   : "border-surface-600 bg-surface-850 text-sage-300"
               }`}
             >
@@ -80,9 +80,9 @@ export default function VideoCard({ job, aspectRatio }) {
           ) : null}
         </div>
 
-        {job.error ? <p className="line-clamp-2 text-xs text-[#ff6166]">{job.error}</p> : null}
+        {job.error ? <p className="line-clamp-2 text-xs text-[#ff3b6b]">{job.error}</p> : null}
 
-        {job.labelError ? <p className="line-clamp-2 text-xs text-[#ff6166]">{job.labelError}</p> : null}
+        {job.labelError ? <p className="line-clamp-2 text-xs text-[#ff3b6b]">{job.labelError}</p> : null}
 
         {videoUrl ? (
           <div className={`mt-auto grid gap-2 pt-1 ${labeledVideoUrl ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -98,7 +98,7 @@ export default function VideoCard({ job, aspectRatio }) {
               <a
                 href={labeledVideoUrl}
                 download
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-white px-3 text-xs font-medium text-black transition hover:bg-sage-200"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-3 text-xs font-medium text-[#0b0714] shadow-[0_0_16px_rgba(241,61,245,0.35)] transition hover:brightness-110"
               >
                 <Download size={14} aria-hidden="true" />
                 Labeled MP4

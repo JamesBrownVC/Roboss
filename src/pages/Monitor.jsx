@@ -46,7 +46,7 @@ const LOG_TONES = {
   move: "text-sage-300",
   detect: "text-sage-100",
   capture: "text-sage-200",
-  hazard: "text-[#ff6166]",
+  hazard: "text-[#ff3b6b]",
   info: "text-sage-300",
 };
 
@@ -170,7 +170,7 @@ export default function Monitor() {
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
               connected
-                ? "border border-[#e5484d]/40 bg-[#e5484d]/10 text-[#ff6166]"
+                ? "border border-[#ff3b6b]/40 bg-[#ff3b6b]/10 text-[#ff3b6b]"
                 : status === "connecting"
                   ? "border border-accent-500/30 bg-accent-500/5 text-accent-300"
                   : "border border-surface-600 bg-surface-850 text-sage-400"
@@ -178,7 +178,7 @@ export default function Monitor() {
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                connected ? "animate-pulse bg-[#e5484d]" : status === "connecting" ? "bg-accent-400" : "bg-sage-500"
+                connected ? "animate-pulse bg-[#ff3b6b]" : status === "connecting" ? "bg-accent-400" : "bg-sage-500"
               }`}
             />
             {connected ? "LIVE" : status === "connecting" ? "Connecting" : "Offline"}
@@ -202,7 +202,7 @@ export default function Monitor() {
           <button
             type="button"
             onClick={disconnect}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#e5484d]/40 bg-[#e5484d]/10 px-4 text-sm font-medium text-[#ff6166] transition hover:bg-[#e5484d]/20"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#ff3b6b]/40 bg-[#ff3b6b]/10 px-4 text-sm font-medium text-[#ff3b6b] transition hover:bg-[#ff3b6b]/20"
           >
             <Square size={15} aria-hidden="true" />
             Disconnect
@@ -211,7 +211,7 @@ export default function Monitor() {
           <button
             type="button"
             onClick={connect}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-white px-4 text-sm font-medium text-black transition hover:bg-sage-200"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-gradient-to-r from-neon-magenta to-neon-violet px-4 text-sm font-medium text-[#0b0714] shadow-[0_0_20px_rgba(241,61,245,0.4)] transition hover:brightness-110"
           >
             <Play size={15} aria-hidden="true" />
             Connect
@@ -235,7 +235,7 @@ export default function Monitor() {
               <>
                 {detections.map((box) => {
                   const isHazard = box.tone === "hazard";
-                  const color = isHazard ? "#e5484d" : "#45a557";
+                  const color = isHazard ? "#ff3b6b" : "#3cf28a";
                   return (
                     <div
                       key={box.id}
@@ -259,8 +259,8 @@ export default function Monitor() {
                   );
                 })}
 
-                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded bg-black/60 px-2 py-1 text-[11px] font-medium text-[#ff6166]">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#e5484d]" />
+                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded bg-black/60 px-2 py-1 text-[11px] font-medium text-[#ff3b6b]">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ff3b6b]" />
                   LIVE
                 </div>
                 <div className="absolute right-3 top-3 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-sage-300">
@@ -290,7 +290,7 @@ export default function Monitor() {
               icon={connected ? Wifi : WifiOff}
               label="Status"
               value={connected ? "Online" : "Offline"}
-              tone={connected ? "text-[#62c073]" : "text-sage-400"}
+              tone={connected ? "text-[#3cf28a]" : "text-sage-400"}
             />
             <TelemetryCard icon={Gauge} label="FPS" value={telemetry.fps} />
             <TelemetryCard icon={Cpu} label="Latency" value={`${telemetry.latencyMs} ms`} />

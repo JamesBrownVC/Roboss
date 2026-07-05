@@ -1,4 +1,50 @@
-# Roboss — Synthetic Action Dataset Compiler
+# Roboss
+
+**Trusted training data for robots.** This repo turns ideas and videos into
+physically verified, auto-labeled datasets: it generates (or ingests) action
+videos, rejects anything that breaks physics, labels what survives, and
+converts the result into robot-ready exports (LeRobot v3).
+
+```
+                     ┌────────────────────────────────────────────────┐
+  idea / prompt ────▶│  ROBOSS PIPELINE                               │
+                     │  agents/ scenario compiler → Gemini video      │──▶ verified, labeled
+                     │  generation → verifier/ rejection gate →       │    action videos
+                     │  auto-labeling (roboss/ service layer + API)   │    (runs/, generated/)
+                     └────────────────────────────────────────────────┘
+                            ▲                              │
+        Roboss Studio ──────┘                              │ accepted videos
+        (src/ + server/ web UI)                            ▼
+                     ┌────────────────────────────────────────────────┐
+  raw human video ──▶│  V2R FACTORY (v2r/)                            │──▶ LeRobot v3 /
+                     │  ingest → feasibility → geometry → kinematics  │    EgoDex export
+                     │  → retarget → MuJoCo validation → package      │
+                     └────────────────────────────────────────────────┘
+```
+
+## Repository map
+
+| component | where | what it does | docs |
+|---|---|---|---|
+| **Roboss pipeline** | `agents/`, `verifier/`, `roboss/`, `gemini_service.py` | idea → scenarios → generated video → physics rejection gate → labels | [below](#1-roboss-pipeline--synthetic-action-dataset-compiler), [agents/README.md](agents/README.md) |
+| **Roboss Studio** | `src/`, `server/` | web UI: launch batches, watch live logs, preview labeled videos, download datasets | [below](#2-roboss-studio-web-ui) |
+| **V2R Factory** | `v2r/` | video → robot data: pose/kinematics extraction, robot retargeting, MuJoCo validation, LeRobot export | [v2r/README.md](v2r/README.md), [V2R_MASTER_PROMPT.md](V2R_MASTER_PROMPT.md) |
+| **V2R demo** | `demo/` | standalone single-page demo over live `v2r/` artifacts | [demo/README.md](demo/README.md) |
+| **Brand film** | `roboss-film/` | generation scripts + selects for "The World Teaches" cinematic ad | [roboss-film/INTENT.md](roboss-film/INTENT.md) |
+| **Outputs** | `runs/`, `generated/`, `v2r/workspaces/` | CLI/API runs, Studio batches, V2R episode workspaces | — |
+
+How the pieces fit: the **Roboss pipeline** is the synthetic-data half —
+it *creates* videos and guarantees they are physically plausible before
+they enter a dataset. The **V2R factory** is the robot half — it takes a
+video (real human footage or an accepted synthetic one) and extracts
+robot-usable data: 3D kinematics, retargeted joint trajectories,
+physics-validated episodes. **Studio** is the product surface over the
+pipeline, and the `roboss/v2r_bridge.py` glue lets a verified video flow
+straight into a V2R export.
+
+---
+
+## 1. Roboss pipeline — Synthetic Action Dataset Compiler
 
 An end-to-end pipeline that turns a plain-English idea into **physically
 plausible, auto-labeled action videos** for training — and throws out the
@@ -22,6 +68,11 @@ impossible AI-generated footage never enters the dataset.
       └─ ACCEPT ─▶ 4. AUTO-LABELING (Gemini) → labels.json  ──▶ dataset
 ```
 
+The scenario compiler (`agents/`) is contract-based: instead of free-form
+prompts it locks entity identity, materials, layout and style in a
+`world_contract`, compiles every video prompt from that contract, and emits
+per-scenario verifier packets — see [agents/README.md](agents/README.md).
+
 Four ways to drive it:
 
 - **Single video** — one prompt straight through generate → verify → label
@@ -31,12 +82,9 @@ Four ways to drive it:
   compiler into the pipeline).
 - **API** — FastAPI endpoints over the same service layer
   (`uvicorn roboss.api:app`).
-- **Studio (web UI)** — a React frontend + dedicated batch backend
-  (`server/` + `src/`) to launch batches, watch live agent logs, preview
-  each video with its labels, and download the dataset as a zip.
-  See [Roboss Studio](#roboss-studio-web-ui).
+- **Studio (web UI)** — see [Roboss Studio](#2-roboss-studio-web-ui).
 
-## Quick start
+### Quick start
 
 ```bash
 # one prompt → one video → verify → label
@@ -57,7 +105,7 @@ Four ways to drive it:
 
 `run.sh help` lists every command. All outputs land in `runs/<name>/`.
 
-## The rejection gate (verifier)
+### The rejection gate (verifier)
 
 ```
 generated video (+ optional scenario metadata)
@@ -82,7 +130,7 @@ generated video (+ optional scenario metadata)
                            semantics section + <video>_semantics.json
 ```
 
-## Gate 1 — formal checks (deterministic)
+### Gate 1 — formal checks (deterministic)
 
 | # | check | flags |
 |---|-------|-------|
@@ -97,7 +145,7 @@ generated video (+ optional scenario metadata)
 | 9 | `telekinesis_suspicion` | object moves in lockstep with a hand gesture while the hand is too far to touch it |
 | 10 | `object_deformation` | rigid object repeatedly snaps its shape (bbox aspect ratio) |
 
-## Gate 2 — semantic reviewer (VLM, optional)
+### Gate 2 — semantic reviewer (VLM, optional)
 
 The rule engine cannot see extra limbs, morphing objects or magic glows.
 Gate 2 samples ~10 frames (plus gate-1 suspicious frames), sends them with
@@ -126,33 +174,6 @@ Thresholds and score weights live in [verifier/config.py](verifier/config.py).
 Scoring: `score = 1 − Σ weight(type) × worst_severity(type)`.
 Accept if `score ≥ 0.72` and no single violation exceeds `0.85`.
 
-## Setup
-
-Requires **Python 3.13** (PyTorch does not support 3.14 yet). Using
-[`uv`](https://github.com/astral-sh/uv):
-
-```bash
-uv venv --python 3.13 .venv
-uv pip install --python .venv/bin/python -r requirements.txt
-```
-
-Or plain `venv`:
-
-```bash
-python3.13 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-```
-
-Put your key in a `.env` file at the project root (loaded automatically):
-
-```
-GEMINI_API_KEY=your_key_here
-```
-
-See [.env.example](.env.example) for optional knobs such as
-`ROBOSS_VIDEO_MODEL`, `ROBOSS_LABEL_MODEL`, `ROBOSS_GATE2_ENABLED`,
-`ROBOSS_LABEL_ON_ACCEPT`, `ROBOSS_ANNOTATE_ENABLED`, and `ROBOSS_RUNS_DIR`.
-
 ### Async pipeline & concurrency
 
 The orchestration core is **async**: in a batch every scenario runs its own
@@ -175,11 +196,7 @@ across `TRACKING_CONCURRENCY` calls.
 FastAPI endpoints await the async core directly
 (`run_video_pipeline_async`, `run_e2e_pipeline_async`).
 
-YOLO11 weights (`yolo11n-pose.pt`, `yolo11n.pt`, ~12 MB total) download
-automatically on first run. `run.sh` / `e2e.sh` create the venv for you if
-it is missing.
-
-## Runners
+### Runners
 
 | command | what it does |
 |---|---|
@@ -202,7 +219,7 @@ The batch path uses the compiled `video_prompt` from each scenario packet
 when present. That prompt carries the object/scene identity anchors; the
 short `scenario_prompt` is kept for reports and semantic review context.
 
-## FastAPI
+### FastAPI service (`roboss.api`)
 
 ```bash
 uvicorn roboss.api:app --host 127.0.0.1 --port 8000
@@ -224,7 +241,7 @@ Endpoints:
 Legacy aliases (`/compile`, `/pipeline`, `/e2e`) still work but are hidden
 from the public docs.
 
-### Local File Storage
+#### Local file storage
 
 The local MVP stores artifacts under `runs/` and exposes them to the
 frontend through FastAPI:
@@ -250,12 +267,10 @@ A video generated at `runs/my_run/sc_01/generated.mp4` is available as:
 http://127.0.0.1:8000/assets/my_run/sc_01/generated.mp4
 ```
 
-### Robot Data Export
+#### Robot data export (bridge to V2R)
 
-James' `v2r/` pipeline (video → labeled, physics-checked, LeRobot v3
-export; see [v2r/README.md](v2r/README.md) and
-[V2R_MASTER_PROMPT.md](V2R_MASTER_PROMPT.md)) is integrated after video
-verification. Enable it on the full endpoints with:
+The `v2r/` pipeline is integrated after video verification through
+`roboss/v2r_bridge.py`. Enable it on the full endpoints with:
 
 ```json
 {
@@ -283,41 +298,6 @@ curl -X POST http://127.0.0.1:8000/robot-dataset-exports \
   -H "Content-Type: application/json" \
   -d '{"video_path":"runs/full_test_01/sc_01/generated.mp4","outdir":"runs/v2r_test/robot_data","robots":["g1"],"mode":"synthetic","stages":"all"}'
 ```
-
-## Roboss Studio (web UI)
-
-A React frontend (Vite + Tailwind, `src/`) over a dedicated batch backend
-(`server/`, FastAPI). One prompt — plus an optional reference image or
-video — becomes a batch: the scenario compiler fans it out, each job is
-generated with Gemini, verified and labeled in parallel, and results
-stream into the UI live.
-
-```bash
-# backend (port 8010)
-.venv/bin/uvicorn server.app:app --host 127.0.0.1 --port 8010
-
-# frontend (port 5174, proxies /api and /generated to the backend)
-npm install
-npm run dev
-```
-
-Pages: **Home** (project tour), **Studio** (launch batches, live pipeline
-circuit view, per-video cards with verification status and labeled preview,
-dataset zip download), **Stats** (accept/reject history).
-
-| endpoint | purpose |
-|---|---|
-| `POST /api/videos` | prompt (+ optional reference image/video) → batch of jobs |
-| `GET /api/batches/{id}` | poll batch status, per-job reports and labels |
-| `GET /api/batches/{id}/download` | zip of the batch's dataset files |
-| `GET /api/stats` | run history for the Stats page |
-| `GET /api/logs`, `GET /api/logs/stream` | agent logs (REST catch-up + live SSE) |
-| `POST /api/demo/dog`, `POST /api/demo/cache` | canned demo batches |
-
-Batch artifacts land in `generated/<batch_id>/` (scenario bundle under
-`bundle/`, one folder per job with the raw and labeled mp4) and are served
-statically under `/generated/...`. `ROBOSS_MAX_PARALLEL_JOBS` (default 3)
-caps concurrent jobs per batch.
 
 ### Verifier CLI (existing video only)
 
@@ -361,7 +341,7 @@ The `--scenario` metadata packet (see [scenario.example.json](scenario.example.j
 comes from the video-generation side; the report then also lists
 `missing_expected_objects` so scenario mismatches are visible.
 
-## Report schema
+### Report schema
 
 ```json
 {
@@ -386,6 +366,145 @@ comes from the video-generation side; the report then also lists
 }
 ```
 
+### Models
+
+| stage | model | where |
+|---|---|---|
+| scenario compiler (text) | `gemini-3.5-flash` | `agents/config.py` |
+| scenario canvas (image) | `gemini-3.1-flash-image` | `agents/config.py` |
+| video generation | `gemini-omni-flash-preview` | `gemini_service.py` |
+| Gate 2 reviewer | `gemini-3.5-flash` | `verifier/config.py` |
+| semantic annotator | `gemini-3.5-flash` | `verifier/config.py` |
+| auto-labeling | `gemini-3.5-flash` | `gemini_service.py` |
+
+---
+
+## 2. Roboss Studio (web UI)
+
+A React frontend (Vite + Tailwind, `src/`) over a dedicated batch backend
+(`server/`, FastAPI). One prompt — plus an optional reference image or
+video — becomes a batch: the scenario compiler fans it out, each job is
+generated with Gemini, verified and labeled in parallel, and results
+stream into the UI live.
+
+```bash
+# backend (port 8010)
+.venv/bin/uvicorn server.app:app --host 127.0.0.1 --port 8010
+
+# frontend (port 5174, proxies /api and /generated to the backend)
+npm install
+npm run dev
+```
+
+Pages: **Home** (project tour), **Studio** (launch batches, live pipeline
+circuit view, per-video cards with verification status and labeled preview,
+dataset zip download), **Stats** (accept/reject history).
+
+| endpoint | purpose |
+|---|---|
+| `POST /api/videos` | prompt (+ optional reference image/video) → batch of jobs |
+| `GET /api/batches/{id}` | poll batch status, per-job reports and labels |
+| `GET /api/batches/{id}/download` | zip of the batch's dataset files |
+| `GET /api/stats` | run history for the Stats page |
+| `GET /api/logs`, `GET /api/logs/stream` | agent logs (REST catch-up + live SSE) |
+| `POST /api/demo/dog`, `POST /api/demo/cache` | canned demo batches |
+
+Batch artifacts land in `generated/<batch_id>/` (scenario bundle under
+`bundle/`, one folder per job with the raw and labeled mp4) and are served
+statically under `/generated/...`. `ROBOSS_MAX_PARALLEL_JOBS` (default 3)
+caps concurrent jobs per batch.
+
+---
+
+## 3. V2R Factory (`v2r/`)
+
+The **video-to-robot-data** half of the repo: a production pipeline that
+turns raw human (or accepted synthetic) video into **labeled,
+physics-checked, LeRobot v3 exports** for robots such as the Unitree G1,
+Go2 and Franka. Full docs: [v2r/README.md](v2r/README.md); source of
+truth: [V2R_MASTER_PROMPT.md](V2R_MASTER_PROMPT.md).
+
+Stages (each real-mode tool runs in its own isolated env under `v2r/envs/`):
+
+```
+ingest → feasibility judge → geometry (ViPE) → human body (GVHMR)
+→ hands (WiLoR/MANO) → objects (Grounding DINO + SAM2 + FoundationPose)
+→ contact → semantics (Qwen2.5-VL) → retarget (GMR/mink)
+→ physics validation (MuJoCo Tier-1) → QA → package (LeRobot v3 + EgoDex)
+```
+
+Highlights:
+
+- **Synthetic vs real modes** — every stage has a deterministic synthetic
+  mock producing schema-valid artifacts, so the whole contract runs on
+  Windows/macOS CI without CUDA; real mode needs CUDA Linux
+  (`config/pipeline.yaml` switches per stage).
+- **Feasibility judge** — its own pre-analysis rejection gate: physics
+  heuristics plus a Qwen-VL judge reject AI-generated or untrackable
+  footage before any GPU time is spent.
+- **Multi-view GT tier** — the same event filmed/generated from several
+  angles is synced, calibrated and triangulated for measured (not
+  self-asserted) 3D accuracy, exported with `tier: multiview_gt`.
+- **Syngen loop** — `v2r syngen` runs its own prompt → Gemini/Veo →
+  two-track verification → ingest → LeRobot delivery cycle.
+
+```bash
+cd v2r
+pip install -e ".[dev]"
+v2r run --episode tests/data/sample.mp4 --stages all --robots g1
+```
+
+Episode outputs land in `v2r/workspaces/{episode_id}/` with
+`export/lerobot/`, `qa/yield_report.md` and per-stage manifests.
+
+---
+
+## 4. Demos & film
+
+- **`demo/`** — a polished standalone single-page demo for the V2R
+  pipeline: FastAPI serves the JSON API and static frontend from one
+  process (`python demo/serve.py`, port 8017) and reads live artifacts
+  from `v2r/` at request time. See [demo/README.md](demo/README.md).
+- **`roboss-film/`** — generation scripts, shot selects and intent docs
+  for *"The World Teaches"*, a 120-second three-act brand film about
+  why robots need verified human data. See
+  [roboss-film/INTENT.md](roboss-film/INTENT.md).
+
+---
+
+## Setup
+
+Requires **Python 3.13** (PyTorch does not support 3.14 yet). Using
+[`uv`](https://github.com/astral-sh/uv):
+
+```bash
+uv venv --python 3.13 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+```
+
+Or plain `venv`:
+
+```bash
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+Put your key in a `.env` file at the project root (loaded automatically):
+
+```
+GEMINI_API_KEY=your_key_here
+```
+
+See [.env.example](.env.example) for optional knobs such as
+`ROBOSS_VIDEO_MODEL`, `ROBOSS_LABEL_MODEL`, `ROBOSS_GATE2_ENABLED`,
+`ROBOSS_LABEL_ON_ACCEPT`, `ROBOSS_ANNOTATE_ENABLED`, and `ROBOSS_RUNS_DIR`.
+
+YOLO11 weights (`yolo11n-pose.pt`, `yolo11n.pt`, ~12 MB total) download
+automatically on first run. `run.sh` / `e2e.sh` create the venv for you if
+it is missing. The Studio frontend additionally needs Node
+(`npm install`), and `v2r/` has its own install
+(`cd v2r && pip install -e ".[dev]"`).
+
 ## Tests
 
 The physics checks are pure NumPy over track data, so they run without
@@ -393,6 +512,7 @@ models or videos:
 
 ```bash
 python -m pytest tests -q     # or: ./run.sh tests
+cd v2r && pytest              # V2R schema/stage contracts
 ```
 
 ## Project layout
@@ -408,9 +528,11 @@ roboss/
   storage.py        LocalStorageService + /assets-ready file metadata
   pipeline.py       reusable compile/generate/verify/label orchestration
   api.py            FastAPI app
+  v2r_bridge.py     verified video → V2R robot-data export
 server/             Studio backend: batch orchestrator + /api endpoints + SSE logs
 src/                Studio frontend: React (Vite + Tailwind) — Home / Studio / Stats
 generated/          Studio batch outputs (bundle + per-job videos/labels)
+runs/               CLI/API run outputs (video, report, labels, manifest)
 agents/             scenario compiler (idea → world contract → scenarios)
 v2r/                V2R factory: video → robot training data (own README)
 demo/               standalone V2R demo frontend (python demo/serve.py)
@@ -432,22 +554,13 @@ tests/
   test_annotate.py  annotator structure enforcement
 ```
 
-## Models
-
-| stage | model | where |
-|---|---|---|
-| scenario compiler (text) | `gemini-3.5-flash` | `agents/config.py` |
-| scenario canvas (image) | `gemini-3.1-flash-image` | `agents/config.py` |
-| video generation | `gemini-omni-flash-preview` | `gemini_service.py` |
-| Gate 2 reviewer | `gemini-3.5-flash` | `verifier/config.py` |
-| semantic annotator | `gemini-3.5-flash` | `verifier/config.py` |
-| auto-labeling | `gemini-3.5-flash` | `gemini_service.py` |
-
 ## Known limitations
 
-- 2D-only: no metric gravity check (`9.81 m/s²`) without camera calibration —
-  the gravity check is a weak "unsupported hovering" heuristic.
+- 2D-only (Roboss verifier): no metric gravity check (`9.81 m/s²`) without
+  camera calibration — the gravity check is a weak "unsupported hovering"
+  heuristic. The V2R multi-view tier is the path to measured 3D.
 - Object vocabulary is COCO-80; "humanoid robot" or "wet floor" need an
-  open-vocabulary detector (Grounding DINO) — planned extension.
+  open-vocabulary detector (Grounding DINO) — planned extension (already
+  used by V2R's objects stage).
 - Heavy camera motion beyond a global pan (zoom, rotation) can add noise;
   the median-displacement compensation only handles translation.

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from gemini_service import enforce_video_continuity_prompt
 from roboss.pipeline import VideoPipelineResult, run_e2e_pipeline
 
 
@@ -94,3 +95,13 @@ def test_e2e_parallel_results_keep_scenario_order(tmp_path, monkeypatch):
     assert summary["parallelism"]["video_workers"] == 3
     assert [r["scenario_id"] for r in summary["accepted"]] == ["sc_01", "sc_03"]
     assert [r["scenario_id"] for r in summary["rejected"]] == ["sc_02"]
+
+
+def test_generation_prompt_enforces_single_static_take():
+    prompt = enforce_video_continuity_prompt("robot crosses a warehouse aisle")
+
+    assert "One single continuous shot" in prompt
+    assert "No montage" in prompt
+    assert "no cuts" in prompt
+    assert "static top-down overhead view" in prompt
+    assert "same frame" in prompt

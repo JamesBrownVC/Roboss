@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from .checks import run_all_checks
-from .config import DEFAULT_THRESHOLDS
+from .config import Thresholds
 from .extract import extract_evidence
 from .report import build_report, save_report
 
@@ -36,7 +36,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="uniformly sampled frames to send (default: 10)")
     args = p.parse_args(argv)
 
-    th = DEFAULT_THRESHOLDS
+    th = Thresholds()  # fresh instance: never mutate the shared default
     if args.max_frames:
         th.max_frames = args.max_frames
     if args.gate2_model:

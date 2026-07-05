@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from .config import AgentConfig, CAMERA_ANGLES
+from .config import AgentConfig, CAMERA_ANGLES, REQUIRED_CAMERA_ANGLE
 from .llm import generate_json, text_part
 from .schemas import CONTRACT_SCHEMA
 
@@ -42,7 +42,9 @@ Rules:
 - default_position uses meters in a scene-local frame (x right, y forward,
   z up); use default_relation instead when an entity is held by or attached
   to another (e.g. "held_by robot_01 at chest level").
-- allowed_camera_angles: pick 3-6 from {json.dumps(CAMERA_ANGLES)}.
+- allowed_camera_angles: use only {REQUIRED_CAMERA_ANGLE}. The videos must be
+  generated from a static top-down overhead view so robot movement paths are
+  visible in one continuous take.
 - allowed_event_types: 4-8 short snake_case event names that fit the user's
   risk focus and are physically possible for these entities.
 - allowed_position_deltas: small per-entity ranges in meters ([-0.6, 0.6]
@@ -177,6 +179,7 @@ def normalize_contract(contract: dict) -> dict:
     policy.setdefault("allowed_position_deltas", [])
     policy.setdefault("forbidden_changes", [])
     policy.setdefault("consistency_requirements", [])
+    policy["allowed_camera_angles"] = [REQUIRED_CAMERA_ANGLE]
     return contract
 
 
@@ -188,7 +191,7 @@ def build_contract(intent: dict, cfg: AgentConfig) -> dict:
                               + json.dumps(intent, indent=2))],
         schema=CONTRACT_SCHEMA,
         max_output_tokens=cfg.max_output_tokens,
-        temperature=cfg.plan_temperature,
+        thinking_level=cfg.plan_thinking_level,
     )
     contract = normalize_contract(contract)
     policy = contract["variation_policy"]
@@ -196,6 +199,5 @@ def build_contract(intent: dict, cfg: AgentConfig) -> dict:
     policy.setdefault("event_timing_seconds",
                       [0.5, max(1.0, intent["duration_seconds"] - 1.0)])
     policy.setdefault("allowed_position_deltas", [])
-    if not policy["allowed_camera_angles"]:
-        policy["allowed_camera_angles"] = ["front_view", "side_view"]
+    policy["allowed_camera_angles"] = [REQUIRED_CAMERA_ANGLE]
     return contract

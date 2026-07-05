@@ -1,14 +1,15 @@
 """Gate 2 — semantic reviewer.
 
 Sends sampled video frames plus the gate-1 findings to a multimodal Gemini
-model and asks it to flag impossibilities the rule engine cannot see:
+model and asks it to flag only high-confidence impossibilities the rule
+engine cannot see:
 extra limbs, morphing objects, magic effects, impossible gestures, scene
 teleports, prompt mismatch. Structured outputs (`response_schema`)
 guarantee the reply is valid JSON matching our schema — the model cannot
 free-form its verdict.
 
-Gate 2 is advisory on top of gate 1: its findings are merged into the same
-violation list with `gate: "semantic"` and scored with the same formula.
+Gate 2 is advisory on top of gate 1: its findings are kept as semantic
+warnings with low score impact. The deterministic gate remains the judge.
 """
 
 from __future__ import annotations
@@ -63,22 +64,28 @@ A deterministic rule engine (gate 1) has already checked trajectories, \
 contacts and gravity from tracked keypoints. Your job is to catch what \
 rules cannot see, by looking at the actual frames:
 
-- anatomical_anomaly: extra, missing or merged limbs; heads/hands fused \
-with objects; anatomically impossible poses
+- anatomical_anomaly: clear extra, missing or merged limbs; heads/hands fused \
+with objects; anatomically impossible poses. Do NOT report ordinary AI-video \
+warping, soft faces, jitter, blur, or brief pose-estimation-looking errors.
 - object_morphing: an object changing identity, shape, size or count \
 between frames (a box becoming a bag, one cup becoming two)
 - magic_effect: glows, energy effects, objects moved by no visible force
 - impossible_gesture: hand or body motion no human could perform
 - scene_inconsistency: background, lighting, scale or perspective breaking \
-between frames
+between frames, including cuts, jump cuts, montage, camera-angle changes, \
+scene changes, or a non-overhead/non-static viewpoint
 - prompt_mismatch: the frames clearly do not depict the requested scenario
 
 Be conservative: report only what you can point to in specific frames. \
 Ordinary generated-video softness, compression artifacts or motion blur \
-are NOT violations. severity is 0.0-1.0 (above 0.85 means definitely \
-impossible). semantic_score is your overall plausibility judgement, \
+are NOT violations. If you are less than 75% certain, return no violation. \
+Use severity 0.75-1.0 only for major, obvious, persistent impossibilities. \
+semantic_score is your overall plausibility judgement, \
 1.0 = fully plausible. Frame numbers must be taken from the labels that \
-precede each image."""
+precede each image. The required video form is one unedited continuous take \
+in one unchanged scene from a fixed top-down overhead camera; any visible \
+montage, shot change, scene cut, or camera perspective switch is a \
+scene_inconsistency."""
 
 
 def sample_frames(video_path: str, n_frames: int, k: int,
@@ -133,8 +140,9 @@ def build_user_content(frames: list[tuple[int, float, bytes]],
         content.append(("text", f"Frame {frame_idx} (t={ts:.2f}s):"))
         content.append(("image/jpeg", jpeg))
 
-    content.append(("text", "Report all semantic/physical impossibilities "
-                            "you can point to in these frames."))
+    content.append(("text", "Report only major, high-confidence semantic or "
+                            "physical impossibilities. Ignore minor AI-video "
+                            "warping, blur, jitter, and uncertain artifacts."))
     return content
 
 
@@ -153,14 +161,24 @@ def build_gemini_parts(frames: list[tuple[int, float, bytes]],
     return parts
 
 
-def parse_gate2_response(data: dict) -> list[Violation]:
-    """Pure and unit-testable: model JSON -> Violation list."""
+def parse_gate2_response(data: dict,
+                         severity_cap: float = 0.40,
+                         min_report_severity: float = 0.75,
+                         severity_scale: float = 0.40) -> list[Violation]:
+    """Pure and unit-testable: model JSON -> Violation list.
+
+    Gate 2 is forgiving: weak VLM notes are dropped, and surviving
+    severities are scaled down so they behave as advisory warnings.
+    """
     violations = []
     for v in data.get("violations", []):
         vtype = v.get("type")
         if vtype not in SEMANTIC_TYPES:
             continue
-        sev = float(np.clip(float(v.get("severity", 0.5)), 0.0, 1.0))
+        raw_sev = float(np.clip(float(v.get("severity", 0.5)), 0.0, 1.0))
+        if raw_sev < min_report_severity:
+            continue
+        sev = float(np.clip(raw_sev * severity_scale, 0.0, severity_cap))
         frames = sorted({int(f) for f in v.get("frame_numbers", []) if int(f) >= 0})
         violations.append(Violation(
             type=vtype,
@@ -215,7 +233,12 @@ def run_gate2(video_path: str,
         return [], {"status": "error", "error": "empty model response"}
     data = json.loads(text)
 
-    violations = parse_gate2_response(data)
+    violations = parse_gate2_response(
+        data,
+        severity_cap=th.gate2_severity_cap,
+        min_report_severity=th.gate2_min_report_severity,
+        severity_scale=th.gate2_severity_scale,
+    )
     meta["semantic_score"] = round(
         float(np.clip(float(data.get("semantic_score", 1.0)), 0.0, 1.0)), 2)
     meta["summary"] = data.get("summary", "")

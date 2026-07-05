@@ -1,0 +1,1268 @@
+{
+  "film": "The World Teaches (ROBOSS)",
+  "duration_target_seconds": 120,
+  "standing_negative_prompt": "no on-screen text, no captions, no subtitles, no watermark, no logo, no distorted hands, no extra fingers, no morphing objects, no cartoon look, no oversaturation.",
+  "character_blocks": {
+    "MACHINIST": "Indian woman, mid-40s, machinist, dark hair pulled back with silver streaks, matte black fabric headband camera with a tiny steady red pinpoint indicator light, olive work shirt with rolled sleeves, fine metal shavings on forearms, warm brown eyes, calm confident expression.",
+    "DANCER": "young Indian woman, early 20s, athletic build, hair in a high bun, wearing a rust-orange cropped hoodie and black joggers, barefoot on a concrete rooftop at golden hour, small silver nose stud, joyful focused expression."
+  },
+  "budget_guardrail": {
+    "max_attempts_per_clip": 4,
+    "override": "User explicitly allowed going past 4 tries from 2026-07-04 22:14 UTC+2 onward; continue regenerating as needed while logging every extra attempt.",
+    "checkpoints": [
+      "after Act I clips pass",
+      "after Act II clips pass",
+      "after Act III clips pass"
+    ]
+  },
+  "clips": [
+    {
+      "id": "C01",
+      "act": "I",
+      "order": 1,
+      "type": "generated",
+      "use_seconds": 5,
+      "pass_if": "hands flawless, copper wire continuous, single slow push-in",
+      "prompt": "Cinematic extreme macro close-up, anamorphic film look, organic 35mm grain, gentle halation, warm golden-hour grade with teal shadows. Seconds 0-3: the weathered hands of a master craftsman, dark brown skin with fine callouses, slowly thread a strand of bright copper wire through the eyelet of a small electric motor armature on a workbench; low warm dawn light rakes from the left, illuminating drifting dust motes in a visible volumetric beam, background falling into warm darkness. Seconds 3-7: the wire pulls taut and the fingers give one confident final twist. Seconds 7-10: the hands rest, dust drifting. Razor-thin depth of field, barely perceptible slow push-in, no camera shake, prestige-watchmaking mood.",
+      "state": "passed",
+      "selected_take": 1,
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "minor: grain slightly clean/digital vs 35mm-grain spec",
+          "repair_applied": null,
+          "mean_soft_score": 87,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "act": "I",
+      "order": 2,
+      "type": "generated",
+      "use_seconds": 6,
+      "pass_if": "ten workers visible, all headband LEDs tiny, one continuous dolly",
+      "prompt": "Cinematic wide interior, anamorphic, warm golden-hour grade with teal shadows, heavy atmospheric haze. A light-industrial workshop in urban India at dawn: long shared wooden benches, hanging cords, crates of components, steam rising from a kettle. Ten workers, men and women of varied ages, absorbed in skilled work: rebuilding a gearbox, soldering a circuit board, stitching heavy canvas, calibrating a brass valve. Every worker wears a slim matte-black fabric headband camera with a tiny steady red pinpoint indicator light. Tall dusty windows pour volumetric shafts of golden light. Seconds 0-10: one continuous slow lateral dolly right to left at waist height gliding past the benches; workers never look at the lens; soft horizontal anamorphic flares crossing each light shaft. Dignified, documentary-cinematic.",
+      "state": "passed",
+      "selected_take": 1,
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "minor: dolly reads as dolly+push not pure lateral; possible actor-similarity between 2 workers",
+          "repair_applied": null,
+          "mean_soft_score": 86.4,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "act": "I",
+      "order": 3,
+      "type": "generated",
+      "use_seconds": 5,
+      "pass_if": "believable body-cam POV, gears mesh cleanly, hands flawless",
+      "prompt": "Visibly handheld body-worn head-camera footage, NOT a locked tripod shot: constant natural sway and subtle vertical bob synchronized to breathing, wide 16mm lens with noticeable barrel distortion curving the frame edges, honest gritty body-cam texture, warm grade. First-person point of view looking down at my own hands on a scarred wooden workbench under a warm lamp. Seconds 0-4: my fingers select a small metal gear from a parts tray and seat it into a planetary gear assembly, the frame drifting slightly with each small movement. Seconds 4-7: I rotate the carrier and the teeth mesh precisely, the camera continuing its natural breathing sway. Seconds 7-10: I test the rotation twice, steady, the sway still faintly present. No interface graphics, fully realistic.",
+      "notes": "Reused later: this footage is comped into the glass pane in C12. Prompt revised after take 1 (locked-camera MOTION fail) -- original: 'First-person point of view from a body-worn head camera, wide 16mm lens with subtle barrel distortion, natural gentle sway synchronized to calm breathing, honest body-cam texture, warm grade. Looking down at my own hands on a scarred wooden workbench under a warm lamp. Seconds 0-4: my fingers select a small metal gear from a parts tray and seat it into a planetary gear assembly. Seconds 4-7: I rotate the carrier and the teeth mesh precisely. Seconds 7-10: I test the rotation twice, steady. No interface graphics, fully realistic.'",
+      "state": "passed",
+      "selected_take": 2,
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "fail",
+          "main_defect": "MOTION: reads as locked overhead tripod shot, no body-cam sway/distortion",
+          "repair_applied": "reinforced sway/distortion wording per repair table, made it lead + repeated clause",
+          "mean_soft_score": 83.6,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 2,
+          "verdict": "pass",
+          "main_defect": "minor: gear assembly geometry reads slightly differently between two frames (plausibly just rotation), not verifiable from stills alone",
+          "repair_applied": null,
+          "mean_soft_score": 83.6,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "act": "I",
+      "order": 4,
+      "type": "generated",
+      "use_seconds": 6,
+      "pass_if": "four distinct crafts appear in order, sparks and steam volumetric, continuous push",
+      "prompt": "Cinematic continuous tracking shot, gimbal-smooth forward push at walking pace, 40mm lens, warm golden haze, anamorphic grain, camera kept close and low so distant walls and shopfronts stay out of frame. Moving through a private enclosed industrial workyard in India at early morning: bare, unmarked, unpainted plaster walls and weathered brick -- no painted slogans, no posters, no notices, no signage of any kind on any surface, exposed brick, corrugated metal awnings, stacked crates and machinery -- no market stalls or hanging signs anywhere in view. Passing skilled workers, each wearing a slim black headband camera with a tiny red pinpoint light. Seconds 0-3: a welder kneels in a cascade of orange sparks blooming against deep shadow. Seconds 3-5: a tailor's hands fly across fabric under a bare bulb. Seconds 5-7: a cook tosses a blackened pan, flame leaping, steam curling through a light shaft. Seconds 7-10: a mechanic spins a wrench one-handed while steadying an engine block. Sparks and steam pass close to the lens.",
+      "notes": "Prompt revised twice. Take 1 failed TEXT (legible shop sign + QR poster). Take 2's fix (adding a 'no readable signage' sentence) backfired and produced MORE/larger signage -- per repair table's two-consecutive-failures rule, take 3 rephrases the whole scene structure: reframed location from an urban-India market street to a private enclosed workyard (bare walls/brick/corrugated metal, explicitly no stalls/signs/posters) and constrained camera framing to stay close/low. Original prompt (take 1, before any repair): Cinematic continuous tracking shot, gimbal-smooth forward push at walking pace, 40mm lens, warm golden haze, anamorphic grain. Moving through a covered workshop courtyard in urban India at early morning, passing skilled workers, each wearing a slim black headband camera with a tiny red pinpoint light. Seconds 0-3: a welder kneels in a cascade of orange sparks blooming against deep shadow. Seconds 3-5: a tailors hands fly across fabric under a bare bulb. Seconds 5-7: a cook tosses a blackened pan, flame leaping, steam curling through a light shaft. Seconds 7-10: a mechanic spins a wrench one-handed while steadying an engine block. Sparks and steam pass close to the lens.",
+      "state": "passed",
+      "selected_take": 6,
+      "prior_clean_take": 4,
+      "over_budget_note": "Takes 5-6 were user-approved over-budget generations (rule 5 ceiling is 4). Take 4 was already a clean pass; user asked to spend more for a stronger craft read. Take 6 selected; take 4 retained as guaranteed-clean fallback.",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "fail",
+          "main_defect": "TEXT: legible shop sign (f_01) + QR/notice poster (f_06) in background",
+          "repair_applied": "added explicit no-readable-signage clause",
+          "mean_soft_score": 87,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 2,
+          "verdict": "fail",
+          "main_defect": "TEXT: regression -- large prominent shop signs + text-covered posters throughout, worse than take 1",
+          "repair_applied": "rephrased whole scene structure (market street -> private workyard, camera kept close/low)",
+          "mean_soft_score": null,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 3,
+          "verdict": "fail",
+          "main_defect": "TEXT: much reduced but still present -- small poster fragment + painted wall script",
+          "repair_applied": "added explicit bare/unmarked/unpainted walls clause targeting painted-on text specifically",
+          "mean_soft_score": null,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 4,
+          "verdict": "pass",
+          "main_defect": "none (clean but sparse staging)",
+          "repair_applied": null,
+          "mean_soft_score": 87.4,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 5,
+          "verdict": "fail",
+          "main_defect": "TEXT: legible notice-posters on walls (f_01, f_05) though craft staging stronger",
+          "repair_applied": "reroll (seed change) chasing craft energy without wall text",
+          "mean_soft_score": 88.8,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 6,
+          "verdict": "pass",
+          "main_defect": "trivial: small non-text wall box on brick pillar (f_09)",
+          "repair_applied": null,
+          "mean_soft_score": 90.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "act": "I",
+      "order": 5,
+      "type": "generated",
+      "use_seconds": 4,
+      "pass_if": "she matches the character block, smile lands subtle, LED tiny",
+      "prompt": "Indian woman, mid-40s, machinist, dark hair pulled back with silver streaks, matte black fabric headband camera with a tiny steady red pinpoint indicator light, olive work shirt with rolled sleeves, fine metal shavings on forearms, warm brown eyes, calm confident expression. Cinematic portrait, 85mm at f/1.8, locked camera, Rembrandt window light from screen left, warm practical rim from behind her right shoulder, the red pinpoint LED a soft bokeh ember above her eyes. Full-frame 16:9 composition filling the entire frame edge to edge, no letterboxing, no black bars, no cinemascope crop. Seconds 0-4: she finishes tightening a small fitting with two precise wrench turns. Seconds 4-7: she exhales, looks up just past the lens, and allows one small private knowing smile of pride. Seconds 7-10: she holds, blinking once. Dignified, never performative.",
+      "notes": "Hero character (MACHINIST). On pass, extract 3 reference frames for potential image-conditioning of later appearances. Prompt revised after take 1 (STYLE fail: baked-in letterbox bars inconsistent with C01-C04) by adding an explicit full-frame/no-letterbox clause. Original prompt (take 1): 'Indian woman, mid-40s, machinist, dark hair pulled back with silver streaks, matte black fabric headband camera with a tiny steady red pinpoint indicator light, olive work shirt with rolled sleeves, fine metal shavings on forearms, warm brown eyes, calm confident expression. Cinematic portrait, 85mm at f/1.8, locked camera, Rembrandt window light from screen left, warm practical rim from behind her right shoulder, the red pinpoint LED a soft bokeh ember above her eyes. Seconds 0-4: she finishes tightening a small fitting with two precise wrench turns. Seconds 4-7: she exhales, looks up just past the lens, and allows one small private knowing smile of pride. Seconds 7-10: she holds, blinking once. Dignified, never performative.'",
+      "state": "passed",
+      "selected_take": 2,
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "fail",
+          "main_defect": "STYLE: baked-in black letterbox bars top/bottom, inconsistent with C01-C04 (would flash on cut); character match otherwise excellent",
+          "repair_applied": "added explicit full-frame 16:9 / no-letterbox / no-black-bars clause",
+          "mean_soft_score": 87.8,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 2,
+          "verdict": "pass",
+          "main_defect": "none (minor: headband reads as band+LED without bulky module)",
+          "repair_applied": null,
+          "mean_soft_score": 89.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "reference_frames_extracted": [
+        "clips/C05/refs/MACHINIST_ref1.png",
+        "clips/C05/refs/MACHINIST_ref2.png",
+        "clips/C05/refs/MACHINIST_ref3.png"
+      ],
+      "conditioning_note": "Omni wrapper (omni_generate_video) is text-only in this repo; image-conditioning not wired. MACHINIST appears only in C05 in the current manifest, so no downstream generated clip needs conditioning; ref frames saved for post/consistency."
+    },
+    {
+      "id": "C06",
+      "act": "I",
+      "order": 6,
+      "type": "generated",
+      "use_seconds": 5,
+      "pass_if": "upper frame stays clean and dark for VFX, crane move smooth",
+      "prompt": "Cinematic macro, warm dawn workshop: anamorphic grain, heavy haze, single hard warm raking key from the left. Seconds 0-6: skilled hands assemble small metal components with fluid expert motion, fingers traveling in graceful arcs above the bench. Seconds 6-10: the camera slowly cranes straight upward off the hands into deep empty darkness directly above the bench, pure dark negative space with only floating dust motes drifting in a faint volumetric beam, absolutely no shelves, no tools, no wall, no ceiling, no light fixtures anywhere in the upper half of frame. Upper two-thirds of the frame stays clean, empty, and dark.",
+      "notes": "Light threads composited in post over the clean dark upper frame. Prompt revised after take 1 (clip-specific PASS IF fail: crane rose into cluttered lit shelving + a fluorescent tube instead of clean dark negative space). Original prompt (take 1): 'Cinematic macro, warm dawn workshop: anamorphic grain, heavy haze, single hard warm raking key from the left. Seconds 0-6: skilled hands assemble small metal components with fluid expert motion, fingers traveling in graceful arcs above the bench. Seconds 6-10: the camera slowly cranes upward from the hands into the dark hazy air above the bench, holding on drifting dust. Upper half of frame clean and dark.'",
+      "state": "passed",
+      "selected_take": 2,
+      "trim_start": 4.0,
+      "edit_note": "Use ~sec 5-9 of the take for the light-thread composite; end before the shelf resolves at sec 10.",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "fail",
+          "main_defect": "framing: crane rose into cluttered lit shelving + fluorescent tube, upper frame not clean/dark for VFX comp",
+          "repair_applied": "constrained crane destination to empty dark negative space above the bench (no shelves/tools/wall/ceiling/fixtures)",
+          "mean_soft_score": 85.2,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 2,
+          "verdict": "pass",
+          "main_defect": "minor: final frame (~sec 10) resolves onto a shelf; trimmed out by the 5s use-window (clean-plate window sec 6-9)",
+          "repair_applied": null,
+          "mean_soft_score": 87.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ]
+    },
+    {
+      "id": "C07",
+      "act": "I",
+      "order": 7,
+      "type": "generated",
+      "use_seconds": 4,
+      "pass_if": "horizon haze reads dawn, upper sky empty, single continuous flight",
+      "prompt": "Cinematic aerial at dawn, wide 24mm, flying slowly forward over a dense industrial district in India: rooftops, water tanks, courtyards, narrow waking streets, long golden shadows, haze fading the horizon to peach. Seconds 0-10: one continuous smooth forward flight with a slow ten degree upward tilt, ending with generous empty sky in the upper half of frame. No readable signage.",
+      "notes": "Thread river composited in post over the empty sky.",
+      "state": "passed",
+      "selected_take": 1,
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 87.8,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ]
+    },
+    {
+      "id": "CARD_DATA",
+      "act": "I/II",
+      "order": 7.5,
+      "type": "slate",
+      "use_seconds": null,
+      "pass_if": null,
+      "prompt": null,
+      "notes": "0:35 DATA card \u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u00a0\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00e2\u20ac\u00a6\u00c3\u201a\u00c2\u00a1\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u2026\u00c2\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u009d post-only slate, never generated.",
+      "state": "not_generated",
+      "attempts": []
+    },
+    {
+      "id": "C08",
+      "act": "II",
+      "order": 8,
+      "type": "generated",
+      "use_seconds": 5,
+      "pass_if": "panels read as lit glass panes, void haze breathes, inhumanly smooth track",
+      "prompt": "Cinematic shot in a black digital void filled with volumetric haze, cold cyan-charcoal grade, blacks lifted slightly into fog. Dozens of glowing rectangular panes of lit glass, each playing soft indistinct moving footage, fly toward and past the camera in loose formation like a school of luminous fish, banking gently, each pane casting cyan spill onto the haze. Seconds 0-10: one continuous slow linear backward track as panes overtake the lens on both sides; one pane passes close enough to light the haze like a passing car at night. Architectural, physical weight, precision mechanical camera, no humans.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 88.4,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 88.6,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C09",
+      "act": "II",
+      "order": 9,
+      "type": "generated",
+      "use_seconds": 6,
+      "pass_if": "footage feels one degree too perfect; one subtle hand flaw is ACCEPTABLE here",
+      "prompt": "Flawless, hyper-clean cinematic cooking footage that feels subtly synthetic: a sunlit modern kitchen, elegant hands plating an elaborate dish, silky steam, perfectly even lighting, unnaturally continuous smooth motion, plastic-smooth skin speculars, zero film grain, luxurious food-commercial styling, locked camera, shallow depth of field. Seconds 0-10: the plating proceeds with eerie perfection, sauce drawn in an immaculate arc, garnish placed with impossible precision.",
+      "notes": "HANDS hard-criterion exception: one subtle hand flaw is acceptable/encouraged here (it plays an AI fake).",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none (intended uncanny perfection; hand-flaw waiver unused)",
+          "repair_applied": null,
+          "mean_soft_score": 89.8,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 89.2,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C10",
+      "act": "II",
+      "order": 10,
+      "type": "generated",
+      "use_seconds": 5,
+      "pass_if": "frozen-time reads clearly, penetration ripple visible, continuous flight",
+      "prompt": "Cinematic VFX shot, cold cyan-charcoal grade: the camera flies forward through a floating pane of glass in a dark hazy void, a subtle refraction ripple on penetration, into a photorealistic kitchen scene frozen in time like a shattered-time diorama: a chef's hand paused mid-motion above a plated dish, steam frozen in curls, droplets suspended in the air. Seconds 0-4: approach and penetrate the glass. Seconds 4-8: continuous smooth linear flight through the frozen scene toward an extreme close-up of the paused hand. Seconds 8-10: hold locked on the hand at macro distance. Ominous forensic mood, haze streaming past, no motion in the scene itself.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 88.8,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C11",
+      "act": "II",
+      "order": 11,
+      "type": "generated",
+      "use_seconds": 3,
+      "pass_if": "disintegration falls with heavy slow physics, red light faint, camera locked",
+      "prompt": "Cinematic VFX shot in a black void with volumetric haze, cold palette disrupted only by a faint red glow: a single large floating pane of lit glass glitches with one violent horizontal tear, its light extinguishes, and the pane crystallizes and disintegrates into millions of tiny dark fragments that fall downward through the fog like ash, catching faint red light as they drop out of frame. Seconds 0-2: the tear. Seconds 2-7: the fall. Seconds 7-10: empty drifting haze. Locked camera, judicial stillness.",
+      "notes": "VIDEO TERMINATED card composited in post over this shot.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 90.2,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C12",
+      "act": "II",
+      "order": 12,
+      "type": "generated",
+      "use_seconds": 5,
+      "pass_if": "warm footage contrasts the cold void, pane reads physical",
+      "prompt": "Cinematic shot in a black digital void with volumetric haze, cold cyan-charcoal grade: a single large pane of lit glass floats centered, playing soft warm-toned workshop footage that bleeds golden light into the surrounding fog, the one warm element in a cold world. Seconds 0-10: one confident slow push-in toward the pane, gentle half-degree parallax, the warm spill growing on the haze as we approach. Architectural, reverent.",
+      "notes": "Generate plate with abstract warm footage only inside the pane \u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u00a0\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00e2\u20ac\u00a6\u00c3\u201a\u00c2\u00a1\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u2026\u00c2\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u009d bounding boxes, depth wipe, and skeleton overlay composited in post; the footage inside the pane is C03 comped in during editing, not part of this generation.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 87.4,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C13",
+      "act": "II",
+      "order": 13,
+      "type": "generated",
+      "use_seconds": 3,
+      "pass_if": "stream formation reads disciplined, emerald edges subtle not neon, orbital move majestic",
+      "prompt": "Cinematic VFX shot in a dark hazy void: dozens of glowing panes of lit glass snap into a disciplined luminous stream flowing in formation past the camera toward a destination off-frame, each pane edged in soft emerald green light bending through drifting fog. Seconds 0-10: one slow majestic fifteen degree orbital camera move revealing the depth of the stream. Cool palette warmed only by the emerald edges, triumphant, orderly.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 88.6,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C14",
+      "act": "II",
+      "order": 14,
+      "type": "generated",
+      "use_seconds": 2,
+      "pass_if": "the sphere reads woven, pulses feel organic, scale vast",
+      "prompt": "Cinematic VFX wide shot in a dark hazy void: a vast slowly rotating sphere woven from millions of fine cyan threads of light, suspended in fog, fed by streams of glowing glass panes arriving from three directions, each pane dissolving into threads on contact and joining the weave, the sphere pulsing softly with each absorption like a heart being fed. Seconds 0-10: slow rising crane-back to a majestic wide with the sphere centered. Living archive, not a database.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 91.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C15",
+      "act": "III",
+      "order": 15,
+      "type": "generated",
+      "use_seconds": 4,
+      "pass_if": "the capsule is EMPTY frosted glass with no text, gradient soft, orbit smooth",
+      "prompt": "Cinematic product-film shot: a bright minimal infinite studio with a soft dawn-gradient backdrop, pale peach into off-white, gentle haze floor. Floating horizontally at chest height in the center: a long slim pill-shaped rounded rectangle capsule of frosted glass, wide like an empty chat input bar, with a soft interior glow and a subtle drop shadow, completely blank and unlabeled. It is not a bottle, not a jar, not a perfume container, not a cap, not a cylinder; it is a horizontal interface-shaped glass bar. Seconds 0-10: one slow twenty degree arc around the floating horizontal capsule, 65mm, its glass edges catching the gradient. Silence and confidence, flagship product reveal aesthetic.",
+      "notes": "Chat text composited in post over the blank capsule. Prompt revised after take 1 failed by reading as a vertical cosmetics/perfume bottle; repair forces horizontal chat-bar geometry and forbids bottle/cap/container forms.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "fail",
+          "main_defect": "STYLE/OBJECT: vertical cosmetics-bottle silhouette with internal cap, not blank horizontal chat-bar capsule",
+          "repair_applied": "rewrite as horizontal pill-shaped frosted glass bar; forbid bottle/cap/container",
+          "mean_soft_score": 78.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 2,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 89.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 2
+    },
+    {
+      "id": "C16",
+      "act": "III",
+      "order": 16,
+      "type": "generated",
+      "use_seconds": 6,
+      "pass_if": "keystrokes read tactile, fingers flawless, one decisive final press",
+      "prompt": "Cinematic extreme macro, 100mm, locked camera, shallow focus, cool edge light with warm fill. The entire frame is filled by one single smooth matte-black featureless glass pressure surface, like a blank trackpad-sized tile; no keyboard, no keycaps, no keypad, no rows of keys, no surrounding device context, no edges with other controls visible. A human fingertip presses the one unmarked glass surface, creating a subtle tactile depression and soft reflection. The surface is completely blank: no labels, no symbols, no letters, no numbers, no logos, no markings anywhere in foreground or background. Seconds 0-6: the fingertip presses the blank pressure surface with tactile authority and human rhythm, slight pauses like natural composition. Seconds 6-8: a brief hesitation above the same blank surface. Seconds 8-10: one decisive, final, slightly slower press into the featureless surface, held for a beat. Satisfying, intimate, premium.",
+      "state": "passed",
+      "failure_analysis": "C16 exhausted the original 4-attempt automatic budget. All attempts failed the hard TEXT criterion by generating readable keyboard legends or symbols despite progressively stronger blank-key prompts. Root cause: any keyboard/keycap imagery strongly biases Omni toward printed legends. User then allowed going past 4 tries; take 5 abandons keyboard/keycaps entirely for a featureless blank touch-sensitive glass pressure tile.",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "fail",
+          "main_defect": "TEXT: readable keyboard legends (A/Z/Q/Alt and other key labels)",
+          "repair_applied": "rewrite as blank unlabeled mechanical keyboard and large unlabeled final key",
+          "mean_soft_score": 76.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 2,
+          "verdict": "fail",
+          "main_defect": "TEXT: readable keyboard legends still present despite blank-keycap prompt",
+          "repair_applied": "rephrase scene from keyboard to custom prototype input device with smooth unmarked key tiles",
+          "mean_soft_score": 75.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 3,
+          "verdict": "fail",
+          "main_defect": "TEXT: small readable key symbols still visible at frame edges/late key",
+          "repair_applied": "last repair: extreme crop on only blank tiles, no surrounding labelled keys or keyboard edge",
+          "mean_soft_score": 79.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 4,
+          "verdict": "fail",
+          "main_defect": "TEXT: readable key legend '7' and small printed symbols still visible in upper row",
+          "repair_applied": "budget guardrail reached; stop and ask before over-budget repair",
+          "mean_soft_score": 76.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 5,
+          "verdict": "fail",
+          "main_defect": "TEXT: defocused background keyboard keys still show white legends/symbols",
+          "repair_applied": "remove all keyboard/device context; make one featureless pressure surface fill the frame",
+          "mean_soft_score": 82.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 6,
+          "verdict": "pass",
+          "main_defect": "none (pressure-tile replacement avoids keyboard text)",
+          "repair_applied": null,
+          "mean_soft_score": 88.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 6
+    },
+    {
+      "id": "C17",
+      "act": "III",
+      "order": 17,
+      "type": "generated",
+      "use_seconds": 5,
+      "pass_if": "orb reads as woven light threads, dancer silhouettes strobe only briefly, breathing rhythm clear",
+      "prompt": "Cinematic VFX shot in a bright minimal studio with a soft peach-to-white gradient: a sphere woven from fine white threads of light hovers and breathes, threads weaving, unraveling, and reweaving. The orb itself is the hero and stays mostly empty, luminous, and abstract. Only three tiny faint ghost fragments of dancers appear for less than half a second each inside the threads: a partial spinning shoulder silhouette, a brief popping elbow shape, a small classical Indian hand-gesture shadow, each gone immediately, never a full body and never sustained. Seconds 0-10: one slow vertical camera rise ending centered on the orb at its largest breath, the gradient backdrop pulsing subtly in sync. Elegant, anticipatory.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "fail",
+          "main_defect": "PASS_IF: dancer silhouette remains full and sustained across multiple frames, not brief strobes",
+          "repair_applied": "make orb primary; silhouettes only faint ghost fragments for split-second flashes",
+          "mean_soft_score": 84.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 2,
+          "verdict": "pass",
+          "main_defect": "minor: dancer ghost fragments are extremely subtle/possibly between sampled frames",
+          "repair_applied": null,
+          "mean_soft_score": 88.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 2
+    },
+    {
+      "id": "C18a",
+      "act": "III",
+      "order": 18.1,
+      "type": "generated",
+      "use_seconds": 4,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Handheld documentary-cinematic footage, 24fps look, visible grain, real-world lighting, full body in frame, single dancer or couple mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. A bharatanatyam dancer in a temple courtyard at dusk, ankle bells, precise geometric poses and rhythmic footwork.",
+      "notes": "Carousel card 1 of 10. Skeleton overlay and time-series strip composited in post.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 90.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C18b",
+      "act": "III",
+      "order": 18.2,
+      "type": "generated",
+      "use_seconds": 3,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Handheld documentary-cinematic footage, 24fps look, visible grain, real-world lighting, full body in frame, single solo street dancer mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. An energetic urban street dancer in a concrete lot at golden hour, crisp percussive isolations, footwork, arm accents, and a clean final freeze.",
+      "notes": "Carousel card 2 of 10. Skeleton overlay and time-series strip composited in post.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 88.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C18c",
+      "act": "III",
+      "order": 18.3,
+      "type": "generated",
+      "use_seconds": 3,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Handheld documentary-cinematic footage, 24fps look, visible grain, real-world lighting, full body in frame, single dancer or couple mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. A salsa couple turning under string lights on a rooftop at night, joyful and fast.",
+      "notes": "Carousel card 3 of 10. Skeleton overlay and time-series strip composited in post.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "minor: final dip crops lower legs slightly, but the used carousel window has clear full-body motion",
+          "repair_applied": null,
+          "mean_soft_score": 88.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C18d",
+      "act": "III",
+      "order": 18.4,
+      "type": "generated",
+      "use_seconds": 4,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Handheld documentary-cinematic footage, 24fps look, visible grain, real-world lighting, full body in frame, single dancer or couple mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. A contemporary dancer in a bare studio with north light, collapsing through a fluid floor phrase.",
+      "notes": "Carousel card 4 of 10. Skeleton overlay and time-series strip composited in post.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 88.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C18e",
+      "act": "III",
+      "order": 18.5,
+      "type": "generated",
+      "use_seconds": 3,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Handheld documentary-cinematic footage, 24fps look, visible grain, real-world lighting, full body in frame, single dancer or couple mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. A bhangra dancer in a wheat field at golden hour, bouncing shoulders, explosive joy.",
+      "notes": "Carousel card 5 of 10. Skeleton overlay and time-series strip composited in post.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 89.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C18f",
+      "act": "III",
+      "order": 18.6,
+      "type": "generated",
+      "use_seconds": 3,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Handheld documentary-cinematic footage, 24fps look, visible grain, real-world lighting, full body in frame, single adult house-dance footwork performer mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. The dancer performs in a bright empty rehearsal warehouse with a smooth concrete floor and high windows, fast intricate footwork, loose relaxed upper body, gliding steps, heel-toe pivots, and a clean final pose.",
+      "notes": "Carousel card 6 of 10. Skeleton overlay and time-series strip composited in post.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 88.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C18g",
+      "act": "III",
+      "order": 18.7,
+      "type": "generated",
+      "use_seconds": 4,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Documentary-cinematic footage, natural real-world lighting, full body in frame, single dancer mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. An Irish stepdancer in a simple green athletic top and black shorts performs rapid precise footwork with a rigid upright torso and arms held straight at her sides, crossing steps and light quick jumps, on a polished wooden hall floor with tall bright windows. Plain clean modern digital image, sharp square corners, no vintage film-strip border, no sprocket holes, no rounded vignette, no darkened corners, no on-screen numbers or letters of any kind, no frame-rate counter, no aperture or exposure readout, no timecode, no REC indicator, no battery icon, no viewfinder brackets, no camera HUD, no overlay graphics whatsoever.",
+      "notes": "Carousel card 7 of 10. Skeleton overlay and time-series strip composited in post. Card concept pivoted from flamenco to Irish stepdance after 5 consecutive flamenco takes failed STYLE with a vintage-film vignette; take 6 (Irish stepdance, same template as passing siblings) still failed with an even worse variant (sprocket-hole border plus readable EXIF-style overlay numbers), showing the defect is likely stochastic per-generation rather than content-triggered. Take 7 drops the ambiguous '24fps look' phrase (possible trigger for literal frame-rate readouts) and adds one exhaustive explicit negative list covering every specific artifact observed across all 6 prior takes.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 7,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 85.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 7
+    },
+    {
+      "id": "C18h",
+      "act": "III",
+      "order": 18.8,
+      "type": "generated",
+      "use_seconds": 3,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Handheld documentary-cinematic footage, 24fps look, visible grain, real-world lighting, full body in frame, single dancer or couple mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. A breaker in a gym at night inverting into a controlled freeze, athletic power.",
+      "notes": "Carousel card 8 of 10. Skeleton overlay and time-series strip composited in post.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 89.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "C18i",
+      "act": "III",
+      "order": 18.9,
+      "type": "generated",
+      "use_seconds": 4,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Documentary-cinematic footage, visible grain, real-world lighting, full body in frame, single dancer or couple mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. A ballroom couple sweeping across a grand hall in a waltz turn, chandelier light. Plain clean modern digital image, sharp square corners, no vintage film-strip border, no sprocket holes, no rounded vignette, no darkened corners, no on-screen numbers or letters of any kind, no frame-rate counter, no timecode, no camera HUD, no overlay graphics whatsoever.",
+      "notes": "Carousel card 9 of 10. Skeleton overlay and time-series strip composited in post. Prompt revised after take 1 failed STYLE (vintage sprocket-hole film-strip vignette, same artifact seen on C18g): dropped '24fps look' phrase and added the standard exhaustive anti-vignette/anti-HUD negative list.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 2,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 90.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 2
+    },
+    {
+      "id": "C18j",
+      "act": "III",
+      "order": 18.95,
+      "type": "generated",
+      "use_seconds": 3,
+      "pass_if": "each style is unmistakable, full body in frame, real-world grammar",
+      "prompt": "Documentary-cinematic footage, visible grain, real-world lighting, full body in frame, single dancer mid-performance, three complete movement phrases across seconds 0-8, hold the final position seconds 8-10. A dancer performs a smooth isolation arm wave that rolls fingertip to shoulder and back, alone in an empty modern dance studio with a mirrored wall, bare concrete floor, and plain daylight. Clean full-bleed edge-to-edge image, sharp square corners, no vintage film-strip border, no sprocket holes, no rounded vignette, no darkened corners, no on-screen numbers or letters of any kind, no frame-rate counter, no timecode, no camera HUD, no overlay graphics whatsoever.",
+      "notes": "Carousel card 10 of 10. Skeleton overlay and time-series strip composited in post. Takes 1-2 (street-performer-with-crowd scene, with and without a plain reroll) both failed STYLE with the same vintage vignette three times running; take 3 pivots the scene away from the outdoor crowd setting to an empty mirrored studio (same fix pattern as C16/C18g: change the underlying scene concept once a defect proves stochastically resistant to wording tweaks alone), while keeping the arm-wave movement and the standard grain/lighting template for visual consistency with sibling cards.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 3,
+          "verdict": "fail",
+          "main_defect": "STYLE: same vintage sprocket-hole film-strip vignette persists even after full scene pivot to empty mirrored studio -- confirms defect is fully stochastic per-generation, not scene/content-triggered at all (prompt already carries the full exhaustive negative list)",
+          "repair_applied": "reroll with identical (already maximally-hardened) prompt, no further wording changes possible",
+          "mean_soft_score": 84.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 4,
+          "verdict": "fail",
+          "main_defect": "STYLE: same rounded vintage vignette (dark rounded corners, small orange sprocket-style accent on left edge) persists on reroll -- fourth consecutive failure on this card with the same stochastic artifact",
+          "repair_applied": "reroll again, identical hardened prompt (same strategy that eventually succeeded on C18g take 7 and C18i take 2)",
+          "mean_soft_score": 84.0,
+          "generation_model": "gemini-omni-flash-preview"
+        },
+        {
+          "take": 5,
+          "verdict": "pass",
+          "main_defect": "none (fifth take finally clean of the stochastic vignette artifact)",
+          "repair_applied": null,
+          "mean_soft_score": 87.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 5
+    },
+    {
+      "id": "C19",
+      "act": "III",
+      "order": 19,
+      "type": "generated",
+      "use_seconds": 6,
+      "pass_if": "she matches the DANCER block exactly and the eight-count reads: step, hip, arm throw, spin, drop, rise, freeze",
+      "prompt": "young Indian woman, early 20s, athletic build, hair in a high bun, wearing a rust-orange cropped hoodie and black joggers, barefoot on a concrete rooftop at golden hour, small silver nose stud, joyful focused expression. Handheld documentary-cinematic footage, golden hour on a concrete rooftop in an Indian city, warm honest grade with visible grain, 35mm, natural handheld breathing, sun flaring softly behind her, city haze in the background. Seconds 0-8: she performs one sharp joyful eight-count street-dance phrase: step, hip pop, arm throw, full spin, drop toward the floor, rise, and a held freeze; grounded, musical, precise, fabric and hair reacting physically, real footfall weight. Seconds 8-10: she holds the freeze, breathing, delighted. Authentic and alive, not polished, not synthetic. Clean modern full-bleed edge-to-edge image, sharp square corners, no vintage film-strip border, no sprocket holes, no rounded vignette, no on-screen numbers or letters, no frame-rate counter, no timecode, no camera HUD overlay of any kind.",
+      "notes": "HERO CLIP (DANCER). All overlays composited in post. After passing, extract 3 reference frames for the live-action ghost composite used in the robot sequence handoff. Preemptively hardened with the standard anti-vignette/anti-HUD negative list before first attempt.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 90.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1,
+      "reference_frames_extracted": [
+        "clips/C19/refs/DANCER_ref1.png",
+        "clips/C19/refs/DANCER_ref2.png",
+        "clips/C19/refs/DANCER_ref3.png"
+      ]
+    },
+    {
+      "id": "C20",
+      "act": "III",
+      "order": 20,
+      "type": "generated",
+      "use_seconds": 7,
+      "pass_if": "acceleration builds continuously, abstract enough to composite type over, final seconds pure streaks",
+      "prompt": "Cinematic VFX shot: the camera falls vertically down an infinite dark digital cliff at accelerating speed, past faint abstract rows of luminous rectangular elements and thin white threads of light streaming upward, motion blur building from none to heavy, a subtle three degree camera roll appearing at peak speed, haze rushing past the lens. Seconds 0-3: measured fall. Seconds 3-7: acceleration, rows blurring to streaks. Seconds 7-10: the frame dissolves into pure vertical streaks of white light. Vertiginous, awe-inspiring, abstract. Clean full-bleed edge-to-edge image, sharp square corners, no vintage film-strip border, no sprocket holes, no rounded vignette, no on-screen numbers or letters, no frame-rate counter, no timecode, no camera HUD overlay.",
+      "notes": "Preemptively hardened with the standard anti-vignette/anti-HUD negative list before first attempt.",
+      "state": "passed",
+      "attempts": [
+        {
+          "take": 1,
+          "verdict": "pass",
+          "main_defect": "none",
+          "repair_applied": null,
+          "mean_soft_score": 89.0,
+          "generation_model": "gemini-omni-flash-preview"
+        }
+      ],
+      "selected_take": 1
+    },
+    {
+      "id": "CARD_LOOK",
+      "act": "III",
+      "order": 20.5,
+      "type": "slate",
+      "use_seconds": null,
+      "pass_if": null,
+      "prompt": null,
+      "notes": "1:43 NOW LOOK IN FRONT OF YOU card \u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u00a0\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00e2\u20ac\u00a6\u00c3\u201a\u00c2\u00a1\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u2026\u00c2\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u009d post-only slate, never generated.",
+      "state": "not_generated",
+      "attempts": []
+    },
+    {
+      "id": "LIVE_ROBOT",
+      "act": "III",
+      "order": 20.6,
+      "type": "live_action",
+      "use_seconds": 13,
+      "pass_if": null,
+      "prompt": null,
+      "notes": "1:45-1:58 robot sequence \u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u00a0\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00e2\u20ac\u00a6\u00c3\u201a\u00c2\u00a1\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u2026\u00c2\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u009d LIVE ACTION, practically filmed, never generated. Insert labeled slate + shoot spec in rough cut.",
+      "state": "not_generated",
+      "attempts": []
+    },
+    {
+      "id": "CARD_END",
+      "act": "III",
+      "order": 20.7,
+      "type": "slate",
+      "use_seconds": null,
+      "pass_if": null,
+      "prompt": null,
+      "notes": "1:58 end cards \u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u00a0\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00e2\u20ac\u00a6\u00c3\u201a\u00c2\u00a1\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u2020\u00e2\u20ac\u2122\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a2\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u2026\u00c2\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u00ac\u00c3\u0192\u00c6\u2019\u00c3\u00a2\u00e2\u201a\u00ac\u00c5\u00a1\u00c3\u0192\u00e2\u20ac\u0161\u00c3\u201a\u00c2\u009d post-only slate, never generated.",
+      "state": "not_generated",
+      "attempts": []
+    }
+  ],
+  "log": [
+    {
+      "clip": "C01",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none (minor grain softness)",
+      "repair_applied": null
+    },
+    {
+      "clip": "C02",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "dolly reads as dolly+push, not pure lateral",
+      "repair_applied": null
+    },
+    {
+      "clip": "C03",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "MOTION: locked overhead shot, no body-cam sway",
+      "repair_applied": "reinforced sway/distortion wording"
+    },
+    {
+      "clip": "C03",
+      "take": 2,
+      "verdict": "pass",
+      "main_defect": "none (minor gear-geometry ambiguity)",
+      "repair_applied": null
+    },
+    {
+      "clip": "C04",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "TEXT: legible shop sign + QR/notice poster in background",
+      "repair_applied": "added explicit no-readable-signage clause"
+    },
+    {
+      "clip": "C04",
+      "take": 2,
+      "verdict": "fail",
+      "main_defect": "TEXT: regressed, more/larger signage than take 1",
+      "repair_applied": "rephrased scene structure: market street -> private workyard"
+    },
+    {
+      "clip": "C04",
+      "take": 3,
+      "verdict": "fail",
+      "main_defect": "TEXT: small poster fragment + painted wall script (much reduced)",
+      "repair_applied": "added explicit bare/unmarked/unpainted walls clause"
+    },
+    {
+      "clip": "C04",
+      "take": 4,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C05",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "STYLE: baked-in letterbox bars (inconsistent with C01-C04)",
+      "repair_applied": "added full-frame/no-letterbox clause"
+    },
+    {
+      "clip": "C05",
+      "take": 2,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C06",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "framing: crane rose into cluttered lit shelving, upper frame not clean/dark",
+      "repair_applied": "constrained crane destination to empty dark negative space"
+    },
+    {
+      "clip": "C06",
+      "take": 2,
+      "verdict": "pass",
+      "main_defect": "minor: last frame reveals shelf (trimmed out by 5s use-window)",
+      "repair_applied": null
+    },
+    {
+      "clip": "C07",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C04",
+      "take": 5,
+      "verdict": "fail",
+      "main_defect": "TEXT: legible wall notice-posters (over-budget reroll)",
+      "repair_applied": "reroll seed change"
+    },
+    {
+      "clip": "C04",
+      "take": 6,
+      "verdict": "pass",
+      "main_defect": "none (small non-text wall box only)",
+      "repair_applied": null,
+      "note": "user-approved over-budget; promoted to select over clean take 4 for stronger craft/LED read"
+    },
+    {
+      "clip": "C08",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C09",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none (intended uncanny perfection; hand-flaw waiver unused)",
+      "repair_applied": null
+    },
+    {
+      "clip": "C08",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C09",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C10",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C11",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C12",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C13",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C14",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C15",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "STYLE/OBJECT: vertical cosmetics-bottle silhouette with internal cap, not blank horizontal chat-bar capsule",
+      "repair_applied": "rewrite as horizontal pill-shaped frosted glass bar; forbid bottle/cap/container"
+    },
+    {
+      "clip": "C15",
+      "take": 2,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C16",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "TEXT: readable keyboard legends (A/Z/Q/Alt and other key labels)",
+      "repair_applied": "rewrite as blank unlabeled mechanical keyboard and large unlabeled final key"
+    },
+    {
+      "clip": "C16",
+      "take": 2,
+      "verdict": "fail",
+      "main_defect": "TEXT: readable keyboard legends still present despite blank-keycap prompt",
+      "repair_applied": "rephrase scene from keyboard to custom prototype input device with smooth unmarked key tiles"
+    },
+    {
+      "clip": "C16",
+      "take": 3,
+      "verdict": "fail",
+      "main_defect": "TEXT: small readable key symbols still visible at frame edges/late key",
+      "repair_applied": "last repair: extreme crop on only blank tiles, no surrounding labelled keys or keyboard edge"
+    },
+    {
+      "clip": "C16",
+      "take": 4,
+      "verdict": "fail",
+      "main_defect": "TEXT: readable key legend '7' and small printed symbols still visible in upper row",
+      "repair_applied": "budget guardrail reached; stop and ask before over-budget repair"
+    },
+    {
+      "clip": "C16",
+      "take": 5,
+      "verdict": "fail",
+      "main_defect": "TEXT: defocused background keyboard keys still show white legends/symbols",
+      "repair_applied": "remove all keyboard/device context; make one featureless pressure surface fill the frame"
+    },
+    {
+      "clip": "C16",
+      "take": 6,
+      "verdict": "pass",
+      "main_defect": "none (pressure-tile replacement avoids keyboard text)",
+      "repair_applied": null
+    },
+    {
+      "clip": "C17",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "PASS_IF: dancer silhouette remains full and sustained across multiple frames, not brief strobes",
+      "repair_applied": "make orb primary; silhouettes only faint ghost fragments for split-second flashes"
+    },
+    {
+      "clip": "C17",
+      "take": 2,
+      "verdict": "pass",
+      "main_defect": "minor: dancer ghost fragments are extremely subtle/possibly between sampled frames",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18a",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18b",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18c",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "minor: final dip crops lower legs slightly, but the used carousel window has clear full-body motion",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18d",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18e",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18f",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18g",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "STYLE: baked-in corner-bracket/vignette overlay on edges; rendered as theatrical spotlit stage with haze instead of small studio",
+      "repair_applied": "rephrase to handheld documentary studio setting, plain wall, explicit no-vignette/no-border/no-decorative-overlay clause"
+    },
+    {
+      "clip": "C18g",
+      "take": 2,
+      "verdict": "fail",
+      "main_defect": "STYLE: same rounded-corner vignette/film-frame overlay persists on all corners despite repair",
+      "repair_applied": "explicit ban on vintage/polaroid/film-strip frame aesthetic, rounded corners, and any picture-in-picture border"
+    },
+    {
+      "clip": "C18g",
+      "take": 3,
+      "verdict": "fail",
+      "main_defect": "TEXT/STYLE: prompt backfired -- added camcorder-viewfinder HUD overlay (REC, timecode, battery icon, corner brackets)",
+      "repair_applied": "abandon anti-vignette/camera-capture wording entirely; revert to minimal successful C18 template, only swap theatrical stage/spotlight cues for plain rehearsal room"
+    },
+    {
+      "clip": "C18g",
+      "take": 4,
+      "verdict": "fail",
+      "main_defect": "STYLE: same rounded-corner vintage film-frame vignette persists even with plain rehearsal-room scene, no stage/spotlight cues",
+      "repair_applied": "hypothesis: the word flamenco itself biases Omni toward vintage-film aesthetic (only common element across all 4 fails, unlike bhangra/salsa siblings which passed take 1); take 5 drops the word entirely and describes the dance via movement only"
+    },
+    {
+      "clip": "C18g",
+      "take": 5,
+      "verdict": "fail",
+      "main_defect": "STYLE: same vintage film-frame vignette persists even with flamenco word removed and costume/heel-strike/hand-clap language kept -- confirms trigger is the visual concept (dark top + red skirt + Spanish heel-dance silhouette), not the literal word",
+      "repair_applied": "pivot concept entirely (same escalation rule as C16): replace flamenco-coded card with Irish stepdance -- different costume palette, different setting, different arm/footwork vocabulary"
+    },
+    {
+      "clip": "C18g",
+      "take": 6,
+      "verdict": "fail",
+      "main_defect": "TEXT+STYLE: vintage sprocket-hole film-strip border PLUS readable EXIF-style overlay text (24fps, F13, frame counters) -- worse than before, and disproves the flamenco-specific hypothesis since content was fully pivoted to Irish stepdance",
+      "repair_applied": "treat as stochastic per-take defect rather than content-triggered; add one exhaustive explicit negative list covering every specific artifact seen so far (sprocket holes, EXIF/frame-rate/aperture text, REC/timecode/battery HUD, rounded vignette)"
+    },
+    {
+      "clip": "C18g",
+      "take": 7,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18h",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18i",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "STYLE: same vintage sprocket-hole film-strip vignette on left+right edges seen previously on C18g -- confirms stochastic per-generation artifact, not content-specific",
+      "repair_applied": "drop 24fps-look phrase; add exhaustive explicit negative list (same fix that worked for C18g take 7)"
+    },
+    {
+      "clip": "C18i",
+      "take": 2,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C18j",
+      "take": 1,
+      "verdict": "fail",
+      "main_defect": "STYLE: same vintage sprocket-hole vignette despite preemptive anti-vignette negative list -- confirms this is stochastic per-take noise, not fully preventable via prompt",
+      "repair_applied": "reroll (no prompt change) -- retry generation"
+    },
+    {
+      "clip": "C18j",
+      "take": 2,
+      "verdict": "fail",
+      "main_defect": "STYLE: same vintage vignette a third consecutive time on this card",
+      "repair_applied": "drop 'documentary-cinematic footage' phrasing entirely (possible residual film-era trigger); rewrite as explicit modern smartphone-capture description"
+    },
+    {
+      "clip": "C18j",
+      "take": 3,
+      "verdict": "fail",
+      "main_defect": "STYLE: same vintage sprocket-hole film-strip vignette persists even after full scene pivot to empty mirrored studio -- confirms defect is fully stochastic per-generation, not scene/content-triggered at all (prompt already carries the full exhaustive negative list)",
+      "repair_applied": "reroll with identical (already maximally-hardened) prompt, no further wording changes possible"
+    },
+    {
+      "clip": "C18j",
+      "take": 4,
+      "verdict": "fail",
+      "main_defect": "STYLE: same rounded vintage vignette (dark rounded corners, small orange sprocket-style accent on left edge) persists on reroll -- fourth consecutive failure on this card with the same stochastic artifact",
+      "repair_applied": "reroll again, identical hardened prompt (same strategy that eventually succeeded on C18g take 7 and C18i take 2)"
+    },
+    {
+      "clip": "C18j",
+      "take": 5,
+      "verdict": "pass",
+      "main_defect": "none (fifth take finally clean of the stochastic vignette artifact)",
+      "repair_applied": null
+    },
+    {
+      "clip": "C19",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    },
+    {
+      "clip": "C20",
+      "take": 1,
+      "verdict": "pass",
+      "main_defect": "none",
+      "repair_applied": null
+    }
+  ]
+}

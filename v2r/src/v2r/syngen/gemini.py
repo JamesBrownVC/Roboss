@@ -231,6 +231,74 @@ def omni_generate_video(
     raise GeminiError(f"no video uri in interaction response: {json.dumps(data)[:300]}")
 
 
+def upload_video(path: Path, api_key: Optional[str] = None, timeout: float = 300.0) -> str:
+    """Upload a local video to the Gemini Files API (resumable protocol);
+    return the file uri for use in file_data parts. Caller should
+    poll_file_active(uri) before generateContent."""
+    key = api_key or get_api_key()
+    if not key:
+        raise GeminiError("GEMINI_API_KEY not set")
+    path = Path(path)
+    blob = path.read_bytes()
+    upload_base = BASE_URL.replace("/v1beta", "").rstrip("/") + "/upload/v1beta/files"
+
+    start = urllib.request.Request(
+        upload_base,
+        data=json.dumps({"file": {"display_name": path.name}}).encode("utf-8"),
+        headers={
+            "X-goog-api-key": key,
+            "X-Goog-Upload-Protocol": "resumable",
+            "X-Goog-Upload-Command": "start",
+            "X-Goog-Upload-Header-Content-Length": str(len(blob)),
+            "X-Goog-Upload-Header-Content-Type": "video/mp4",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(start, timeout=timeout, context=_ssl_context()) as resp:
+        upload_url = resp.headers.get("X-Goog-Upload-URL")
+    if not upload_url:
+        raise GeminiError("Files API did not return an upload URL")
+
+    put = urllib.request.Request(
+        upload_url,
+        data=blob,
+        headers={
+            "X-Goog-Upload-Command": "upload, finalize",
+            "X-Goog-Upload-Offset": "0",
+            "Content-Length": str(len(blob)),
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(put, timeout=timeout, context=_ssl_context()) as resp:
+        info = json.loads(resp.read().decode("utf-8"))
+    uri = info.get("file", {}).get("uri")
+    if not uri:
+        raise GeminiError(f"upload finalize returned no uri: {json.dumps(info)[:300]}")
+    return uri
+
+
+def analyze_video(
+    path: Path,
+    prompt: str,
+    response_schema: Optional[dict] = None,
+    model: str = DEFAULT_VISION_MODEL,
+    api_key: Optional[str] = None,
+) -> str:
+    """Native video understanding: upload -> ACTIVE -> generateContent with
+    the whole video attached (dense temporal analysis, not sampled stills)."""
+    key = api_key or get_api_key()
+    uri = upload_video(Path(path), api_key=key)
+    poll_file_active(uri, api_key=key)
+    parts = [
+        {"file_data": {"mime_type": "video/mp4", "file_uri": uri}},
+        {"text": prompt},
+    ]
+    return generate_content(parts, model=model, temperature=0.0,
+                            response_schema=response_schema, api_key=key,
+                            timeout=300.0)
+
+
 def poll_file_active(
     uri: str,
     api_key: Optional[str] = None,
@@ -324,7 +392,11 @@ def download_file(uri: str, dest: Path, api_key: Optional[str] = None) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(uri, headers={"X-goog-api-key": key})
     try:
-        with urllib.request.urlopen(req, timeout=300) as resp, open(dest, "wb") as f:
+        # context: the Windows cert store on this host contains a corrupt
+        # certificate (ASN1 NOT_ENOUGH_DATA on default-context handshakes);
+        # every urlopen in this module must use the certifi context
+        with urllib.request.urlopen(req, timeout=300, context=_ssl_context()) as resp, \
+                open(dest, "wb") as f:
             while True:
                 chunk = resp.read(1 << 20)
                 if not chunk:

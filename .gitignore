@@ -7,17 +7,64 @@ __pycache__/
 build/
 dist/
 
-# Frontend
+# Node / frontend
 node_modules/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Secrets
 .env
 .env.*
 credentials*.json
 
+# Stray generated media in repo root
+/*.mp4
+/*.png
+
+# Common generated media and large local artifacts
+*.avi
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.parquet
+*.npz
+*.npy
+*.onnx
+*.safetensors
+*.ckpt
+*.pth
+.ultralytics/
+generated/
+
+# roboss-film: keep the text/code/manifest scaffolding, exclude heavy media
+# (669 PNG frames + 88 MP4 clips ≈ 667 MB — regenerable render artifacts)
+roboss-film/clips/
+roboss-film/roughcut/
+roboss-film/selects/**
+roboss-film/slates/
+roboss-film/**/*.png
+roboss-film/**/*.mp4
+# ...but DO commit the five selects clips the bench fixture references (C01-C05).
+!roboss-film/selects/
+!roboss-film/selects/C01.mp4
+!roboss-film/selects/C02.mp4
+!roboss-film/selects/C03.mp4
+!roboss-film/selects/C04.mp4
+!roboss-film/selects/C05.mp4
+
 # Model weights
 *.pt
-.ultralytics/
+# ...but DO commit the specific runtime weights teammates need (all <100MB).
+# CLIP ViT-B-32.pt (337MB) stays ignored: over GitHub's 100MB cap and unused
+# by the bench/tests (see scripts/fetch_assets.py if ever needed).
+!v2r/yolo11n.pt
+!v2r/yolov8s-worldv2.pt
+!v2r/assets/superanimal/*.pt
 v2r/assets/models/*.task
 v2r/assets/models/*.pt
 !v2r/assets/models/.gitkeep
@@ -28,8 +75,41 @@ v2r/assets/robots/*/meshes/
 v2r/assets/robots/*/assets/
 
 # Large / generated data
-v2r/data/
-v2r/workspaces/
+v2r/data/**
+# ...but DO commit the specific clips the bench fixture + tests reference.
+# Each parent dir must be un-ignored before the leaf file can be re-included.
+!v2r/data/raw/
+!v2r/data/raw/animal_dog/
+!v2r/data/raw/animal_dog/dog_run.mp4
+!v2r/data/raw/human_pexels_walk/
+!v2r/data/raw/human_pexels_walk/human_pexels_walk_000.mp4
+!v2r/data/raw/human_pexels_dance/
+!v2r/data/raw/human_pexels_dance/human_pexels_dance_000.mp4
+!v2r/data/raw/animal_pexels/
+!v2r/data/raw/animal_pexels/animal_pexels_000.mp4
+!v2r/data/raw/animal_pexels_wildlife/
+!v2r/data/raw/animal_pexels_wildlife/animal_pexels_wildlife_000.mp4
+!v2r/data/syngen/
+!v2r/data/syngen/web_175617/
+!v2r/data/syngen/web_175617/videos/
+!v2r/data/syngen/web_175617/videos/e01_cam0.mp4
+!v2r/data/syngen/web_175617/videos/e02_cam0.mp4
+!v2r/data/syngen/web_175617/videos/e03_cam0.mp4
+!v2r/data/syngen/veo1/
+!v2r/data/syngen/veo1/videos/
+!v2r/data/syngen/veo1/videos/e00_cam0.mp4
+# Omni-generated demo dogs (agentic labeling + twin-fit demo inputs)
+!v2r/data/raw/ai_dogs/
+!v2r/data/raw/ai_dogs/omni_dog_walk.mp4
+!v2r/data/raw/ai_dogs/omni_mech_dog.mp4
+# Workspaces: ignore heavy generated media (videos, depth PNGs, hdf5) but DO
+# commit the tabular label/retarget artifacts (*.parquet, e.g. cmd_twist,
+# qpos, keypoints). The **/ un-ignore lets git descend into the tree; the
+# trailing negation overrides both this rule and the global *.parquet above.
+v2r/workspaces/**
+!v2r/workspaces/**/
+!v2r/workspaces/**/*.parquet
+!v2r/workspaces/**/utterances.json
 v2r/.gpu_locks/
 demo/.cache/
 generated/
@@ -37,10 +117,8 @@ generated/
 annotated*.mp4
 scenario_bundle/
 
-# Generated pipeline outputs (videos, reports, labels). Keep only the
-# curated runs/warehouse_v1 demo that is already tracked.
+# Generated pipeline outputs (videos, reports, labels).
 /runs/*
-!/runs/warehouse_v1/
 
 # OS
 .DS_Store

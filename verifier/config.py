@@ -79,6 +79,12 @@ class Thresholds:
     gate2_model: str = "gemini-3.5-flash"
     gate2_frames: int = 10          # uniformly sampled frames sent to the VLM
     gate2_max_side: int = 1024      # frames are downscaled to this long edge
+    gate2_min_report_severity: float = 0.75  # ignore weaker VLM notes
+    gate2_severity_scale: float = 0.40       # make Gate 2 advisory
+    gate2_severity_cap: float = 0.40         # never dominate Gate 1
+                                      # finding lowers the score but can never
+                                      # hard-reject on its own — the
+                                      # deterministic gate stays the judge
 
     # --- decision ---
     accept_score: float = 0.72
@@ -99,12 +105,12 @@ WEIGHTS: dict[str, float] = {
     "object_disappearance": 0.10,
     "gravity_suspicion": 0.10,
     # gate 2 — semantic (VLM) checks
-    "anatomical_anomaly": 0.20,
-    "magic_effect": 0.20,
-    "object_morphing": 0.15,
-    "impossible_gesture": 0.10,
-    "scene_inconsistency": 0.10,
-    "prompt_mismatch": 0.10,
+    "anatomical_anomaly": 0.03,
+    "magic_effect": 0.03,
+    "object_morphing": 0.03,
+    "impossible_gesture": 0.02,
+    "scene_inconsistency": 0.02,
+    "prompt_mismatch": 0.02,
 }
 
 DEFAULT_THRESHOLDS = Thresholds()

@@ -1,0 +1,110 @@
+{
+  "fixture": "C:\\Users\\james\\Downloads\\RAISE SUMMIT HACK\\v2r\\tests\\data\\label_bench.yaml",
+  "agent": "loop",
+  "aggregate": {
+    "n_clips": 5,
+    "verdict_accuracy": 0.4,
+    "human_present_accuracy": 1.0,
+    "skill_recall": 0.8,
+    "skill_precision_mean": 0.933,
+    "clips_with_hallucinations": 0,
+    "boundary_iou_mean": 0.0,
+    "boundary_mae_s_mean": null,
+    "evidence_coverage_mean": 1.0
+  },
+  "per_clip": {
+    "pipette": {
+      "verdict_ok": true,
+      "human_ok": true,
+      "skill_recall": false,
+      "skill_precision": 0.667,
+      "hallucinations": [],
+      "boundary_iou": 0.0,
+      "boundary_mae_s": null,
+      "evidence_coverage": 1.0,
+      "predicted": {
+        "recommendation": "human_review",
+        "human_present": "hands_only",
+        "skills": [
+          "hold",
+          "idle",
+          "reach",
+          "release"
+        ]
+      },
+      "seconds": 98.5
+    },
+    "waves": {
+      "verdict_ok": false,
+      "human_ok": true,
+      "skill_recall": true,
+      "skill_precision": 1.0,
+      "hallucinations": [],
+      "boundary_iou": null,
+      "boundary_mae_s": null,
+      "evidence_coverage": null,
+      "predicted": {
+        "recommendation": "proceed",
+        "human_present": "none",
+        "skills": [
+          "idle"
+        ]
+      },
+      "seconds": 16.0
+    },
+    "night_hut": {
+      "verdict_ok": false,
+      "human_ok": true,
+      "skill_recall": true,
+      "skill_precision": 1.0,
+      "hallucinations": [],
+      "boundary_iou": null,
+      "boundary_mae_s": null,
+      "evidence_coverage": null,
+      "predicted": {
+        "recommendation": "proceed",
+        "human_present": "none",
+        "skills": [
+          "idle"
+        ]
+      },
+      "seconds": 7.8
+    },
+    "timelapse": {
+      "verdict_ok": false,
+      "human_ok": true,
+      "skill_recall": true,
+      "skill_precision": 1.0,
+      "hallucinations": [],
+      "boundary_iou": null,
+      "boundary_mae_s": null,
+      "evidence_coverage": null,
+      "predicted": {
+        "recommendation": "human_review",
+        "human_present": "none",
+        "skills": [
+          "idle"
+        ]
+      },
+      "seconds": 14.9
+    },
+    "stick_figure": {
+      "verdict_ok": true,
+      "human_ok": true,
+      "skill_recall": true,
+      "skill_precision": 1.0,
+      "hallucinations": [],
+      "boundary_iou": null,
+      "boundary_mae_s": null,
+      "evidence_coverage": null,
+      "predicted": {
+        "recommendation": "reject",
+        "human_present": "none",
+        "skills": [
+          "idle"
+        ]
+      },
+      "seconds": 160.5
+    }
+  }
+}

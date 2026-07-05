@@ -5,9 +5,11 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .config import DEFAULT_CONFIG
+from .config import AgentConfig
 from .llm import AgentError
 from .pipeline import run_pipeline
+
+_DEFAULTS = AgentConfig()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -27,17 +29,22 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--start-frames", action="store_true",
                    help="also derive a start frame per scenario from the "
                         "canvas (implies --canvas)")
+    p.add_argument("--workers", type=int, default=None,
+                   help=f"parallel start-frame image calls "
+                        f"(default: {_DEFAULTS.start_frame_workers})")
     p.add_argument("--model", default=None,
-                   help=f"text model (default: {DEFAULT_CONFIG.text_model})")
+                   help=f"text model (default: {_DEFAULTS.text_model})")
     p.add_argument("--image-model", default=None,
-                   help=f"image model (default: {DEFAULT_CONFIG.image_model})")
+                   help=f"image model (default: {_DEFAULTS.image_model})")
     args = p.parse_args(argv)
 
-    cfg = DEFAULT_CONFIG
+    cfg = AgentConfig()  # fresh instance: never mutate the shared default
     if args.model:
         cfg.text_model = args.model
     if args.image_model:
         cfg.image_model = args.image_model
+    if args.workers:
+        cfg.start_frame_workers = args.workers
 
     try:
         result = run_pipeline(
@@ -51,6 +58,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print()
     print(f"  world      : {result.contract['world_contract']['world_id']}")
+    print(f"  models     : text {cfg.text_model}, image {cfg.image_model}, "
+          f"video hint {cfg.video_model}")
     print(f"  scenarios  : {len(result.scenarios)} valid"
           + (f", {len(result.dropped)} dropped" if result.dropped else ""))
     for sc in result.scenarios:

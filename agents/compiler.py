@@ -9,6 +9,17 @@ and a verifier packet consumable by `python -m verifier --scenario`.
 
 from __future__ import annotations
 
+from .config import REQUIRED_CAMERA_ANGLE
+
+
+OVERHEAD_SINGLE_TAKE_CLAUSE = (
+    "Camera requirement: static top-down overhead view from above the scene, "
+    "wide enough to show the full robot body, nearby humans, objects, floor "
+    "layout, and the robot's movement path throughout the situation. Single "
+    "continuous unedited take, no montage, no cuts, no shot changes, no zooms, "
+    "no close-ups, no first-person or robot POV."
+)
+
 
 def _entity_clause(entity: dict) -> str:
     clause = f"the same {entity['appearance']}"
@@ -18,9 +29,19 @@ def _entity_clause(entity: dict) -> str:
     return clause
 
 
+def enforce_motion_analysis_camera(scenario: dict) -> dict:
+    out = dict(scenario)
+    camera = dict(out.get("camera", {}))
+    camera["angle"] = REQUIRED_CAMERA_ANGLE
+    camera["movement"] = "static"
+    out["camera"] = camera
+    return out
+
+
 def compile_video_prompt(contract: dict, scenario: dict) -> str:
     wc = contract["world_contract"]
     env = wc["locked_environment"]
+    scenario = enforce_motion_analysis_camera(scenario)
     camera = scenario["camera"]
     scene = contract.get("scene_registry", {})
     registry = contract.get("object_registry", [])
@@ -44,6 +65,10 @@ def compile_video_prompt(contract: dict, scenario: dict) -> str:
         f"Camera: {camera['angle'].replace('_', ' ')}, "
         f"{camera['movement'].replace('_', ' ')}, "
         f"{camera['duration_seconds']:g} seconds.",
+        OVERHEAD_SINGLE_TAKE_CLAUSE,
+        "Robot reaction requirement: the video must show the event situation "
+        f"'{scenario['event']['description']}' and then show the robot's "
+        f"observable response: {scenario['expected_robot_response']}.",
     ]
 
     id_to_appearance = {e["id"]: e["appearance"]
@@ -61,6 +86,7 @@ def compile_video_prompt(contract: dict, scenario: dict) -> str:
 
 def compile_keyframes(scenario: dict) -> list[dict]:
     """Three temporal anchors: initial state, event trigger, final state."""
+    scenario = enforce_motion_analysis_camera(scenario)
     timeline = scenario["action_timeline"]
     event = scenario["event"]
     duration = scenario["camera"]["duration_seconds"]
@@ -76,6 +102,7 @@ def compile_keyframes(scenario: dict) -> list[dict]:
 
 def compile_verifier_packet(contract: dict, scenario: dict) -> dict:
     """The metadata packet the verification gate consumes (--scenario)."""
+    scenario = enforce_motion_analysis_camera(scenario)
     wc = contract["world_contract"]
     scene = contract.get("scene_registry", {})
     video_prompt = compile_video_prompt(contract, scenario)
@@ -107,9 +134,9 @@ def compile_verifier_packet(contract: dict, scenario: dict) -> dict:
 
 def compile_scenario(contract: dict, scenario: dict) -> dict:
     """Returns the scenario enriched with all compiled artifacts."""
-    out = dict(scenario)
+    out = enforce_motion_analysis_camera(scenario)
     out["inherits_world_contract"] = contract["world_contract"]["world_id"]
-    out["video_prompt"] = compile_video_prompt(contract, scenario)
-    out["keyframes"] = compile_keyframes(scenario)
-    out["verifier_packet"] = compile_verifier_packet(contract, scenario)
+    out["video_prompt"] = compile_video_prompt(contract, out)
+    out["keyframes"] = compile_keyframes(out)
+    out["verifier_packet"] = compile_verifier_packet(contract, out)
     return out

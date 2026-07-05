@@ -1,28 +1,28 @@
-# agents — Scenario Contract Agent
+﻿# agents â€” Scenario Contract Agent
 
-The **user → video generation** half of the Synthetic Action Dataset
+The **user â†’ video generation** half of the Synthetic Action Dataset
 Compiler. Input: a free-form user intention. Output: a *contract-based*
-generation bundle — not a prompt, but a controlled scene specification.
+generation bundle â€” not a prompt, but a controlled scene specification.
 
 ```
 user intention
-      │
-      ▼
- 1. Intent Parser        Gemini, structured JSON → domain, actors, task, risk
- 2. Contract Builder     Gemini → world_contract (immutable canvas:
+      â”‚
+      â–¼
+ 1. Intent Parser        Gemini, structured JSON â†’ domain, actors, task, risk
+ 2. Contract Builder     Gemini â†’ world_contract (immutable canvas:
                          entities + appearance locks, materials, layout,
                          lighting, style) + variation_policy (what may
                          change: camera angles, event types, deltas, timing)
- 3. Scenario Planner     Gemini → N variations INSIDE the contract
+ 3. Scenario Planner     Gemini â†’ N variations INSIDE the contract
  4. Validator            pure Python, no LLM: identity/camera/event/action
                          contracts checked deterministically; failures are
                          fed back to the model (repair loop), then dropped
  5. Prompt Compiler      pure Python: the video prompt is COMPILED from the
                          contract, so every prompt repeats the same
                          appearance locks verbatim + a consistency clause
- 6. Canvas anchor        Gemini image model → one canonical scene image
+ 6. Canvas anchor        Gemini image model â†’ one canonical scene image
     (optional)           shared by the whole series
- 7. Start frames         canvas image + edit instruction → per-scenario
+ 7. Start frames         canvas image + edit instruction â†’ per-scenario
     (optional)           first frame for image-to-video generation
 ```
 
@@ -89,12 +89,12 @@ gate consumes, so after the video model renders `sc_001.mp4`:
 python -m verifier sc_001.mp4 --scenario runs\warehouse_v1\verifier_packets\sc_001_human_slip.json --gate2
 ```
 
-planned scenario → generated video → contract compliance + physics check →
+planned scenario â†’ generated video â†’ contract compliance + physics check â†’
 only compliant videos enter the dataset.
 
 ## Tests
 
-The validator and compiler are pure functions over dicts — tested without
+The validator and compiler are pure functions over dicts â€” tested without
 any API in `tests/test_agents.py`:
 
 ```powershell
@@ -104,6 +104,8 @@ python -m pytest tests -q
 ## Config
 
 Models and knobs in [config.py](config.py): `gemini-3.5-flash` for text
-stages (same family as the verifier's gate 2), `gemini-3.5-flash-image`
-for the visual anchors (override with `--image-model`), temperature 0.3
-for planning stages vs 0.9 for scenario diversity, 2 repair rounds.
+stages (same family as the verifier's gate 2), `gemini-3-pro-image`
+for the visual anchors (override with `--image-model`), thinking_level
+low/high per stage (Gemini 3.5 deprecates temperature), 2 repair rounds,
+4 parallel start-frame workers (--workers). The bundle also carries a
+video-model hint (veo-3.1) for the generation side.

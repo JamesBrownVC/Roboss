@@ -1,0 +1,193 @@
+# Ground-truth fixture for the label-accuracy regression bench.
+#
+# Written by hand after frame-by-frame inspection of every clip (contact
+# sheets in workspaces/_eval_frames/). Fields:
+#   video                 - path relative to the v2r repo root
+#   acceptable_verdicts   - recommendation values counted as correct
+#   acceptable_human      - human_present values counted as correct
+#   expected_skills       - >=1 must appear in predicted non-idle segments (recall)
+#   allowed_skills        - predicted non-idle skills outside this set count
+#                           against precision (fabrications)
+#   forbidden_skills      - any occurrence = hallucination (hard fail)
+#   key_segments          - optional interval GT for boundary scoring
+#                           (skills: synonym set, start_s/end_s: interval)
+#   ai_generated          - report-only (known-hard; not scored)
+clips:
+  pipette:
+    video: data/raw/human_pexels_walk/human_pexels_walk_000.mp4
+    notes: real lab close-up; blue nitrile gloves defeat MediaPipe; pipetting into well plate
+    acceptable_verdicts: [proceed, human_review]
+    acceptable_human: [hands_only, partial]
+    expected_skills: [insert, pour, place, lower, press]
+    allowed_skills: [insert, pour, place, lower, press, lift, hold, grasp, reach]
+    forbidden_skills: [walk, wave, cut, fold, stir]
+    key_segments:
+      - skills: [insert, pour, place, lower, press]
+        start_s: 0.0
+        end_s: 11.6
+    ai_generated: false
+
+  aigen_cup:
+    video: data/syngen/web_175617/videos/e02_cam0.mp4
+    notes: generated; man walks to table 0-4.5s, reaches ~4.5-6, grasps ~6, lifts cup 6.5-9.5
+    acceptable_verdicts: [proceed, human_review]
+    acceptable_human: [full_body, partial]
+    expected_skills: [grasp, lift]
+    allowed_skills: [reach, grasp, lift, hold, place, release, walk]
+    forbidden_skills: [pour, cut, stir, wave]
+    key_segments:
+      - skills: [reach]
+        start_s: 4.0
+        end_s: 6.0
+      - skills: [grasp]
+        start_s: 5.5
+        end_s: 7.0
+      - skills: [lift, hold]
+        start_s: 6.5
+        end_s: 10.0
+    ai_generated: true
+
+  aigen_cup2:
+    video: data/syngen/web_175617/videos/e01_cam0.mp4
+    notes: generated; mug on table, man reaches ~2-5s, then holds mug up 5-10s
+    acceptable_verdicts: [proceed, human_review]
+    acceptable_human: [full_body, partial]
+    expected_skills: [grasp, lift, hold]
+    allowed_skills: [reach, grasp, lift, hold, place, release]
+    forbidden_skills: [pour, cut, walk, wave]
+    key_segments:
+      - skills: [reach]
+        start_s: 1.5
+        end_s: 5.0
+      - skills: [grasp, lift, hold]
+        start_s: 4.5
+        end_s: 10.0
+    ai_generated: true
+
+  veo_wave:
+    video: data/syngen/veo1/videos/e00_cam0.mp4
+    notes: generated (Veo); woman waves at camera ~1-3.5s; finger morphing artifacts
+    acceptable_verdicts: [proceed, human_review, reject]
+    acceptable_human: [full_body, partial]
+    expected_skills: [wave, gesture]
+    allowed_skills: [wave, gesture, idle, hold]
+    forbidden_skills: [grasp, lift, pour, walk]
+    key_segments:
+      - skills: [wave, gesture]
+        start_s: 0.8
+        end_s: 3.8
+    ai_generated: true
+
+  gear_assembly:
+    video: ../roboss-film/selects/C03.mp4
+    notes: AI-styled workshop close-up; hands place gear on assembly ~0-4s, lift+rotate to test 4-9s
+    acceptable_verdicts: [proceed, human_review]
+    acceptable_human: [hands_only, partial]
+    expected_skills: [rotate, place, grasp]
+    allowed_skills: [reach, grasp, place, lift, rotate, hold, insert, idle, release]
+    forbidden_skills: [walk, wave, pour]
+    key_segments:
+      - skills: [rotate, lift]
+        start_s: 4.0
+        end_s: 9.5
+    ai_generated: true
+
+  wire_winding:
+    video: ../roboss-film/selects/C01.mp4
+    notes: AI-styled close-up; hands wind copper wire onto a motor armature, continuous
+    acceptable_verdicts: [proceed, human_review]
+    acceptable_human: [hands_only, partial]
+    expected_skills: [rotate, insert, hold, fold]
+    allowed_skills: [rotate, insert, hold, fold, grasp, pull, place, reach, slide, turn]
+    forbidden_skills: [walk, wave, pour, cut]
+    ai_generated: true
+
+  workshop_montage:
+    video: ../roboss-film/selects/C02.mp4
+    notes: AI-styled MULTI-SHOT montage (soldering, hammering, engine work); tests shot handling
+    acceptable_verdicts: [proceed, human_review]
+    acceptable_human: [full_body, partial]
+    expected_skills: [press, place, hold, insert, grasp, rotate]
+    allowed_skills: [press, place, hold, insert, grasp, rotate, reach, lift, cut, slide, turn, idle, wipe]
+    forbidden_skills: [walk, wave, pour]
+    multi_shot: true
+    ai_generated: true
+
+  street_montage:
+    video: ../roboss-film/selects/C04.mp4
+    notes: AI-styled MULTI-SHOT street-workshop montage incl. wok cooking (stir)
+    acceptable_verdicts: [proceed, human_review, reject]
+    acceptable_human: [full_body, partial]
+    expected_skills: [stir, hold, place, press, idle]
+    allowed_skills: [stir, hold, place, press, grasp, lift, rotate, reach, idle, walk, turn, insert, cut, shake]
+    forbidden_skills: []
+    multi_shot: true
+    ai_generated: true
+
+  wrench_portrait:
+    video: ../roboss-film/selects/C05.mp4
+    notes: AI-styled; woman tightens bolt with wrench ~0-5s then faces camera smiling 5-10s
+    acceptable_verdicts: [proceed, human_review]
+    acceptable_human: [full_body, partial]
+    expected_skills: [rotate, turn]
+    allowed_skills: [rotate, turn, grasp, hold, place, idle, reach, release]
+    forbidden_skills: [walk, pour, cut]
+    key_segments:
+      - skills: [rotate, turn]
+        start_s: 0.0
+        end_s: 5.5
+      - skills: [idle, hold]
+        start_s: 5.0
+        end_s: 10.0
+    ai_generated: true
+
+  waves:
+    video: data/raw/human_pexels_dance/human_pexels_dance_000.mp4
+    notes: real aerial ocean waves; NO subject; the classic fabrication trap
+    acceptable_verdicts: [reject]
+    acceptable_human: [none]
+    expected_skills: []
+    allowed_skills: [idle]
+    forbidden_skills: [wave, walk, grasp, reach, lift, gesture, hold, swim]
+    ai_generated: false
+
+  night_hut:
+    video: data/raw/animal_pexels/animal_pexels_000.mp4
+    notes: real; dark night scene, stone hut, wild boar (animal) present, NO human
+    acceptable_verdicts: [reject, human_review]
+    acceptable_human: [none]
+    expected_skills: []
+    allowed_skills: [idle]
+    forbidden_skills: [walk, wave, grasp, reach, lift, gesture]
+    ai_generated: false
+
+  timelapse:
+    video: data/raw/animal_pexels_wildlife/animal_pexels_wildlife_000.mp4
+    notes: real; mountain-camp star timelapse, NO subject
+    acceptable_verdicts: [reject]
+    acceptable_human: [none]
+    expected_skills: []
+    allowed_skills: [idle]
+    forbidden_skills: [walk, wave, grasp, reach, lift, gesture]
+    ai_generated: false
+
+  stick_figure:
+    video: data/syngen/web_175617/videos/e03_cam0.mp4
+    notes: abstract rendered stick figure on grey stage; not a real human; low training value
+    acceptable_verdicts: [reject, human_review]
+    acceptable_human: [full_body, none]
+    expected_skills: []
+    allowed_skills: [walk, wave, gesture, idle, turn]
+    forbidden_skills: [grasp, lift, pour]
+    ai_generated: true
+
+  dog_quadruped:
+    video: data/raw/animal_dog/dog_run.mp4
+    notes: real (CC-BY Wikimedia); two dogs running/playing on grass, NO human;
+           trackable quadruped -> Go2 retargeting. Tests animal_pose + gait verbs.
+    acceptable_verdicts: [proceed, human_review]
+    acceptable_human: [none]
+    expected_skills: [walk, trot, gallop, run, stand, jump]
+    allowed_skills: [walk, trot, gallop, run, jump, stand, sit, lie_down, turn, idle]
+    forbidden_skills: [grasp, lift, pour, wave, reach, insert, stir, cut]
+    ai_generated: false

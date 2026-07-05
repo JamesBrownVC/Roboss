@@ -196,10 +196,23 @@ class Ingest(Stage):
             if shots is not None:
                 probe.shots = shots
                 sio.write_json_model(ws.probe_path, probe)
+        elif abs(probe.fps - hz) <= 0.6 and src.suffix.lower() == ".mp4":
+            # already at canonical rate: copy the container through UNCHANGED.
+            # Critically this PRESERVES THE AUDIO TRACK (cv2 re-encode drops
+            # it), which the transcription/utterance channel needs.
+            import shutil
+
+            ctx.log("[ingest] source already ~30 Hz mp4: copying through (audio preserved)")
+            shutil.copy2(src, ws.video_path)
+            n_out = probe.n_frames
+            notes.append("copied through unchanged; audio track preserved")
+            tool = TOOL_SYNTH
         else:
             ctx.log("[ingest] re-encoding to 30 Hz (cv2, synthetic mode)")
             n_out = _reencode_cv2(src, ws.video_path, probe, hz)
-            notes.append("cv2 mp4v encoder (synthetic mode); h264 requires ffmpeg (real mode)")
+            notes.append("cv2 mp4v encoder (synthetic mode); h264 requires ffmpeg "
+                         "(real mode); AUDIO DROPPED by cv2 - transcription needs "
+                         "the agentic path or real-mode ffmpeg")
             tool = TOOL_SYNTH
 
         metrics["out_n_frames"] = n_out

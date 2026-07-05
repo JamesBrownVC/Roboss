@@ -2,15 +2,101 @@ __pycache__/
 *.pyc
 *.egg-info/
 .pytest_cache/
-workspaces/
-.gpu_locks/
-data/
-assets/models/*.task
-assets/models/*.pt
-!assets/models/.gitkeep
-assets/body_models/*
-!assets/body_models/README.md
-assets/robots/*/meshes/
 .venv/
 build/
 dist/
+
+# Node / frontend caches if commands are run from v2r/
+node_modules/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local model/cache outputs
+.ultralytics/
+generated/
+# Workspaces: ignore heavy generated media but DO commit the tabular
+# label/retarget parquets (cmd_twist, qpos, keypoints...). `**/` re-includes
+# the directories so git can descend; the *.parquet negation then overrides
+# both this rule and the global *.parquet below.
+workspaces/**
+!workspaces/**/
+.gpu_locks/
+data/**
+# ...but DO commit the specific clips the bench fixture + tests reference so
+# teammates can run `v2r label-bench` and the suite out of the box. Each parent
+# directory must be un-ignored before the leaf file can be re-included.
+!tests/data/
+!tests/data/**
+!data/raw/
+!data/raw/animal_dog/
+!data/raw/animal_dog/dog_run.mp4
+!data/raw/human_pexels_walk/
+!data/raw/human_pexels_walk/human_pexels_walk_000.mp4
+!data/raw/human_pexels_dance/
+!data/raw/human_pexels_dance/human_pexels_dance_000.mp4
+!data/raw/animal_pexels/
+!data/raw/animal_pexels/animal_pexels_000.mp4
+!data/raw/animal_pexels_wildlife/
+!data/raw/animal_pexels_wildlife/animal_pexels_wildlife_000.mp4
+!data/syngen/
+!data/syngen/web_175617/
+!data/syngen/web_175617/videos/
+!data/syngen/web_175617/videos/e01_cam0.mp4
+!data/syngen/web_175617/videos/e02_cam0.mp4
+!data/syngen/web_175617/videos/e03_cam0.mp4
+!data/syngen/veo1/
+!data/syngen/veo1/videos/
+!data/syngen/veo1/videos/e00_cam0.mp4
+assets/models/*.task
+assets/models/*.pt
+!assets/models/.gitkeep
+# MediaPipe landmarker models (small, needed by pose/hands tools)
+!assets/models/hand_landmarker.task
+!assets/models/pose_landmarker_lite.task
+assets/body_models/*
+!assets/body_models/README.md
+assets/robots/*/meshes/
+
+# Generated media and large local artifacts
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.parquet
+*.npz
+*.npy
+*.pt
+*.onnx
+*.safetensors
+*.ckpt
+*.pth
+
+# Re-include the committed runtime weights and fixture clips.
+!tests/data/
+!tests/data/**
+!yolo11n.pt
+!yolov8s-worldv2.pt
+!assets/superanimal/*.pt
+!data/raw/animal_dog/dog_run.mp4
+!data/raw/human_pexels_walk/human_pexels_walk_000.mp4
+!data/raw/human_pexels_dance/human_pexels_dance_000.mp4
+!data/raw/animal_pexels/animal_pexels_000.mp4
+!data/raw/animal_pexels_wildlife/animal_pexels_wildlife_000.mp4
+!data/syngen/web_175617/videos/e01_cam0.mp4
+!data/syngen/web_175617/videos/e02_cam0.mp4
+!data/syngen/web_175617/videos/e03_cam0.mp4
+!data/syngen/veo1/videos/e00_cam0.mp4
+# Omni-generated demo dogs (agentic labeling + twin-fit demo inputs)
+!data/raw/ai_dogs/
+!data/raw/ai_dogs/omni_dog_walk.mp4
+!data/raw/ai_dogs/omni_mech_dog.mp4
+# Workspace tabular artifacts (cmd_twist, qpos, keypoints...): must be
+# re-included AFTER the global *.parquet exclude above to take effect.
+!workspaces/**/*.parquet
+!workspaces/**/utterances.json

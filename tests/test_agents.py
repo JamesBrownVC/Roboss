@@ -12,7 +12,7 @@ from agents.compiler import (
     compile_verifier_packet,
 )
 from agents.canvas import canvas_prompt, start_frame_prompt
-from agents.validator import validate_all, validate_scenario
+from agents.validator import validate_all, validate_contract, validate_scenario
 
 CONTRACT = {
     "world_contract": {
@@ -108,7 +108,7 @@ CONTRACT = {
         },
     ],
     "variation_policy": {
-        "allowed_camera_angles": ["side_view", "overhead_view", "robot_pov"],
+        "allowed_camera_angles": ["overhead_view"],
         "allowed_event_types": ["human_slip", "box_slips_from_robot",
                                 "human_crosses_path"],
         "allowed_position_deltas": [
@@ -124,7 +124,7 @@ GOOD_SCENARIO = {
     "scenario_id": "sc_001_human_slip",
     "title": "Human slips near the robot carrying a box",
     "referenced_entities": ["robot_01", "human_01", "box_01"],
-    "camera": {"angle": "side_view", "movement": "static",
+    "camera": {"angle": "overhead_view", "movement": "static",
                "duration_seconds": 6.0},
     "event": {"type": "human_slip", "trigger_time_seconds": 2.2,
               "risk_severity": "high",
@@ -209,6 +209,18 @@ def test_unknown_actor_rejected():
                for e in validate_scenario(CONTRACT, sc))
 
 
+def test_missing_robot_response_after_event_rejected():
+    sc = copy.deepcopy(GOOD_SCENARIO)
+    sc["action_timeline"][-1] = {
+        "t_start": 3.1,
+        "t_end": 5.0,
+        "actor": "human_01",
+        "action": "stands up and steps away from the aisle",
+    }
+    assert any("robot response" in e
+               for e in validate_scenario(CONTRACT, sc))
+
+
 def test_position_delta_outside_policy_rejected():
     sc = copy.deepcopy(GOOD_SCENARIO)
     sc["position_deltas"][0]["dx"] = 1.2
@@ -216,11 +228,19 @@ def test_position_delta_outside_policy_rejected():
                for e in validate_scenario(CONTRACT, sc))
 
 
-def test_duplicate_ids_rejected():
+def test_duplicate_ids_keep_first_copy():
     results = validate_all(CONTRACT, [GOOD_SCENARIO,
                                       copy.deepcopy(GOOD_SCENARIO)])
-    assert any("duplicate scenario_id" in e
-               for errs in results.values() for e in errs)
+    first_errs, second_errs = results[0][1], results[1][1]
+    assert first_errs == []                       # the original stays valid
+    assert any("duplicate scenario_id" in e for e in second_errs)
+
+
+def test_validate_contract_catches_registry_mismatch():
+    broken = copy.deepcopy(CONTRACT)
+    broken["object_registry"] = broken["object_registry"][:2]  # drop box_01
+    assert any("object_registry" in e for e in validate_contract(broken))
+    assert validate_contract(CONTRACT) == []
 
 
 # ----------------------------------------------------------------- compiler
@@ -234,12 +254,19 @@ def test_prompt_repeats_all_appearance_locks():
     assert "Object identity anchors" in prompt
     assert "Scene identity anchor" in prompt
     assert "Do not change" in prompt          # consistency clause
-    assert "side view" in prompt              # camera plan
+    assert "overhead view" in prompt          # camera plan
+    assert "top-down overhead view" in prompt
+    assert "Single continuous unedited take" in prompt
+    assert "no montage" in prompt
+    assert "Robot reaction requirement" in prompt
+    assert GOOD_SCENARIO["expected_robot_response"] in prompt
 
 
 def test_compiled_scenario_artifacts():
     sc = compile_scenario(CONTRACT, GOOD_SCENARIO)
     assert sc["inherits_world_contract"] == "warehouse_canvas_001"
+    assert sc["camera"]["angle"] == "overhead_view"
+    assert sc["camera"]["movement"] == "static"
     kf = sc["keyframes"]
     assert kf[0]["time"] == 0.0 and kf[1]["time"] == 2.2 and kf[2]["time"] == 6.0
     packet = sc["verifier_packet"]
@@ -263,4 +290,4 @@ def test_canvas_prompts_reference_the_contract():
     assert "gray concrete" in cp and "cardboard box" in cp
     sc = compile_scenario(CONTRACT, GOOD_SCENARIO)
     sp = start_frame_prompt(sc)
-    assert "side view" in sp and "SAME" in sp
+    assert "overhead view" in sp and "SAME" in sp

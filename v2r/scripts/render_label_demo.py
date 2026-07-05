@@ -35,15 +35,36 @@ LEG_CHAINS = {
 SPINE = ["nose", "neck_base", "back_base", "back_middle", "back_end", "tail_base"]
 LEG_COLOR = {"FL": (60, 160, 255), "FR": (40, 90, 230), "RL": (255, 170, 60), "RR": (230, 110, 40)}
 SPINE_COLOR = (90, 220, 120)
+
+# MediaPipe human pose (33 landmarks): drawn when the episode tracked a human
+HUMAN_CHAINS = [
+    (["left_shoulder", "left_elbow", "left_wrist"], (60, 160, 255)),
+    (["right_shoulder", "right_elbow", "right_wrist"], (255, 170, 60)),
+    (["left_hip", "left_knee", "left_ankle"], (40, 90, 230)),
+    (["right_hip", "right_knee", "right_ankle"], (230, 110, 40)),
+    (["left_shoulder", "right_shoulder"], (90, 220, 120)),
+    (["left_hip", "right_hip"], (90, 220, 120)),
+    (["left_shoulder", "left_hip"], (90, 220, 120)),
+    (["right_shoulder", "right_hip"], (90, 220, 120)),
+    (["nose", "left_shoulder"], (150, 200, 150)),
+    (["nose", "right_shoulder"], (150, 200, 150)),
+]
 SEG_PALETTE = [(96, 189, 90), (222, 155, 67), (108, 128, 235), (90, 200, 220),
                (200, 100, 200), (120, 220, 160), (240, 120, 120)]
 
 
 def _load(ws: EpisodeWorkspace):
     kp = None
+    kp_kind = None
     kp_path = ws.root / "animal" / "keypoints_superanimal.parquet"
     if kp_path.is_file():
         kp = pd.read_parquet(kp_path)
+        kp_kind = "animal"
+    else:
+        hp = ws.human_dir / "pose2d3d_mediapipe.parquet"
+        if hp.is_file():
+            kp = pd.read_parquet(hp).rename(columns={"joint_name": "keypoint_name"})
+            kp_kind = "human"
     segments = []
     if ws.segments_json.is_file():
         segments = json.loads(ws.segments_json.read_text(encoding="utf-8"))["segments"]
@@ -66,7 +87,7 @@ def _load(ws: EpisodeWorkspace):
     fpath = ws.retarget_dir("go2") / "twin_fit_report.json"
     if fpath.is_file():
         fit = json.loads(fpath.read_text(encoding="utf-8"))
-    return kp, segments, transcript, report, twist, fit, utterances
+    return kp, kp_kind, segments, transcript, report, twist, fit, utterances
 
 
 def _kp_frames(kp: pd.DataFrame):
@@ -77,14 +98,16 @@ def _kp_frames(kp: pd.DataFrame):
     return out, np.array(sorted(out))
 
 
-def _draw_kp(frame, pts: dict, w: int, h: int):
+def _draw_kp(frame, pts: dict, w: int, h: int, kind: str = "animal"):
     def px(name):
         if name in pts and pts[name][2] > 0.3:
             u, v, _ = pts[name]
             return int(u * w), int(v * h)
         return None
 
-    for chain, color in [(SPINE, SPINE_COLOR)] + [(c, LEG_COLOR[l]) for l, c in LEG_CHAINS.items()]:
+    chains = (HUMAN_CHAINS if kind == "human"
+              else [(SPINE, SPINE_COLOR)] + [(c, LEG_COLOR[l]) for l, c in LEG_CHAINS.items()])
+    for chain, color in chains:
         prev = None
         for name in chain:
             p = px(name)
@@ -109,7 +132,8 @@ def _step_label(s: dict) -> str:
     return a
 
 
-def render_video(ws, out_mp4: Path, kp, segments, transcript, report, utterances=None):
+def render_video(ws, out_mp4: Path, kp, segments, transcript, report,
+                 utterances=None, kp_kind="animal"):
     cap = cv2.VideoCapture(str(ws.video_path))
     fps = cap.get(cv2.CAP_PROP_FPS) or 24
     W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -133,7 +157,7 @@ def render_video(ws, out_mp4: Path, kp, segments, transcript, report, utterances
         if len(kp_times):
             j = int(np.argmin(np.abs(kp_times - t)))
             if abs(kp_times[j] - t) < 0.2:
-                _draw_kp(frame, kp_lookup[kp_times[j]], W, H)
+                _draw_kp(frame, kp_lookup[kp_times[j]], W, H, kp_kind)
 
         # header
         cv2.rectangle(frame, (0, 0), (W, 34), (25, 25, 25), -1)
@@ -182,8 +206,10 @@ def render_video(ws, out_mp4: Path, kp, segments, transcript, report, utterances
                 break
         cv2.putText(canvas, f"t = {t:5.2f} s", (W - 150, H + 86),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1, cv2.LINE_AA)
+        kp_note = ("keypoints: MediaPipe Pose (33)" if kp_kind == "human"
+                   else "keypoints: SuperAnimal-Quadruped (39)")
         cv2.putText(canvas,
-                    "keypoints: SuperAnimal-Quadruped (39) | labels: Nemotron agent + Kimi critic | source: estimated",
+                    f"{kp_note} | labels: Nemotron agent + Kimi critic | source: estimated",
                     (10, H + 116), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (150, 150, 150), 1, cv2.LINE_AA)
         vw.write(canvas)
         i += 1
@@ -191,7 +217,8 @@ def render_video(ws, out_mp4: Path, kp, segments, transcript, report, utterances
     vw.release()
 
 
-def render_storyboard(ws, out_png: Path, kp, segments, transcript, report, twist, fit):
+def render_storyboard(ws, out_png: Path, kp, segments, transcript, report, twist, fit,
+                      kp_kind="animal"):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -218,7 +245,7 @@ def render_storyboard(ws, out_png: Path, kp, segments, transcript, report, twist
         if len(kp_times):
             j = int(np.argmin(np.abs(kp_times - t)))
             if abs(kp_times[j] - t) < 0.25:
-                _draw_kp(frame, kp_lookup[kp_times[j]], frame.shape[1], frame.shape[0])
+                _draw_kp(frame, kp_lookup[kp_times[j]], frame.shape[1], frame.shape[0], kp_kind)
         ax.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         seg = next((s for s in segments if s["start_s"] <= t <= s["end_s"]), None)
         ax.set_title(f"t={t:.1f}s  [{seg['skill'] if seg else '-'}]", fontsize=10)
@@ -268,9 +295,22 @@ def render_storyboard(ws, out_png: Path, kp, segments, transcript, report, twist
         ax.legend(fontsize=8, ncol=3)
         ax.set_title("Go2 command channel (cmd_twist) from the twin fit", fontsize=11, loc="left")
         ax.set_xlabel("t (s)")
+    elif kp_kind == "human" and kp is not None:
+        # human episode: show the analyzed pose time series (wrist heights -
+        # a wave gesture is literally visible as the oscillation)
+        for joint, color, lab in [("right_wrist", "#e65100", "right wrist"),
+                                  ("left_wrist", "#1565c0", "left wrist")]:
+            jd = kp[kp["keypoint_name"] == joint].sort_values("frame")
+            if len(jd):
+                ax.plot(jd["t"], 1.0 - jd["v"], "-", color=color, label=f"{lab} height")
+        ax.legend(fontsize=8)
+        ax.set_title("Pose time series (MediaPipe, 33 joints tracked - wrist height shown)",
+                     fontsize=11, loc="left")
+        ax.set_xlabel("t (s)")
+        ax.set_ylabel("image height (1-v)")
     else:
         ax.axis("off")
-        ax.text(0.5, 0.5, "no twin fit for this episode", ha="center", fontsize=11)
+        ax.text(0.5, 0.5, "no twin fit / pose series for this episode", ha="center", fontsize=11)
 
     ax = fig.add_subplot(gs[2, 3:])
     ax.axis("off")
@@ -302,9 +342,11 @@ def main():
     ws = EpisodeWorkspace(cfg.workspaces_root, episode)
     out_dir = cfg.root.parent / "demo" / "label_demo"
     out_dir.mkdir(parents=True, exist_ok=True)
-    kp, segments, transcript, report, twist, fit, utterances = _load(ws)
-    render_video(ws, out_dir / f"{name}.mp4", kp, segments, transcript, report, utterances)
-    render_storyboard(ws, out_dir / f"{name}.png", kp, segments, transcript, report, twist, fit)
+    kp, kp_kind, segments, transcript, report, twist, fit, utterances = _load(ws)
+    render_video(ws, out_dir / f"{name}.mp4", kp, segments, transcript, report,
+                 utterances, kp_kind)
+    render_storyboard(ws, out_dir / f"{name}.png", kp, segments, transcript, report,
+                      twist, fit, kp_kind)
     print("wrote", out_dir / f"{name}.mp4")
     print("wrote", out_dir / f"{name}.png")
 

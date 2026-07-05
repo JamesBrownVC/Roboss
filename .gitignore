@@ -109,6 +109,7 @@ v2r/data/**
 v2r/workspaces/**
 !v2r/workspaces/**/
 !v2r/workspaces/**/*.parquet
+!v2r/workspaces/**/utterances.json
 v2r/.gpu_locks/
 demo/.cache/
 *_report.json

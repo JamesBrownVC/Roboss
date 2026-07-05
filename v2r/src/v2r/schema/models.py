@@ -143,6 +143,28 @@ class Captions(BaseModel):
     source: SourceTag = SourceTag.estimated
 
 
+class Utterance(BaseModel):
+    """One spoken utterance, aligned to the video timeline. The situation ->
+    utterance pairing is what teaches a robot WHAT TO SAY in context."""
+
+    t_start_s: float
+    t_end_s: float
+    speaker: str = "person_0"
+    text: str
+    language: str = ""            # BCP-47-ish, e.g. "en", "fr"
+    intent: str = "other"         # greeting|instruction|comment|response|other
+    aligned_segment: Optional[str] = None   # skill of the co-occurring action segment
+    conf: float = Field(0.5, ge=0.0, le=1.0)
+
+
+class UtterancesFile(BaseModel):
+    utterances: list[Utterance] = Field(default_factory=list)
+    has_speech: bool = False
+    audio_notes: str = ""         # e.g. "music only", "no audio track"
+    method: str = ""
+    source: SourceTag = SourceTag.estimated
+
+
 class SceneTags(BaseModel):
     scene_type: str = "unknown"
     lighting: str = "unknown"

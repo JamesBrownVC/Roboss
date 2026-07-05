@@ -82,6 +82,8 @@ class EpisodeWorkspace:
     def captions_json(self) -> Path: return self.semantics_dir / "captions.json"
     @property
     def scene_tags_json(self) -> Path: return self.semantics_dir / "scene_tags.json"
+    @property
+    def utterances_json(self) -> Path: return self.semantics_dir / "utterances.json"
 
     # retargets/ -----------------------------------------------------------
     @property

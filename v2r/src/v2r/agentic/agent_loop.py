@@ -98,6 +98,11 @@ ACTIONS:
     {{"name": "find", "queries": ["blue nitrile glove", "pipette"]}} -
     use when MediaPipe/YOLO fail but you SEE something (gloves, tools);
     'not_found' does not prove absence for small/unusual objects;
+  transcribe = SPEECH transcription from the audio track (timestamps,
+    speaker, verbatim text, language, intent). Run it whenever people speak
+    or video_analysis mentions speech/talking: aligned (situation, utterance)
+    pairs teach the robot WHAT TO SAY in context. Quote key utterances in
+    captions.long. No speech -> it honestly reports has_speech=false;
   forensics = AI-generation statistics (WEAK heuristic; only a hint);
   motion = cheap per-bin motion energy (superseded by flow/primitives).
   Each returns a JSON summary and writes artifacts.
@@ -429,10 +434,15 @@ class AgentLoop:
             out = T.aigen_forensics(self.ws.video_path)
         elif name == "motion":
             out = T.motion_timeline(self.ws.video_path)
+        elif name == "transcribe":
+            from ..labeling.transcribe import transcribe_to_workspace
+
+            out = transcribe_to_workspace(self.ws, self.cfg,
+                                          api_key=self.router.gemini_key)
         else:
             return {"error": f"unknown tool {name!r}; valid: pose, animal_pose, "
                              "hands, objects, track, flow, primitives, scenes, "
-                             "action, find, forensics, motion"}
+                             "action, find, forensics, motion, transcribe"}
         self.evidence[name] = out
         return out
 

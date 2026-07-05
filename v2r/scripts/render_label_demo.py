@@ -59,11 +59,14 @@ def _load(ws: EpisodeWorkspace):
     tw = ws.retarget_dir("go2") / "cmd_twist.parquet"
     if tw.is_file():
         twist = pd.read_parquet(tw)
+    utterances = []
+    if ws.utterances_json.is_file():
+        utterances = json.loads(ws.utterances_json.read_text(encoding="utf-8")).get("utterances", [])
     fit = {}
     fpath = ws.retarget_dir("go2") / "twin_fit_report.json"
     if fpath.is_file():
         fit = json.loads(fpath.read_text(encoding="utf-8"))
-    return kp, segments, transcript, report, twist, fit
+    return kp, segments, transcript, report, twist, fit, utterances
 
 
 def _kp_frames(kp: pd.DataFrame):
@@ -106,7 +109,7 @@ def _step_label(s: dict) -> str:
     return a
 
 
-def render_video(ws, out_mp4: Path, kp, segments, transcript, report):
+def render_video(ws, out_mp4: Path, kp, segments, transcript, report, utterances=None):
     cap = cv2.VideoCapture(str(ws.video_path))
     fps = cap.get(cv2.CAP_PROP_FPS) or 24
     W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -167,6 +170,16 @@ def render_video(ws, out_mp4: Path, kp, segments, transcript, report):
         if active_seg:
             cv2.putText(canvas, f"{active_seg['skill'].upper()}: {active_seg['text'][:80]}",
                         (10, H + 86), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (120, 255, 170), 2, cv2.LINE_AA)
+        # speech subtitles from the utterance channel
+        for u in utterances or []:
+            if u["t_start_s"] <= t <= u["t_end_s"] + 0.3:
+                sub = f'{u.get("speaker", "?")}: "{u["text"][:70]}"'
+                (tw_, th_), _ = cv2.getTextSize(sub, cv2.FONT_HERSHEY_SIMPLEX, 0.65, 2)
+                x = max((W - tw_) // 2, 8)
+                cv2.rectangle(canvas, (x - 8, H - 46 - th_), (x + tw_ + 8, H - 30), (15, 15, 15), -1)
+                cv2.putText(canvas, sub, (x, H - 38), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.65, (90, 220, 255), 2, cv2.LINE_AA)
+                break
         cv2.putText(canvas, f"t = {t:5.2f} s", (W - 150, H + 86),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1, cv2.LINE_AA)
         cv2.putText(canvas,
@@ -289,8 +302,8 @@ def main():
     ws = EpisodeWorkspace(cfg.workspaces_root, episode)
     out_dir = cfg.root.parent / "demo" / "label_demo"
     out_dir.mkdir(parents=True, exist_ok=True)
-    kp, segments, transcript, report, twist, fit = _load(ws)
-    render_video(ws, out_dir / f"{name}.mp4", kp, segments, transcript, report)
+    kp, segments, transcript, report, twist, fit, utterances = _load(ws)
+    render_video(ws, out_dir / f"{name}.mp4", kp, segments, transcript, report, utterances)
     render_storyboard(ws, out_dir / f"{name}.png", kp, segments, transcript, report, twist, fit)
     print("wrote", out_dir / f"{name}.mp4")
     print("wrote", out_dir / f"{name}.png")

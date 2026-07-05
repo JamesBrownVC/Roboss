@@ -70,6 +70,22 @@ class SemanticsStage(Stage):
             "coverage_s": round(segments[-1].end_s - segments[0].start_s, 2) if segments else 0.0,
         }
         outputs = [ws.rel(ws.segments_json), ws.rel(ws.captions_json), ws.rel(ws.scene_tags_json)]
+
+        # speech channel: (situation, utterance) pairs teach the robot what to
+        # SAY in context. Best effort: needs a Gemini key + an audio track
+        # (ingest preserves audio when it can copy the source through).
+        try:
+            from ..labeling.transcribe import transcribe_to_workspace
+
+            tr = transcribe_to_workspace(ws, ctx.cfg)
+            metrics["transcription"] = {k: tr[k] for k in
+                                        ("available", "has_speech", "n_utterances",
+                                         "audio_notes", "reason") if k in tr}
+            if tr.get("available") and ws.utterances_json.is_file():
+                outputs.append(ws.rel(ws.utterances_json))
+        except Exception as e:  # noqa: BLE001 - transcription is optional
+            metrics["transcription"] = {"available": False, "reason": str(e)[:150]}
+
         return StageResult(status=StageStatus.success, metrics=metrics, outputs=outputs, **TOOL)
 
     def _run_real(self, ctx: StageContext) -> StageResult:

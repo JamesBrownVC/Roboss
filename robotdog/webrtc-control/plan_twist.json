@@ -1,0 +1,21 @@
+{
+  "steps": [
+    {
+      "t": 0.0,
+      "action": "move",
+      "x": 0.35,
+      "y": 0.0,
+      "z": 0.0,
+      "duration": 3.0
+    },
+    {
+      "t": 4.0,
+      "action": "move",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.6,
+      "duration": 2.25
+    }
+  ],
+  "source": "/tmp/cmd_twist_test.parquet"
+}

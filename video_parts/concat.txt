@@ -1,0 +1,5 @@
+file '/Users/arresejo/Documents/Projets/evostack/Roboss/video_parts/act1_reveil.mp4'
+file '/Users/arresejo/Documents/Projets/evostack/Roboss/video_parts/act2_salut.mp4'
+file '/Users/arresejo/Documents/Projets/evostack/Roboss/video_parts/act3_exploration.mp4'
+file '/Users/arresejo/Documents/Projets/evostack/Roboss/video_parts/act4_etirement.mp4'
+file '/Users/arresejo/Documents/Projets/evostack/Roboss/video_parts/act7_calme.mp4'

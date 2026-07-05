@@ -1,0 +1,475 @@
+{
+  "steps": [
+    {
+      "t": 0.0,
+      "action": "sport",
+      "cmd": "StandDown"
+    },
+    {
+      "t": 2.25,
+      "action": "sport",
+      "cmd": "StandUp"
+    },
+    {
+      "t": 3.25,
+      "action": "sport",
+      "cmd": "BalanceStand"
+    },
+    {
+      "t": 3.5,
+      "action": "move",
+      "x": 0.4,
+      "y": 0.0,
+      "z": 0.0,
+      "duration": 3.0
+    },
+    {
+      "t": 8.75,
+      "action": "move",
+      "x": 0.0,
+      "y": 0.0,
+      "z": -0.8,
+      "duration": 1.96
+    },
+    {
+      "t": 9.5,
+      "action": "sport",
+      "cmd": "Sit"
+    }
+  ],
+  "track": [
+    {
+      "t": 0.0,
+      "visible": true,
+      "cx": 325.5,
+      "cy": 641.0,
+      "w": 485.0,
+      "h": 340.0,
+      "posture": "lying",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 0.25,
+      "visible": true,
+      "cx": 325.5,
+      "cy": 642.0,
+      "w": 485.0,
+      "h": 338.0,
+      "posture": "lying",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 0.5,
+      "visible": true,
+      "cx": 326.0,
+      "cy": 641.5,
+      "w": 484.0,
+      "h": 339.0,
+      "posture": "lying",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 0.75,
+      "visible": true,
+      "cx": 326.5,
+      "cy": 641.5,
+      "w": 485.0,
+      "h": 339.0,
+      "posture": "lying",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 1.0,
+      "visible": true,
+      "cx": 326.5,
+      "cy": 641.5,
+      "w": 485.0,
+      "h": 341.0,
+      "posture": "lying",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 1.25,
+      "visible": true,
+      "cx": 327.0,
+      "cy": 642.0,
+      "w": 484.0,
+      "h": 338.0,
+      "posture": "lying",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 1.5,
+      "visible": false
+    },
+    {
+      "t": 1.75,
+      "visible": true,
+      "cx": 327.5,
+      "cy": 642.0,
+      "w": 485.0,
+      "h": 340.0,
+      "posture": "lying",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 2.0,
+      "visible": true,
+      "cx": 318.5,
+      "cy": 622.5,
+      "w": 467.0,
+      "h": 383.0,
+      "posture": "lying",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 2.25,
+      "visible": true,
+      "cx": 326.0,
+      "cy": 592.0,
+      "w": 460.0,
+      "h": 468.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 2.5,
+      "visible": true,
+      "cx": 352.5,
+      "cy": 558.0,
+      "w": 457.0,
+      "h": 540.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 2.75,
+      "visible": true,
+      "cx": 366.0,
+      "cy": 538.0,
+      "w": 452.0,
+      "h": 580.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 3.0,
+      "visible": true,
+      "cx": 370.0,
+      "cy": 529.5,
+      "w": 452.0,
+      "h": 597.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 3.25,
+      "visible": true,
+      "cx": 370.0,
+      "cy": 530.5,
+      "w": 452.0,
+      "h": 595.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 3.5,
+      "visible": true,
+      "cx": 381.0,
+      "cy": 527.5,
+      "w": 454.0,
+      "h": 575.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 3.75,
+      "visible": true,
+      "cx": 404.5,
+      "cy": 532.0,
+      "w": 467.0,
+      "h": 592.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 4.0,
+      "visible": true,
+      "cx": 417.0,
+      "cy": 529.0,
+      "w": 484.0,
+      "h": 602.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 4.25,
+      "visible": true,
+      "cx": 460.5,
+      "cy": 515.0,
+      "w": 419.0,
+      "h": 574.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 4.5,
+      "visible": true,
+      "cx": 472.5,
+      "cy": 521.0,
+      "w": 437.0,
+      "h": 582.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 4.75,
+      "visible": true,
+      "cx": 479.0,
+      "cy": 521.0,
+      "w": 460.0,
+      "h": 582.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 5.0,
+      "visible": true,
+      "cx": 509.5,
+      "cy": 524.0,
+      "w": 451.0,
+      "h": 580.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 5.25,
+      "visible": true,
+      "cx": 533.5,
+      "cy": 495.0,
+      "w": 455.0,
+      "h": 538.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 5.5,
+      "visible": true,
+      "cx": 569.0,
+      "cy": 516.5,
+      "w": 430.0,
+      "h": 575.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 5.75,
+      "visible": true,
+      "cx": 598.5,
+      "cy": 515.5,
+      "w": 429.0,
+      "h": 579.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 6.0,
+      "visible": true,
+      "cx": 603.5,
+      "cy": 515.5,
+      "w": 409.0,
+      "h": 579.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 6.25,
+      "visible": true,
+      "cx": 618.5,
+      "cy": 486.5,
+      "w": 389.0,
+      "h": 529.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 6.5,
+      "visible": true,
+      "cx": 646.0,
+      "cy": 506.0,
+      "w": 390.0,
+      "h": 584.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 6.75,
+      "visible": true,
+      "cx": 661.0,
+      "cy": 506.0,
+      "w": 390.0,
+      "h": 590.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 7.0,
+      "visible": true,
+      "cx": 671.0,
+      "cy": 500.0,
+      "w": 386.0,
+      "h": 598.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 7.25,
+      "visible": true,
+      "cx": 669.5,
+      "cy": 516.0,
+      "w": 387.0,
+      "h": 566.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 7.5,
+      "visible": true,
+      "cx": 669.5,
+      "cy": 533.0,
+      "w": 387.0,
+      "h": 532.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 7.75,
+      "visible": true,
+      "cx": 669.0,
+      "cy": 547.0,
+      "w": 386.0,
+      "h": 504.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 8.0,
+      "visible": true,
+      "cx": 668.5,
+      "cy": 547.0,
+      "w": 387.0,
+      "h": 502.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 8.25,
+      "visible": true,
+      "cx": 674.0,
+      "cy": 554.5,
+      "w": 398.0,
+      "h": 493.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": false
+    },
+    {
+      "t": 8.5,
+      "visible": true,
+      "cx": 676.5,
+      "cy": 552.0,
+      "w": 383.0,
+      "h": 480.0,
+      "posture": "standing",
+      "facing": "right",
+      "walking": true
+    },
+    {
+      "t": 8.75,
+      "visible": true,
+      "cx": 662.0,
+      "cy": 578.0,
+      "w": 292.0,
+      "h": 528.0,
+      "posture": "standing",
+      "facing": "toward",
+      "walking": true
+    },
+    {
+      "t": 9.0,
+      "visible": true,
+      "cx": 654.5,
+      "cy": 582.0,
+      "w": 233.0,
+      "h": 502.0,
+      "posture": "standing",
+      "facing": "toward",
+      "walking": true
+    },
+    {
+      "t": 9.25,
+      "visible": true,
+      "cx": 647.5,
+      "cy": 551.0,
+      "w": 207.0,
+      "h": 562.0,
+      "posture": "standing",
+      "facing": "toward",
+      "walking": false
+    },
+    {
+      "t": 9.5,
+      "visible": true,
+      "cx": 633.5,
+      "cy": 527.0,
+      "w": 185.0,
+      "h": 606.0,
+      "posture": "sitting",
+      "facing": "away",
+      "walking": false
+    },
+    {
+      "t": 9.75,
+      "visible": true,
+      "cx": 629.5,
+      "cy": 531.5,
+      "w": 177.0,
+      "h": 593.0,
+      "posture": "sitting",
+      "facing": "toward",
+      "walking": false
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "steps": [
+    {
+      "t": 0.0,
+      "action": "move",
+      "x": 0.4,
+      "y": 0.0,
+      "z": 0.0,
+      "duration": 2.5
+    },
+    {
+      "t": 2.6,
+      "action": "sport",
+      "cmd": "StopMove"
+    },
+    {
+      "t": 4.5,
+      "action": "sport",
+      "cmd": "BalanceStand"
+    }
+  ],
+  "scenario_id": "sc_01_stumble_and_fall_path",
+  "actor": "robot_01",
+  "timeline": [
+    {
+      "t_start": 0.0,
+      "t_end": 2.5,
+      "actor": "robot_01",
+      "action": "Walks forward down the aisle while securely holding box_01 at chest level with both hands."
+    },
+    {
+      "t_start": 2.6,
+      "t_end": 4.5,
+      "actor": "robot_01",
+      "action": "Detects the falling obstacle, initiates rapid deceleration, and stops completely before contacting human_01."
+    },
+    {
+      "t_start": 4.5,
+      "t_end": 6.0,
+      "actor": "robot_01",
+      "action": "Stands static with box_01 secured, monitoring human_01 who begins to sit up on the concrete floor."
+    }
+  ]
+}

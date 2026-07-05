@@ -1,0 +1,7 @@
+unitree_webrtc_connect>=2.1.2
+aiohttp>=3.9
+Pillow>=10.0
+google-genai>=1.0        # video_to_motion.py analyze step
+python-dotenv>=1.0       # video_to_motion.py analyze step
+pandas>=2.0              # video_to_motion.py twist step (twin-fit contract)
+pyarrow>=14.0            # parquet reader for cmd_twist.parquet

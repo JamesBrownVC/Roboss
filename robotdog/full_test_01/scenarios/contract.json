@@ -1,0 +1,288 @@
+{
+  "world_contract": {
+    "world_id": "warehouse_robotics_safety_world",
+    "description": "A consistent physical testing environment for evaluating humanoid robot safety protocols when encountering unpredictable human behavior in a warehouse aisle.",
+    "locked_entities": [
+      {
+        "id": "robot_01",
+        "type": "humanoid_robot",
+        "appearance": "A matte-white and dark-gray humanoid robot, standing 1.7 meters tall, with a smooth visor-like black glass faceplate, metallic silver joints, and a slender torso with a small yellow warning stripe on its left shoulder.",
+        "identity_signature": "humanoid_robot_white_gray_visor_yellow_stripe",
+        "locked_attributes": [
+          "height",
+          "color_scheme",
+          "joint_structure",
+          "shoulder_stripe"
+        ],
+        "material": "matte polycarbonate, brushed aluminum, and tempered glass",
+        "default_position": {
+          "x": 0.0,
+          "y": 2.5,
+          "z": 0.0
+        }
+      },
+      {
+        "id": "human_01",
+        "type": "human_worker",
+        "appearance": "A male warehouse worker of medium build, wearing a high-visibility neon orange safety vest over a dark blue long-sleeve shirt, gray work pants, brown steel-toed boots, and a yellow hard hat.",
+        "identity_signature": "human_worker_orange_vest_blue_shirt_yellow_hat",
+        "locked_attributes": [
+          "clothing_colors",
+          "vest_type",
+          "hard_hat_color",
+          "build"
+        ],
+        "material": "cotton fabric, polyester vest, plastic hard hat, leather boots",
+        "default_position": {
+          "x": 1.2,
+          "y": 4.5,
+          "z": 0.0
+        }
+      },
+      {
+        "id": "box_01",
+        "type": "cardboard_box",
+        "appearance": "A plain, unbranded brown corrugated cardboard box, measuring 40cm x 30cm x 30cm, with clear packing tape sealing the top seam.",
+        "identity_signature": "brown_cardboard_box_40x30x30_taped",
+        "locked_attributes": [
+          "dimensions",
+          "color",
+          "material_texture",
+          "tape_placement"
+        ],
+        "material": "corrugated cardboard and plastic adhesive tape",
+        "default_relation": "held_by robot_01 at chest level with both hands"
+      },
+      {
+        "id": "shelving_01",
+        "type": "warehouse_shelving",
+        "appearance": "Industrial steel shelving units, painted safety orange on the horizontal beams and dark blue on the vertical uprights, holding several wooden pallets with shrink-wrapped cardboard boxes.",
+        "identity_signature": "industrial_shelving_orange_blue_with_pallets",
+        "locked_attributes": [
+          "beam_color",
+          "upright_color",
+          "shelf_heights",
+          "pallet_contents"
+        ],
+        "material": "powder-coated structural steel and pine wood pallets",
+        "default_position": {
+          "x": -1.5,
+          "y": 3.0,
+          "z": 0.0
+        }
+      }
+    ],
+    "locked_environment": {
+      "layout": "A narrow warehouse aisle, 3 meters wide, flanked by tall industrial shelving on the left and a yellow safety line painted on the concrete floor on the right.",
+      "floor": "Polished light-gray industrial concrete floor with subtle scuff marks and a painted yellow safety line.",
+      "lighting": "Overhead high-bay LED warehouse lighting, casting neutral white light (4000K) with soft, realistic diffuse shadows.",
+      "style": "Realistic CCTV surveillance footage, static camera angle, slightly high angle, neutral color grading, no cinematic bloom or dramatic depth of field."
+    },
+    "entity_ids": [
+      "robot_01",
+      "human_01",
+      "box_01",
+      "shelving_01"
+    ]
+  },
+  "object_registry": [
+    {
+      "entity_id": "robot_01",
+      "shape_signature": "bipedal humanoid robot with segmented limbs and a smooth, featureless head visor",
+      "material_signature": "non-reflective matte white plastic panels with dark gray metallic joints",
+      "color_signature": "primary matte white, secondary dark gray, accent safety yellow and glossy black",
+      "surface_details": "subtle panel gaps, small yellow warning stripe on left shoulder joint, no branding logos",
+      "scale_signature": "1.7 meters tall, shoulder width 0.45 meters",
+      "reference_views": [
+        "front_standing_pose",
+        "side_profile_carrying_box",
+        "rear_view_walking"
+      ],
+      "negative_drift": [
+        "do not allow the robot to morph into a wheeled platform",
+        "do not change the white panels to chrome or glossy finish",
+        "do not add glowing LED eyes or face patterns to the visor"
+      ]
+    },
+    {
+      "entity_id": "human_01",
+      "shape_signature": "adult male human of average height and athletic build",
+      "material_signature": "matte fabric clothing, semi-gloss plastic hard hat, matte leather boots",
+      "color_signature": "neon orange vest, dark blue shirt, medium gray pants, yellow hard hat",
+      "surface_details": "reflective silver stripes on the orange safety vest, fabric folds on sleeves and pants",
+      "scale_signature": "1.8 meters tall, medium build",
+      "reference_views": [
+        "front_view_standing",
+        "side_view_stumbling",
+        "rear_view_walking"
+      ],
+      "negative_drift": [
+        "do not change the vest color to yellow or green",
+        "do not remove the hard hat during the action",
+        "do not change the worker's clothing to casual wear like jeans or t-shirts"
+      ]
+    },
+    {
+      "entity_id": "box_01",
+      "shape_signature": "perfect rectangular cuboid cardboard box",
+      "material_signature": "matte fibrous brown cardboard with slightly reflective clear tape",
+      "color_signature": "kraft paper brown",
+      "surface_details": "corrugation lines visible under close inspection, single strip of clear tape along the top center seam",
+      "scale_signature": "0.4m width, 0.3m depth, 0.3m height",
+      "reference_views": [
+        "isometric_held_view",
+        "top_down_seam_view"
+      ],
+      "negative_drift": [
+        "do not allow the box to warp, bend, or crush unless directly impacted",
+        "do not add shipping labels, barcodes, or printed text to the box",
+        "do not change the color to white or gray"
+      ]
+    },
+    {
+      "entity_id": "shelving_01",
+      "shape_signature": "heavy-duty multi-tier industrial pallet rack",
+      "material_signature": "painted structural steel with slight metallic sheen, rough wooden pallets",
+      "color_signature": "safety orange horizontal beams, dark blue vertical uprights",
+      "surface_details": "bolt holes along the vertical uprights, dust layers on top shelves, shrink-wrapped boxes on pallets",
+      "scale_signature": "3.5 meters high, 1.2 meters deep, extending along the left side of the frame",
+      "reference_views": [
+        "aisle_perspective_view",
+        "close_up_beam_connection"
+      ],
+      "negative_drift": [
+        "do not change the shelving color scheme to gray or green",
+        "do not allow the shelves to shift, shake, or change height between frames",
+        "do not change the contents of the pallets during the video"
+      ]
+    }
+  ],
+  "scene_registry": {
+    "scene_id": "warehouse_aisle_scene",
+    "layout_signature": "straight warehouse aisle with shelving on the left, clear walking path in the center, and a painted safety boundary line on the right",
+    "background_signature": "deep warehouse perspective with distant shelving units, concrete pillars, and faint industrial equipment visible in the background blur",
+    "lighting_signature": "even overhead industrial LED lighting, high-angle source, cool-neutral color temperature, minimal glare",
+    "spatial_map": "shelving_01 aligned along x = -1.5m; robot_01 path along x = 0.0m, moving from y = 1.0m to y = 5.0m; human_01 starts at x = 1.2m, y = 4.5m and crosses to x = -0.2m, y = 3.0m",
+    "reference_views": [
+      "static_high_angle_surveillance_view",
+      "low_angle_aisle_perspective"
+    ],
+    "negative_drift": [
+      "do not introduce dramatic lens flares or cinematic lighting effects",
+      "do not change the concrete floor texture to shiny epoxy or dark asphalt",
+      "do not add extra aisles or remove the shelving units"
+    ]
+  },
+  "reference_assets": [
+    {
+      "asset_id": "canonical_canvas_01",
+      "kind": "canvas",
+      "target": "entire_scene",
+      "description": "The master layout frame showing the empty warehouse aisle with shelving_01 on the left, the concrete floor, and the overhead lighting configuration under static surveillance camera framing."
+    },
+    {
+      "asset_id": "robot_ref_front",
+      "kind": "object_view",
+      "target": "robot_01",
+      "description": "Front-facing reference image of robot_01 standing upright in neutral lighting.",
+      "source_entity_id": "robot_01"
+    },
+    {
+      "asset_id": "human_ref_front",
+      "kind": "object_view",
+      "target": "human_01",
+      "description": "Front-facing reference image of human_01 wearing the complete safety gear set.",
+      "source_entity_id": "human_01"
+    },
+    {
+      "asset_id": "scene_start_frame_01",
+      "kind": "start_frame",
+      "target": "entire_scene",
+      "description": "The initial frame of the video sequence: robot_01 is at y=2.0m carrying box_01, and human_01 is visible at y=5.0m near the right side of the aisle, preparing to step forward.",
+      "source_scene_id": "warehouse_aisle_scene"
+    }
+  ],
+  "identity_checks": [
+    {
+      "check_id": "robot_color_consistency",
+      "scope": "object",
+      "target_id": "robot_01",
+      "method": "VLM color histogram comparison and visual inspection of panel textures",
+      "pass_condition": "The robot's panels must remain matte white and dark gray throughout the sequence, with no color shifting or metallic reflection changes."
+    },
+    {
+      "check_id": "human_clothing_consistency",
+      "scope": "object",
+      "target_id": "human_01",
+      "method": "VLM attribute verification at start, middle, and end frames",
+      "pass_condition": "The human worker must wear the neon orange vest, yellow hard hat, and blue shirt in all frames; clothing items cannot disappear or change color."
+    },
+    {
+      "check_id": "box_geometry_preservation",
+      "scope": "object",
+      "target_id": "box_01",
+      "method": "bounding box aspect ratio tracking and edge detection",
+      "pass_condition": "The cardboard box must maintain its rigid 40x30x30cm rectangular shape without warping, stretching, or scaling unless a physical collision occurs."
+    },
+    {
+      "check_id": "background_layout_stability",
+      "scope": "scene",
+      "target_id": "warehouse_aisle_scene",
+      "method": "structural similarity index (SSIM) on static background regions",
+      "pass_condition": "The shelving units, floor lines, and background structures must remain perfectly static and structurally identical to the canonical canvas."
+    }
+  ],
+  "variation_policy": {
+    "allowed_camera_angles": [
+      "corner_security_camera",
+      "three_quarter_view",
+      "side_view"
+    ],
+    "allowed_event_types": [
+      "sudden_path_crossing",
+      "stumble_and_fall",
+      "abrupt_stop_evasion",
+      "box_drop_emergency",
+      "erratic_direction_change"
+    ],
+    "allowed_position_deltas": [
+      {
+        "entity_id": "robot_01",
+        "dx": [
+          -0.2,
+          0.2
+        ],
+        "dy": [
+          -0.5,
+          0.5
+        ]
+      },
+      {
+        "entity_id": "human_01",
+        "dx": [
+          -1.0,
+          1.0
+        ],
+        "dy": [
+          -1.5,
+          1.5
+        ]
+      }
+    ],
+    "event_timing_seconds": [
+      2.0,
+      4.5
+    ],
+    "forbidden_changes": [
+      "Do not change the identity, colors, or materials of the robot_01 and human_01.",
+      "Do not alter the structural layout of shelving_01 or the concrete floor texture.",
+      "Do not introduce cinematic camera movements, pans, zooms, or dramatic lighting changes.",
+      "Do not add any additional human actors or robots to the scene."
+    ],
+    "consistency_requirements": [
+      "Every generated video must feature robot_01 carrying box_01 along the aisle.",
+      "The human_01 must perform an unpredictable, sudden movement that crosses into the robot's path.",
+      "The static surveillance camera perspective must remain completely still throughout the 6.0-second duration."
+    ]
+  }
+}

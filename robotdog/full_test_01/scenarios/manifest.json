@@ -1,0 +1,47 @@
+{
+  "run_id": "full_test_01/scenarios",
+  "root": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios",
+  "files": {
+    "bundle.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\bundle.json",
+      "url": "/assets/full_test_01/scenarios/bundle.json",
+      "size_bytes": 1107
+    },
+    "canvas.png": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\canvas.png",
+      "url": "/assets/full_test_01/scenarios/canvas.png",
+      "size_bytes": 811464
+    },
+    "contract.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\contract.json",
+      "url": "/assets/full_test_01/scenarios/contract.json",
+      "size_bytes": 12793
+    },
+    "frames/sc_01_stumble_and_fall_path_start.png": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\frames\\sc_01_stumble_and_fall_path_start.png",
+      "url": "/assets/full_test_01/scenarios/frames/sc_01_stumble_and_fall_path_start.png",
+      "size_bytes": 791887
+    },
+    "intent.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\intent.json",
+      "url": "/assets/full_test_01/scenarios/intent.json",
+      "size_bytes": 812
+    },
+    "scenarios.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\scenarios.json",
+      "url": "/assets/full_test_01/scenarios/scenarios.json",
+      "size_bytes": 23193
+    },
+    "verifier_packets/sc_01_stumble_and_fall_path.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\verifier_packets\\sc_01_stumble_and_fall_path.json",
+      "url": "/assets/full_test_01/scenarios/verifier_packets/sc_01_stumble_and_fall_path.json",
+      "size_bytes": 13736
+    }
+  },
+  "kind": "scenario_bundle",
+  "world_id": "warehouse_robotics_safety_world",
+  "scene_id": "warehouse_aisle_scene",
+  "scenarios": [
+    "sc_01_stumble_and_fall_path"
+  ]
+}

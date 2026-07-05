@@ -1,0 +1,68 @@
+{
+  "run_dir": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01",
+  "compile": {
+    "outdir": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios",
+    "world_id": "warehouse_robotics_safety_world",
+    "scene_id": "warehouse_aisle_scene",
+    "scenarios": [
+      "sc_01_stumble_and_fall_path"
+    ],
+    "dropped": {},
+    "canvas": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\canvas.png",
+    "start_frames": {
+      "sc_01_stumble_and_fall_path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\frames\\sc_01_stumble_and_fall_path_start.png"
+    },
+    "bundle": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\bundle.json",
+    "manifest": "/assets/full_test_01/scenarios/manifest.json",
+    "files": {
+      "bundle.json": {
+        "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\bundle.json",
+        "url": "/assets/full_test_01/scenarios/bundle.json",
+        "size_bytes": 1107
+      },
+      "canvas.png": {
+        "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\canvas.png",
+        "url": "/assets/full_test_01/scenarios/canvas.png",
+        "size_bytes": 811464
+      },
+      "contract.json": {
+        "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\contract.json",
+        "url": "/assets/full_test_01/scenarios/contract.json",
+        "size_bytes": 12793
+      },
+      "frames/sc_01_stumble_and_fall_path_start.png": {
+        "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\frames\\sc_01_stumble_and_fall_path_start.png",
+        "url": "/assets/full_test_01/scenarios/frames/sc_01_stumble_and_fall_path_start.png",
+        "size_bytes": 791887
+      },
+      "intent.json": {
+        "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\intent.json",
+        "url": "/assets/full_test_01/scenarios/intent.json",
+        "size_bytes": 812
+      },
+      "manifest.json": {
+        "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\manifest.json",
+        "url": "/assets/full_test_01/scenarios/manifest.json",
+        "size_bytes": 2070
+      },
+      "scenarios.json": {
+        "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\scenarios.json",
+        "url": "/assets/full_test_01/scenarios/scenarios.json",
+        "size_bytes": 23193
+      },
+      "verifier_packets/sc_01_stumble_and_fall_path.json": {
+        "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\verifier_packets\\sc_01_stumble_and_fall_path.json",
+        "url": "/assets/full_test_01/scenarios/verifier_packets/sc_01_stumble_and_fall_path.json",
+        "size_bytes": 13736
+      }
+    }
+  },
+  "results": [
+    {
+      "scenario_id": "sc_01_stumble_and_fall_path",
+      "status": "reject",
+      "exit_code": 2,
+      "outdir": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path"
+    }
+  ]
+}

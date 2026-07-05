@@ -1,0 +1,19 @@
+{
+  "domain": "Warehouse Robotics Safety",
+  "environment": "Warehouse aisle with shelving and concrete floor",
+  "main_task": "Humanoid robot carrying a cardboard box",
+  "risk_focus": "Unpredictable human behavior and sudden path crossing",
+  "actors": [
+    "humanoid robot",
+    "human worker"
+  ],
+  "objects": [
+    "cardboard box",
+    "warehouse shelving"
+  ],
+  "variation_count": 1,
+  "duration_seconds": 6.0,
+  "camera_style": "static surveillance-like",
+  "notes": "Scenarios should depict rare safety edge cases where the human worker makes sudden, erratic movements or stumbles into the robot's path while it is transporting a box.",
+  "raw_intention": "Generate rare safety scenarios where a humanoid robot carries a box in a warehouse and a human worker behaves unpredictably"
+}

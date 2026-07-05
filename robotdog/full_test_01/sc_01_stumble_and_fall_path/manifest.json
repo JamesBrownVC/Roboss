@@ -1,0 +1,27 @@
+{
+  "run_id": "full_test_01/sc_01_stumble_and_fall_path",
+  "root": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path",
+  "files": {
+    "generated.mp4": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path\\generated.mp4",
+      "url": "/assets/full_test_01/sc_01_stumble_and_fall_path/generated.mp4",
+      "size_bytes": 1429595
+    },
+    "generation_request.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path\\generation_request.json",
+      "url": "/assets/full_test_01/sc_01_stumble_and_fall_path/generation_request.json",
+      "size_bytes": 18809
+    },
+    "report.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path\\report.json",
+      "url": "/assets/full_test_01/sc_01_stumble_and_fall_path/report.json",
+      "size_bytes": 7005
+    }
+  },
+  "kind": "verified_video",
+  "decision": "reject",
+  "plausibility_score": 0.41,
+  "video_url": "/assets/full_test_01/sc_01_stumble_and_fall_path/generated.mp4",
+  "report_url": "/assets/full_test_01/sc_01_stumble_and_fall_path/report.json",
+  "labels_url": null
+}

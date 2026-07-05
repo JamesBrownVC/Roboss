@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go2 Control</title>
+<link rel="stylesheet" href="/static/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<header>
+  <h1>🐕 Go2 Control</h1>
+  <div class="status-bar">
+    <span id="conn-badge" class="badge off">disconnected</span>
+    <span id="robot-ip" class="badge">—</span>
+    <span class="badge">mode: <b id="motion-mode">?</b></span>
+    <span class="badge">🔋 <b id="battery-soc">—</b></span>
+    <select id="mode-select" title="Motion mode">
+      <option value="normal">normal</option>
+      <option value="ai">ai</option>
+      <option value="advanced">advanced</option>
+      <option value="mcf">mcf</option>
+    </select>
+  </div>
+</header>
+
+<main>
+  <!-- ======================= LEFT: video + drive ======================= -->
+  <section class="col">
+    <div class="panel">
+      <h2>📷 Camera <label class="toggle"><input type="checkbox" id="video-toggle" checked> stream</label></h2>
+      <img id="video" src="/video" alt="video stream">
+    </div>
+
+    <div class="panel">
+      <h2>🌐 LiDAR 3D <label class="toggle"><input type="checkbox" id="lidar-toggle"> on</label>
+        <span class="hint" id="lidar-count"></span>
+        <span class="hint">(drag = orbit, scroll = zoom)</span></h2>
+      <div id="lidar-3d"></div>
+    </div>
+
+    <div class="panel">
+      <h2>�🎮 Drive <span class="hint">(WASD + QE = yaw, Shift = boost, Space = stop)</span></h2>
+      <div class="drive-grid">
+        <div class="dpad">
+          <button data-move="fwd">▲</button>
+          <div class="dpad-row">
+            <button data-move="left">◀</button>
+            <button data-move="stop" class="danger">■</button>
+            <button data-move="right">▶</button>
+          </div>
+          <button data-move="back">▼</button>
+          <div class="dpad-row">
+            <button data-move="yawl">⟲</button>
+            <button data-move="yawr">⟳</button>
+          </div>
+        </div>
+        <div class="drive-params">
+          <label>speed x <input type="range" id="speed-x" min="0.1" max="1.5" step="0.1" value="0.5"><span id="speed-x-val">0.5</span></label>
+          <label>speed yaw <input type="range" id="speed-yaw" min="0.2" max="2.0" step="0.1" value="1.0"><span id="speed-yaw-val">1.0</span></label>
+          <label class="toggle"><input type="checkbox" id="avoid-toggle"> 🛡 obstacle avoidance</label>
+          <label>body height <input type="range" id="body-height" min="-0.18" max="0.03" step="0.01" value="0"><span id="body-height-val">0</span></label>
+          <label>foot raise <input type="range" id="foot-raise" min="-0.06" max="0.03" step="0.01" value="0"><span id="foot-raise-val">0</span></label>
+          <label>speed level
+            <select id="speed-level"><option value="-1">slow</option><option value="0" selected>normal</option><option value="1">fast</option></select>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>💡 VUI — LED / Audio</h2>
+      <div class="vui-row" id="led-colors">
+        <button data-color="white" style="--c:#fff">⬤</button>
+        <button data-color="red" style="--c:#f44">⬤</button>
+        <button data-color="yellow" style="--c:#fd4">⬤</button>
+        <button data-color="green" style="--c:#4d4">⬤</button>
+        <button data-color="cyan" style="--c:#4dd">⬤</button>
+        <button data-color="blue" style="--c:#48f">⬤</button>
+        <button data-color="purple" style="--c:#a4f">⬤</button>
+      </div>
+      <label>brightness <input type="range" id="vui-brightness" min="0" max="10" step="1" value="5"><span id="vui-brightness-val">5</span>/10</label>
+      <label>volume <input type="range" id="vui-volume" min="0" max="10" step="1" value="5"><span id="vui-volume-val">5</span>/10</label>
+    </div>
+
+    <div class="panel">
+      <h2>🔊 Audio Hub</h2>
+      <div class="btn-row">
+        <button id="audio-refresh">↻ list</button>
+        <button id="audio-pause">⏸ pause</button>
+        <button id="audio-resume">▶ resume</button>
+        <select id="audio-play-mode">
+          <option value="no_cycle">no cycle</option>
+          <option value="single_cycle">single cycle</option>
+          <option value="list_loop">list loop</option>
+        </select>
+        <button id="megaphone-on">📢 megaphone on</button>
+        <button id="megaphone-off">📢 off</button>
+      </div>
+      <ul id="audio-list"></ul>
+    </div>
+  </section>
+
+  <!-- ======================= MIDDLE: commands ======================= -->
+  <section class="col">
+    <div class="panel">
+      <h2>🧍 Posture</h2>
+      <div class="btn-grid" id="grp-posture"></div>
+    </div>
+    <div class="panel">
+      <h2>✨ Tricks</h2>
+      <div class="btn-grid" id="grp-tricks"></div>
+    </div>
+    <div class="panel">
+      <h2>🏃 Gaits &amp; modes</h2>
+      <div class="btn-grid" id="grp-gaits"></div>
+    </div>
+    <div class="panel">
+      <h2>🧪 Any command (full SPORT_CMD list)</h2>
+      <div class="btn-row">
+        <select id="any-cmd"></select>
+        <input type="text" id="any-param" placeholder='parameter JSON, ex: {"x":0.5}'>
+        <button id="any-send">send</button>
+      </div>
+      <h2 style="margin-top:12px">🛰 Generic RPC (any topic)</h2>
+      <div class="btn-row">
+        <select id="rpc-topic"></select>
+        <input type="number" id="rpc-api" placeholder="api_id" style="width:90px">
+        <input type="text" id="rpc-param" placeholder="parameter JSON">
+        <button id="rpc-send">send</button>
+      </div>
+      <pre id="rpc-result" class="mono"></pre>
+    </div>
+  </section>
+
+  <!-- ======================= RIGHT: telemetry ======================= -->
+  <section class="col">
+    <div class="panel">
+      <h2>🔋 Battery (BMS)</h2>
+      <div class="kv" id="bms-kv"></div>
+    </div>
+    <div class="panel">
+      <h2>🧭 IMU &amp; Sport state</h2>
+      <div class="kv" id="imu-kv"></div>
+      <div class="kv" id="sport-kv"></div>
+    </div>
+    <div class="panel">
+      <h2>🦿 Motors (12) — temp / position</h2>
+      <table id="motor-table" class="mono"><thead>
+        <tr><th>#</th><th>°C</th><th>q</th><th>#</th><th>°C</th><th>q</th></tr>
+      </thead><tbody></tbody></table>
+      <div class="kv" id="foot-kv"></div>
+    </div>
+    <div class="panel">
+      <h2>🕹 R3-1 Remote <span class="hint" id="r3-status">(no data — is the remote on?)</span></h2>
+      <div class="r3-row">
+        <canvas id="r3-left" width="90" height="90"></canvas>
+        <canvas id="r3-right" width="90" height="90"></canvas>
+        <div id="r3-keys" class="r3-keys"></div>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button id="r3-enable">enable remote (SwitchJoystick on)</button>
+        <button id="r3-disable">disable</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>📡 Raw topics</h2>
+      <select id="raw-topic-select"></select>
+      <pre id="raw-json" class="mono"></pre>
+    </div>
+    <div class="panel">
+      <h2>📜 Log</h2>
+      <pre id="log" class="mono"></pre>
+    </div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+<script type="module" src="/static/lidar3d.js"></script>
+</body>
+</html>

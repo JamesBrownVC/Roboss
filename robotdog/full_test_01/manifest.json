@@ -1,0 +1,73 @@
+{
+  "run_id": "full_test_01",
+  "root": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01",
+  "files": {
+    "sc_01_stumble_and_fall_path/generated.mp4": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path\\generated.mp4",
+      "url": "/assets/full_test_01/sc_01_stumble_and_fall_path/generated.mp4",
+      "size_bytes": 1429595
+    },
+    "sc_01_stumble_and_fall_path/generation_request.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path\\generation_request.json",
+      "url": "/assets/full_test_01/sc_01_stumble_and_fall_path/generation_request.json",
+      "size_bytes": 18809
+    },
+    "sc_01_stumble_and_fall_path/manifest.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path\\manifest.json",
+      "url": "/assets/full_test_01/sc_01_stumble_and_fall_path/manifest.json",
+      "size_bytes": 1251
+    },
+    "sc_01_stumble_and_fall_path/report.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\sc_01_stumble_and_fall_path\\report.json",
+      "url": "/assets/full_test_01/sc_01_stumble_and_fall_path/report.json",
+      "size_bytes": 7005
+    },
+    "scenarios/bundle.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\bundle.json",
+      "url": "/assets/full_test_01/scenarios/bundle.json",
+      "size_bytes": 1107
+    },
+    "scenarios/canvas.png": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\canvas.png",
+      "url": "/assets/full_test_01/scenarios/canvas.png",
+      "size_bytes": 811464
+    },
+    "scenarios/contract.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\contract.json",
+      "url": "/assets/full_test_01/scenarios/contract.json",
+      "size_bytes": 12793
+    },
+    "scenarios/frames/sc_01_stumble_and_fall_path_start.png": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\frames\\sc_01_stumble_and_fall_path_start.png",
+      "url": "/assets/full_test_01/scenarios/frames/sc_01_stumble_and_fall_path_start.png",
+      "size_bytes": 791887
+    },
+    "scenarios/intent.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\intent.json",
+      "url": "/assets/full_test_01/scenarios/intent.json",
+      "size_bytes": 812
+    },
+    "scenarios/manifest.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\manifest.json",
+      "url": "/assets/full_test_01/scenarios/manifest.json",
+      "size_bytes": 2070
+    },
+    "scenarios/scenarios.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\scenarios.json",
+      "url": "/assets/full_test_01/scenarios/scenarios.json",
+      "size_bytes": 23193
+    },
+    "scenarios/verifier_packets/sc_01_stumble_and_fall_path.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\verifier_packets\\sc_01_stumble_and_fall_path.json",
+      "url": "/assets/full_test_01/scenarios/verifier_packets/sc_01_stumble_and_fall_path.json",
+      "size_bytes": 13736
+    },
+    "summary.json": {
+      "path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\summary.json",
+      "url": "/assets/full_test_01/summary.json",
+      "size_bytes": 3148
+    }
+  },
+  "kind": "verified_video_batch",
+  "summary_url": "/assets/full_test_01/summary.json"
+}

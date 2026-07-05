@@ -1,0 +1,341 @@
+{
+  "video_id": "generated",
+  "scenario": "Human Worker Stumbles and Falls into Robot Path",
+  "plausible": false,
+  "plausibility_score": 0.41,
+  "decision": "reject",
+  "main_reason": "The generated video contains physical inconsistencies: body deformation, foot skate, levitation, object materialization, object morphing.",
+  "violations": [
+    {
+      "type": "levitation",
+      "severity": 0.85,
+      "frames": [
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142
+      ],
+      "reason": "Person #6 hangs in the air for 2.6s with both feet off the ground and no vertical motion — too long and too static for a jump.",
+      "gate": "formal",
+      "entity": "person#6"
+    },
+    {
+      "type": "body_deformation",
+      "severity": 0.81,
+      "frames": [
+        122,
+        123,
+        124,
+        125,
+        126
+      ],
+      "reason": "The left forearm of person #1 stretches to 238% of its own established length, which is anatomically impossible.",
+      "gate": "formal",
+      "entity": "person#1"
+    },
+    {
+      "type": "object_materialization",
+      "severity": 0.75,
+      "frames": [
+        79
+      ],
+      "reason": "A person materializes out of nowhere at frame 79, away from frame edges and from anyone who could have introduced it.",
+      "gate": "formal",
+      "entity": "person#6"
+    },
+    {
+      "type": "object_materialization",
+      "severity": 0.75,
+      "frames": [
+        25
+      ],
+      "reason": "A parking meter materializes out of nowhere at frame 25, away from frame edges and from anyone who could have introduced it.",
+      "gate": "formal",
+      "entity": "parking meter#4"
+    },
+    {
+      "type": "object_materialization",
+      "severity": 0.7,
+      "frames": [
+        38
+      ],
+      "reason": "The parking meter vanishes into thin air at frame 38, away from frame edges and with nobody nearby to remove it.",
+      "gate": "formal",
+      "entity": "parking meter#4"
+    },
+    {
+      "type": "body_deformation",
+      "severity": 0.67,
+      "frames": [
+        122,
+        123,
+        124,
+        126
+      ],
+      "reason": "The shoulder girdle of person #1 stretches to 193% of its own established length, which is anatomically impossible.",
+      "gate": "formal",
+      "entity": "person#1"
+    },
+    {
+      "type": "body_deformation",
+      "severity": 0.67,
+      "frames": [
+        119,
+        120,
+        121,
+        122
+      ],
+      "reason": "The left shin of person #1 stretches to 193% of its own established length, which is anatomically impossible.",
+      "gate": "formal",
+      "entity": "person#1"
+    },
+    {
+      "type": "body_deformation",
+      "severity": 0.63,
+      "frames": [
+        120,
+        121,
+        123,
+        124,
+        126
+      ],
+      "reason": "The left upper arm of person #1 stretches to 180% of its own established length, which is anatomically impossible.",
+      "gate": "formal",
+      "entity": "person#1"
+    },
+    {
+      "type": "body_deformation",
+      "severity": 0.63,
+      "frames": [
+        120,
+        123
+      ],
+      "reason": "The pelvis of person #1 stretches to 180% of its own established length, which is anatomically impossible.",
+      "gate": "formal",
+      "entity": "person#1"
+    },
+    {
+      "type": "foot_skate",
+      "severity": 0.59,
+      "frames": [
+        123,
+        124,
+        125,
+        126
+      ],
+      "reason": "The right foot of person #1 appears grounded but slides horizontally at 0.98 diag/s, indicating unstable contact physics.",
+      "gate": "formal",
+      "entity": "person#1"
+    },
+    {
+      "type": "object_morphing",
+      "severity": 0.4,
+      "frames": [
+        79
+      ],
+      "reason": "A white glove suddenly appears on the worker's right hand, which was previously bare.",
+      "gate": "semantic"
+    }
+  ],
+  "suspicious_frames": [
+    25,
+    38,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142
+  ],
+  "extracted_evidence": {
+    "fps": 24.0,
+    "frames_processed": 144,
+    "humans_detected": 2,
+    "objects_detected": [
+      "parking meter",
+      "skateboard"
+    ],
+    "tracks": [
+      {
+        "id": 1,
+        "label": "person",
+        "frames_tracked": 144
+      },
+      {
+        "id": 6,
+        "label": "person",
+        "frames_tracked": 65
+      },
+      {
+        "id": 4,
+        "label": "parking meter",
+        "frames_tracked": 3
+      },
+      {
+        "id": 2,
+        "label": "skateboard",
+        "frames_tracked": 4
+      }
+    ],
+    "detected_classes": [
+      "person",
+      "parking meter",
+      "skateboard"
+    ],
+    "expected_objects": [
+      "humanoid robot",
+      "human worker",
+      "cardboard box",
+      "warehouse shelving"
+    ],
+    "missing_expected_objects": [
+      "humanoid robot",
+      "human worker",
+      "cardboard box",
+      "warehouse shelving"
+    ]
+  },
+  "gates": {
+    "formal": {
+      "violations": 10
+    },
+    "semantic": {
+      "status": "ok",
+      "model": "gemini-3.5-flash",
+      "frames_sent": [
+        0,
+        15,
+        25,
+        31,
+        38,
+        47,
+        63,
+        79,
+        80,
+        95,
+        111,
+        127,
+        143
+      ],
+      "semantic_score": 0.78,
+      "summary": "The video demonstrates high continuity and matches the prompt well, with only a minor inconsistency regarding the sudden appearance of a glove on the worker's hand."
+    }
+  }
+}

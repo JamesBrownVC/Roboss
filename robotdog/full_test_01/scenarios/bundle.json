@@ -1,0 +1,33 @@
+{
+  "intention": "Generate rare safety scenarios where a humanoid robot carries a box in a warehouse and a human worker behaves unpredictably",
+  "world_id": "warehouse_robotics_safety_world",
+  "scene_id": "warehouse_aisle_scene",
+  "locked_entities": [
+    "robot_01",
+    "human_01",
+    "box_01",
+    "shelving_01"
+  ],
+  "reference_assets_planned": 4,
+  "identity_checks": [
+    "robot_color_consistency",
+    "human_clothing_consistency",
+    "box_geometry_preservation",
+    "background_layout_stability"
+  ],
+  "scenarios_valid": [
+    "sc_01_stumble_and_fall_path"
+  ],
+  "scenarios_dropped": {},
+  "canvas": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\canvas.png",
+  "canvas_error": null,
+  "start_frames": {
+    "sc_01_stumble_and_fall_path": "C:\\Users\\yassi\\OneDrive\\Desktop\\Roboss\\runs\\full_test_01\\scenarios\\frames\\sc_01_stumble_and_fall_path_start.png"
+  },
+  "files": {
+    "intent": "intent.json",
+    "contract": "contract.json",
+    "scenarios": "scenarios.json",
+    "verifier_packets": "verifier_packets/"
+  }
+}

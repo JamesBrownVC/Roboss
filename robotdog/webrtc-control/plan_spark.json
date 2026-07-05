@@ -1,0 +1,197 @@
+{
+  "steps": [
+    {
+      "t": 0.0,
+      "action": "sport",
+      "cmd": "Stretch"
+    },
+    {
+      "t": 2.5,
+      "action": "sport",
+      "cmd": "Stretch"
+    }
+  ],
+  "track": [
+    {
+      "t": 0.0,
+      "posture": "bowing",
+      "posture_conf": 0.5354042053222656,
+      "facing": "away",
+      "facing_conf": 0.5514092445373535
+    },
+    {
+      "t": 0.5,
+      "posture": "bowing",
+      "posture_conf": 0.48178282380104065,
+      "facing": "away",
+      "facing_conf": 0.604030430316925
+    },
+    {
+      "t": 1.0,
+      "posture": "lying",
+      "posture_conf": 0.4439217448234558,
+      "facing": "away",
+      "facing_conf": 0.6009894013404846
+    },
+    {
+      "t": 1.5,
+      "posture": "bowing",
+      "posture_conf": 0.43710121512413025,
+      "facing": "away",
+      "facing_conf": 0.6106914281845093
+    },
+    {
+      "t": 2.0,
+      "posture": "lying",
+      "posture_conf": 0.47265487909317017,
+      "facing": "away",
+      "facing_conf": 0.5210295915603638
+    },
+    {
+      "t": 2.5,
+      "posture": "bowing",
+      "posture_conf": 0.5905671119689941,
+      "facing": "away",
+      "facing_conf": 0.6820234060287476
+    },
+    {
+      "t": 3.0,
+      "posture": "bowing",
+      "posture_conf": 0.8074387311935425,
+      "facing": "away",
+      "facing_conf": 0.4717804789543152
+    },
+    {
+      "t": 3.5,
+      "posture": "bowing",
+      "posture_conf": 0.7241122722625732,
+      "facing": "away",
+      "facing_conf": 0.45959797501564026
+    },
+    {
+      "t": 4.0,
+      "posture": "bowing",
+      "posture_conf": 0.6915366649627686,
+      "facing": "away",
+      "facing_conf": 0.3686409592628479
+    },
+    {
+      "t": 4.5,
+      "posture": "bowing",
+      "posture_conf": 0.6125298738479614,
+      "facing": "away",
+      "facing_conf": 0.4163365662097931
+    },
+    {
+      "t": 5.0,
+      "posture": "bowing",
+      "posture_conf": 0.6622975468635559,
+      "facing": "away",
+      "facing_conf": 0.5696894526481628
+    },
+    {
+      "t": 5.5,
+      "posture": "bowing",
+      "posture_conf": 0.802591860294342,
+      "facing": "away",
+      "facing_conf": 0.7005181312561035
+    },
+    {
+      "t": 6.0,
+      "posture": "bowing",
+      "posture_conf": 0.6128928065299988,
+      "facing": "away",
+      "facing_conf": 0.8283538222312927
+    },
+    {
+      "t": 6.5,
+      "posture": "bowing",
+      "posture_conf": 0.5994130969047546,
+      "facing": "away",
+      "facing_conf": 0.688874363899231
+    },
+    {
+      "t": 7.0,
+      "posture": "bowing",
+      "posture_conf": 0.5600330233573914,
+      "facing": "away",
+      "facing_conf": 0.6223344802856445
+    },
+    {
+      "t": 7.5,
+      "posture": "bowing",
+      "posture_conf": 0.573371171951294,
+      "facing": "away",
+      "facing_conf": 0.6825180053710938
+    },
+    {
+      "t": 8.0,
+      "posture": "bowing",
+      "posture_conf": 0.6015873551368713,
+      "facing": "away",
+      "facing_conf": 0.6977087259292603
+    },
+    {
+      "t": 8.5,
+      "posture": "bowing",
+      "posture_conf": 0.6355265378952026,
+      "facing": "away",
+      "facing_conf": 0.6370305418968201
+    },
+    {
+      "t": 9.0,
+      "posture": "bowing",
+      "posture_conf": 0.6493346691131592,
+      "facing": "away",
+      "facing_conf": 0.6396663188934326
+    },
+    {
+      "t": 9.5,
+      "posture": "sitting",
+      "posture_conf": 0.5271522998809814,
+      "facing": "away",
+      "facing_conf": 0.5795540809631348
+    }
+  ],
+  "energy": [
+    0.025,
+    0.062,
+    0.081,
+    0.093,
+    0.084,
+    0.077,
+    0.156,
+    0.42,
+    0.742,
+    1.0,
+    0.898,
+    0.586,
+    0.331,
+    0.369,
+    0.556,
+    0.671,
+    0.654,
+    0.636,
+    0.64,
+    0.683,
+    0.747,
+    0.746,
+    0.702,
+    0.714,
+    0.749,
+    0.732,
+    0.638,
+    0.449,
+    0.305,
+    0.137,
+    0.088,
+    0.157,
+    0.341,
+    0.594,
+    0.723,
+    0.791,
+    0.798,
+    0.693,
+    0.423
+  ]
+}

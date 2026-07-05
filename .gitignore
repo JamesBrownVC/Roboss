@@ -98,6 +98,10 @@ v2r/data/**
 !v2r/data/syngen/veo1/
 !v2r/data/syngen/veo1/videos/
 !v2r/data/syngen/veo1/videos/e00_cam0.mp4
+# Omni-generated demo dogs (agentic labeling + twin-fit demo inputs)
+!v2r/data/raw/ai_dogs/
+!v2r/data/raw/ai_dogs/omni_dog_walk.mp4
+!v2r/data/raw/ai_dogs/omni_mech_dog.mp4
 # Workspaces: ignore heavy generated media (videos, depth PNGs, hdf5) but DO
 # commit the tabular label/retarget artifacts (*.parquet, e.g. cmd_twist,
 # qpos, keypoints). The **/ un-ignore lets git descend into the tree; the

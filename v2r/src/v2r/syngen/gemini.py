@@ -392,7 +392,11 @@ def download_file(uri: str, dest: Path, api_key: Optional[str] = None) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(uri, headers={"X-goog-api-key": key})
     try:
-        with urllib.request.urlopen(req, timeout=300) as resp, open(dest, "wb") as f:
+        # context: the Windows cert store on this host contains a corrupt
+        # certificate (ASN1 NOT_ENOUGH_DATA on default-context handshakes);
+        # every urlopen in this module must use the certifi context
+        with urllib.request.urlopen(req, timeout=300, context=_ssl_context()) as resp, \
+                open(dest, "wb") as f:
             while True:
                 chunk = resp.read(1 << 20)
                 if not chunk:
